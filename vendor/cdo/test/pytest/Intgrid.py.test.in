@@ -1,0 +1,53 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+FORMAT="-f srv -b 32"
+GRIDS=["F16", "F32"]
+OPERATORS=["intgridbil"]
+UNSTRUC_OPERATORS=[]
+
+ABS=defaultdict(lambda : 0.001, {"intgriddis" : 0.2})
+
+if (os.getenv("USER") == "m214003"):
+    OPERATORS=OPERATORS + ["intgriddis", "intgridnn"]
+    UNSTRUC_OPERATORS=UNSTRUC_OPERATORS + ["intgriddis", "intgridnn"]
+
+GRIDTYPES=["regular", "unstructured"]
+
+HAS_THREADS=cdo_check_req("has-threads")
+HAS_OPENMP=cdo_check_req("has-openmp")
+
+IFILE=DATAPATH + "/bathy4.grb"
+
+test_module=TestModule()
+
+for GRIDTYPE in GRIDTYPES:
+    SETGRID=f'-setgridtype,{GRIDTYPE}' if (GRIDTYPE != "regular") else ""
+    for GRID in GRIDS:
+        STATS=UNSTRUC_OPERATORS if (GRIDTYPE == "unstructured") else OPERATORS
+        for OPERATOR in STATS:
+            OFILE=f'{GRID}_{OPERATOR[7:]}_res'
+            RFILE=f'{DATAPATH}/{GRID}_{OPERATOR[7:]}_ref'
+
+            if (not HAS_THREADS):
+                test_module.add_skip("POSIX threads not enabled")
+            else:
+                if (HAS_OPENMP):
+                    t=TAPTest(f'{OPERATOR} {GRIDTYPE} {GRID} +threading')
+                    for NTHREADS in [1,2,4]:
+                        command=f'{CDO} {FORMAT} -P {NTHREADS} {OPERATOR},{GRID} {SETGRID} {IFILE} {OFILE}'
+                        t.add(command)
+                        t.add(f'{CDO} diff,abslim={ABS[OPERATOR]} {OFILE} {RFILE}')
+                        t.clean(OFILE)
+                else:
+                    t=TAPTest(f'{OPERATOR} {GRIDTYPE} {GRID}')
+                    command=f'{CDO} {FORMAT} {OPERATOR},{GRID} {SETGRID} {IFILE} {OFILE}'
+                    t.add(command)
+                    t.add(f'{CDO} diff,abslim={ABS[OPERATOR]} {OFILE} {RFILE}')
+                    t.clean(OFILE)
+                test_module.add(t)
+
+test_module.run()

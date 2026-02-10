@@ -1,0 +1,23 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+OPERATORS=["ifthenc","ifnotthenc"]
+CONST=-77
+
+IFILE="infile_condc"
+
+test_module = TestModule()
+test_module.prepare(f'{CDO} {FORMAT} gtc,0 -topo,global_10 {IFILE}')
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/cond_{OPERATOR}_ref'
+    OFILE=f'cond_{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{CONST} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+t.clean(IFILE)
+test_module.run()

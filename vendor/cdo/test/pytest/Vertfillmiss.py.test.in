@@ -1,0 +1,26 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+OPERATOR="vertfillmiss"
+METHODS=["nearest", "linear", "forward", "backward"]
+
+RUNS=[1, 2, 3, 4]
+
+test_module = TestModule()
+
+for METHOD in METHODS:
+    t=TAPTest(f'method={METHOD}')
+    for RUN in RUNS:
+        IFILE=f'{DATAPATH}/{OPERATOR}_{RUN}.srv'
+        RFILE=f'{DATAPATH}/{OPERATOR}_{METHOD}_{RUN}_ref'
+        OFILE=f'{OPERATOR}_{METHOD}_{RUN}_res'
+        t.add(f'{CDO} {FORMAT} {OPERATOR},method={METHOD} {IFILE} {OFILE}')
+        t.add(f'{CDO} diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

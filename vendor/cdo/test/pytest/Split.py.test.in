@@ -1,0 +1,34 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_CGRIBEX=cdo_check_req("has-cgribex")
+
+OPERATORS=["splitcode","splitparam","splitname","splitlevel","splitgrid","splitzaxis","splittabnum"]
+
+RFILES={}
+RFILES["splitcode"]=["splitcode_129.grb","splitcode_130.grb","splitcode_152.grb"]
+RFILES["splitparam"]=["splitparam_129.128.grb","splitparam_130.128.grb","splitparam_152.128.grb"]
+RFILES["splitname"]=["splitname_geosp.grb","splitname_lsp.grb","splitname_t.grb"]
+RFILES["splitlevel"]=["splitlevel_000000.grb","splitlevel_000090.grb","splitlevel_000900.grb","splitlevel_009000.grb","splitlevel_090000.grb"]
+RFILES["splitgrid"]=["splitgrid_01.grb"]
+RFILES["splitzaxis"]=["splitzaxis_01.grb","splitzaxis_02.grb"]
+RFILES["splittabnum"]=["splittabnum_128.grb"]
+
+IFILE=f'{DATAPATH}/pl_data.grb'
+
+test_module = TestModule()
+for OPERATOR in OPERATORS:
+    if (not HAS_CGRIBEX):
+       test_module.add_skip("CGRIBEX not enabled")
+       continue
+
+    OBASE=f'{OPERATOR}_'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {OPERATOR} {IFILE} {OBASE}')
+    for OFILE in RFILES[OPERATOR]:
+       t.add(f'{CDO} diff {OFILE} {DATAPATH}/{OFILE}')
+       t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

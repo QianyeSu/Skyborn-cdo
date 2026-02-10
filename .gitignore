@@ -42,16 +42,32 @@ htmlcov/
 *.nc
 !tests/data/*.nc
 
-# CDO vendor source (added as submodule or copied locally for builds)
-# Exclude from main git to keep repo size small
-vendor/cdo/
+# CDO vendor source - included with Windows patches applied
+# vendor/cdo/ is tracked in git
 
-# CDO build artifacts
-vendor/cdo/config.h
-vendor/cdo/config.log
-vendor/cdo/config.status
-vendor/cdo/Makefile
-vendor/cdo/src/.libs/
-vendor/cdo/src/*.o
-vendor/cdo/src/*.lo
-vendor/cdo/src/cdo
+# Local build directories
+build_win64/
+install_win64/
+build_linux/
+install_linux/
+build_macos/
+install_macos/
+
+# Build log files
+configure_log*.txt
+make_log*.txt
+
+# CDO build artifacts (if building in-tree)
+*.o
+*.lo
+*.la
+.libs/
+.deps/
+config.log
+config.status
+config.cache
+autom4te.cache/
+
+# Temporary/helper files
+*.txt.bak
+*.sh.bak

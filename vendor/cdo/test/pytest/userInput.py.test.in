@@ -1,0 +1,26 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+INSTRINGS=["1337,global_1", "1337 global_1", "1337 \\global_1"]
+RFILE="userInputRes.srv"
+OFILE="userInputOutput.srv"
+USER_INPUT="userInput_testFile"
+
+test_module = TestModule()
+test_module.prepare(f'{CDO} {FORMAT} const,1337,global_1 {RFILE}')
+
+for INSTR in INSTRINGS:
+    t=TAPTest(INSTR)
+    f=open(USER_INPUT, "w")
+    f.write(f'{INSTR}\n')
+    f.close()
+    t.add(f'{CDO} {FORMAT} const {OFILE} < {USER_INPUT}')
+    t.add(f'{CDO} diff {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+t.clean(RFILE,USER_INPUT)
+test_module.run()

@@ -1,0 +1,38 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+FORMAT="-f srv -b 32"
+
+HAS_THREADS=cdo_check_req("has-threads")
+
+GRID="global_5"
+
+IFILE=f'{DATAPATH}/topo_eu5.grb'
+
+OPERATORS=["remapdis","remapnn","remapbil","remapbic","remapcon","remaplaf"]
+ABSLIMS=defaultdict(lambda : 0.0001, {"remapdis" : 0.001})
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    if (not HAS_THREADS):
+        test_module.add_skip("POSIX threads not enabled")
+    else:
+#       for extra in ["","off","on"]:
+        for extra in ["off"]:
+
+            os.environ['REMAP_EXTRAPOLATE'] = extra
+            OFILE=f'topo_eu5_{OPERATOR[5:]}_{extra}_{os.getpid()}'
+            RFILE=f'{DATAPATH}/topo_eu5_{OPERATOR[5:]}_{extra}_ref'
+
+            for GRIDTYPE in ["", " -setgridtype,curvilinear"]:
+                t=TAPTest(f'{OPERATOR} regional->global')
+                t.add(f'{CDO} {FORMAT} {OPERATOR},{GRID} {GRIDTYPE} {IFILE} {OFILE}')
+                t.add(f'{CDO} diff,abslim={ABSLIMS[OPERATOR]} {OFILE} {RFILE}')
+                t.clean(OFILE)
+                test_module.add(t)
+
+test_module.run()

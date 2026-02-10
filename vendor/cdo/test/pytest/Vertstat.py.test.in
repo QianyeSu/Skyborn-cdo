@@ -1,0 +1,19 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+OPERATORS=["vertmin","vertmax","vertrange","vertsum","vertavg","vertmean","vertstd","vertstd1","vertvar","vertvar1","vertint","vertcum"]
+#
+IFILE=f'{DATAPATH}/pl_data.grb'
+FORMAT="-f srv -b 32"
+#
+test_module = TestModule()
+for OPER in OPERATORS:
+    OFILE=f'{OPER}_res'
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+    t=TAPTest(OPER)
+    t.add(f'{CDO} {FORMAT} {OPER} {IFILE} {OFILE}')
+    t.diff(RFILE,OFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+test_module.run()

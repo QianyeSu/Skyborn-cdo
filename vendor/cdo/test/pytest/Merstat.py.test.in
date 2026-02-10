@@ -1,0 +1,21 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+OPERATORS=["mermin","mermax","merrange","mersum","meravg","mermean","merstd","merstd1","mervar","mervar1","merskew","merkurt","mermedian"]
+
+IFILE=f'{DATAPATH}/t21_geosp_tsurf.grb'
+FORMAT="-f srv -b 32"
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    OFILE=f'{OPER}_res'
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+
+    t = TAPTest(OPER)
+    t.add(f'{CDO} {FORMAT} {OPER} {IFILE} {OFILE}')
+    t.diff(OFILE,RFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

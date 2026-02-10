@@ -1,0 +1,49 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+IFILE1=f'{DATAPATH}/ts_1d_5years'
+IFILE2=f'{DATAPATH}/ts_1d_1year'
+FORMAT="-f srv -b 32"
+#
+OPERATORS=["ydayadd","ydaysub","ydaymul","ydaydiv"]
+#
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO}  {FORMAT} {OPERATOR} -del29feb {IFILE1} {IFILE2} {OFILE}')
+    t.diff(OFILE,RFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+
+
+#Swap infiles -> larger is 2nd
+
+
+
+#Negative tests
+SHOULD_FAIL=1 #expected value is 1 instead of 0
+FIVE_YEARS=f'{DATAPATH}/ts_1d_5years'
+SINGLE_YEAR=f'{DATAPATH}/ts_1d_1year'
+OFILE="ydayarith_negative_tests"
+
+extra_day_fails = TAPTest("extra day should cause error")
+extra_day_fails.add(f'{CDO} {FORMAT} -ydayadd {SINGLE_YEAR} -mergetime [ -select,dom=25Jan {FIVE_YEARS} ] {OFILE}',SHOULD_FAIL)
+extra_day_fails.clean(OFILE)
+test_module.add(extra_day_fails)
+
+missing_day_fails = TAPTest("missing day should cause error")
+missing_day_fails.add(f'{CDO} {FORMAT} -ydayadd {SINGLE_YEAR} -delete,dom=25Jan {SINGLE_YEAR} {OFILE}',SHOULD_FAIL)
+missing_day_fails.clean(OFILE)
+test_module.add(missing_day_fails)
+
+second_input_must_not_be_larger = TAPTest("wrong order of inputs should fail")
+second_input_must_not_be_larger.add(f'{CDO} {FORMAT} -ydayadd {SINGLE_YEAR} {FIVE_YEARS} {OFILE}',SHOULD_FAIL)
+second_input_must_not_be_larger.clean(OFILE)
+test_module.add(second_input_must_not_be_larger)
+
+test_module.run()
+

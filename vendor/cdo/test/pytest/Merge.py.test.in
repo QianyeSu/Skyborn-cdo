@@ -1,0 +1,25 @@
+#! @PYTHON@
+#
+from cdoTest import *
+test_module = TestModule()
+#
+FORMAT="-f srv -b 32"
+
+IFILE=f'{DATAPATH}/pl_data'
+IFILES="code130.srv code152.srv code129.srv"
+
+test_module.prepare(f'{CDO} splitcode {IFILE} code')
+
+OPERATORS=["merge"]
+
+for OPER in OPERATORS:
+    RFILE=f'{DATAPATH}/pl_data'
+    OFILE="merge_res"
+
+    t = TAPTest(OPER)
+    t.add(f'{CDO}  {FORMAT} {OPER} {IFILES} {OFILE}')
+    t.add(f'{CDO}  diff {OFILE} {RFILE}')
+    t.clean(OFILE,*(IFILES.split(' ')))
+    test_module.add(t)
+
+test_module.run()

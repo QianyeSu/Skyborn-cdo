@@ -1,0 +1,20 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+OPERATORS=["zonmin","zonmax","zonrange","zonsum","zonavg","zonmean","zonstd","zonstd1","zonvar","zonvar1","zonskew","zonkurt","zonmedian"]
+
+IFILE=f'{DATAPATH}/t21_geosp_tsurf.grb'
+FORMAT="-f srv -b 32"
+#
+test_module = TestModule()
+for OPER in OPERATORS:
+    OFILE=f'{OPER}_res'
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+    t=TAPTest(OPER)
+    t.add(f'{CDO} {FORMAT} {OPER} {IFILE} {OFILE}')
+    t.diff(OFILE,RFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+#
+test_module.run()

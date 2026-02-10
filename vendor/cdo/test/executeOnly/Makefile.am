@@ -1,0 +1,2 @@
+
+TESTS = Splitsel.test

@@ -1,0 +1,29 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+FORMAT="-f ext -b 32"
+#
+PCTLS=[0, 1, 20, 25, 33, 50, 66, 75, 80, 99, 100]
+#
+METHODS=["nrank", "nist", "rtype8", "linear", "lower", "higher", "nearest", "midpoint", "inverted_cdf", "averaged_inverted_cdf", "closest_observation", "interpolated_inverted_cdf", "hazen", "weibull", "median_unbiased", "normal_unbiased"]
+#
+IFILE=f'{DATAPATH}/topo5.srv'
+#
+OPER="fldpctl"
+#
+test_module = TestModule()
+#
+for METHOD in METHODS:
+    t = TAPTest(f'percentile method {METHOD}')
+    for PCTL in PCTLS:
+        RFILE=f'{DATAPATH}/percentile_{PCTL}_{METHOD}_ref'
+        OFILE=f'percentile_{PCTL}_{METHOD}_res'
+
+        t.add(f'{CDO} {FORMAT}  --percentile {METHOD} {OPER},{PCTL} {IFILE} {OFILE}')
+        t.add(f'{CDO} diff,abslim=0.001 {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

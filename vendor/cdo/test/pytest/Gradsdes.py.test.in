@@ -1,0 +1,25 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+IFILE=f'{DATAPATH}/pl_data.grb'
+OFILE="pl_data.grb"
+RFILE1="pl_data.ctl"
+RFILE2="pl_data.gmp"
+#
+OPER="gradsdes"
+#
+test_module=TestModule()
+test_module.prepare(f'cp {IFILE} {OFILE}')
+t = TAPTest(OPER)
+#
+t.add(f'{CDO} {OPER} {OFILE}')
+t.add(f'head -12 {DATAPATH}/{RFILE1} > h1')
+t.add(f'head -12 {RFILE1} > h2')
+t.add('diff h1 h2')
+t.add(f'cmp -s {DATAPATH}/{RFILE2}  {RFILE2}')
+#
+t.clean("h1","h2",OFILE,RFILE2,RFILE1)
+
+test_module.add(t)
+test_module.run()

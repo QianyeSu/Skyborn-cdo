@@ -1,0 +1,32 @@
+#! @PYTHON@
+#
+from cdoTest import *
+import os
+#
+HAS_THREADS=cdo_check_req("has-threads")
+#
+REFVAL="12.5663706"
+GRIDS=["global_5","global_2","global_1","global_.5","F32","F80","F160"]
+RSTAT=0;
+PLANET_RADIUS=1
+#
+os.environ["PLANET_RADIUS"]="1"
+#
+OPER="gridarea"
+#
+test_module=TestModule()
+for GRID in GRIDS:
+    if(not HAS_THREADS):
+        test_module.add_skip("POSIX threads not enabled")
+        continue
+
+    t=TAPTest(GRID)
+    CDOCOMMAND="$CDO -s outputf,%10.7f -fldsum -$STATS -random,$GRID"
+    t.add(f'{CDO} -s outputf,%10.7f -fldsum -{OPER} -random,{GRID} > gridarea_res')
+    t.add(f'echo {REFVAL} > gridarea_ref')
+    t.add("diff gridarea_ref gridarea_res")
+    t.clean("gridarea_res","gridarea_ref")
+    test_module.add(t)
+
+test_module.run()
+

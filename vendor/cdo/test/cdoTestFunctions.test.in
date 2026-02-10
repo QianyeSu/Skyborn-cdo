@@ -1,0 +1,53 @@
+function runTest
+{
+    test -z "$NTEST"       && { echo "NTEST undefined"; exit 1; }
+    test -z "$CDOTEST"     && { echo "CDOTEST undefined"; exit 1; }
+    test -z "$CDOCOMMAND"  && { echo "CDOCOMMAND undefined"; exit 1; }
+    test -z "$TESTCOMMAND" && { echo "TESTCOMMAND undefined"; exit 1; }
+
+    local RSTAT=0
+
+    echo "Running test: $NTEST - $CDOTEST"
+
+    echo "$CDOCOMMAND"
+    $CDOCOMMAND
+    test $? -eq 0 || (( RSTAT+=1 ))
+
+    echo "$TESTCOMMAND"
+    $TESTCOMMAND
+    test $? -eq 0 || (( RSTAT+=1 ))
+
+    test $RSTAT -eq 0 && echo "ok $NTEST - $CDOTEST"
+    test $RSTAT -eq 0 || echo "not ok $NTEST - $CDOTEST"
+}
+
+function runOperatorTest
+{
+    local OPERATOR=$1
+    local IFILE=$2
+    local ABSLIM=$3
+
+    test -z "$ABSLIM" && ABSLIM=0
+
+    local RFILE=$DATAPATH/${OPERATOR}_ref
+    local OFILE=${OPERATOR}_res
+
+    local RSTAT=0
+
+    local CDOTEST="$OPERATOR"
+    echo "Running test: $NTEST - $CDOTEST"
+
+    local CDOCOMMAND="$CDO  $FORMAT $OPERATOR $IFILE $OFILE"
+    echo "$CDOCOMMAND"
+    $CDOCOMMAND
+    test $? -eq 0 || (( RSTAT+=1 ))
+
+    $CDO  diff,abslim=$ABSLIM "$OFILE" "$RFILE"
+    test $? -eq 0 || (( RSTAT+=1 ))
+
+    test $RSTAT -eq 0 && echo "ok $NTEST - $CDOTEST"
+    test $RSTAT -eq 0 || echo "not ok $NTEST - $CDOTEST"
+
+    rm -f "$OFILE"
+#    (( NTEST+=1 ))
+}

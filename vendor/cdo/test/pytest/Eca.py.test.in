@@ -1,0 +1,24 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["eca_hwfi","etccdi_wsdi"]
+
+IFILE1=f'{DATAPATH}/tsurf_1d_1year'
+IFILE2=f'{DATAPATH}/tsurf_runpctl_1d_1year'
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

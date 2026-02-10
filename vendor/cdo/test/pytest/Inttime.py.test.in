@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+ABSLIMMAX="0.001"
+
+IFILE=f'{DATAPATH}/ts_6h_1mon'
+
+OPERATORS=["intntime","inttime"]
+ARGS=["3","1991-01-01,0,2hour"]
+
+test_module = TestModule()
+
+for OPERATOR,ARG in zip(OPERATORS,ARGS):
+    RFILE=f'{DATAPATH}/inttime_ref'
+    OFILE="inttime_res"
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{ARG} {IFILE} {OFILE}')
+    t.diff(RFILE,OFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()
+
+
+

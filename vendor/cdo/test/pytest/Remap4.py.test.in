@@ -1,0 +1,75 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+FORMAT="-f srv -b 32"
+
+HAS_THREADS=cdo_check_req("has-threads")
+
+# remapdis depends on extrapolation for curvilinear grids
+OPERATORS=["remapnn","remapbil","remapbic","remapcon"]
+ABSLIMS=defaultdict(lambda : 0.001, {"remapdis" : 0.001})
+
+GRID="global.grid"
+TGTGRID="rotated.grid"
+
+f=open(f'{GRID}1', "w")
+f.write("gridtype  = lonlat\n")
+f.write("xsize     = 720\n")
+f.write("ysize     = 360\n")
+f.write("xfirst    = 0.25\n")
+f.write("xinc      = 0.5\n")
+f.write("yfirst    = -89.75\n")
+f.write("yinc      = 0.5\n")
+f.close()
+
+f=open(f'{GRID}2', "w")
+f.write("gridtype  = lonlat\n")
+f.write("xsize     = 720\n")
+f.write("ysize     = 360\n")
+f.write("xfirst    = 0\n")
+f.write("xinc      = 0.5\n")
+f.write("yfirst    = -89.75\n")
+f.write("yinc      = 0.5\n")
+f.close()
+
+f=open(TGTGRID, "w")
+f.write("gridtype  = projection\n")
+f.write("xsize     = 76\n")
+f.write("ysize     = 53\n")
+f.write("xinc      = 0.24\n")
+f.write("yinc      = 0.24\n")
+f.write("xfirst    = -18.0\n")
+f.write("yfirst    = -12.9\n")
+f.write("grid_mapping_name = rotated_latitude_longitude\n")
+f.write("grid_north_pole_longitude = -170.0\n")
+f.write("grid_north_pole_latitude  = 43.0\n")
+f.close()
+
+test_module = TestModule()
+
+for GRIDNUM in 1, 2:
+    SRCGRID=f'{GRID}{GRIDNUM}'
+    for OPERATOR in OPERATORS:
+        if (not HAS_THREADS):
+            test_module.add_skip("POSIX threads not enabled")
+        else:
+ #            for extra in ["","off","on"]:
+            for extra in ["off"]:
+
+                os.environ['REMAP_EXTRAPOLATE'] = extra
+                OFILE=f'{OPERATOR}_reg{GRIDNUM}_rotated_{os.getpid()}'
+                RFILE=f'{DATAPATH}/{OPERATOR}_reg{GRIDNUM}_rotated_ref'
+
+                for GRIDTYPE in ["", " -setgridtype,curvilinear"]:
+                    t=TAPTest(f'{OPERATOR} global->rotated')
+                    t.add(f'{CDO} {FORMAT} {OPERATOR},{TGTGRID} {GRIDTYPE} -topo,{SRCGRID} {OFILE}')
+                    t.add(f'{CDO} diff,abslim={ABSLIMS[OPERATOR]} {OFILE} {RFILE}')
+                    t.clean(OFILE)
+                    test_module.add(t)
+
+t.clean(f'{GRID}1',f'{GRID}2',TGTGRID)
+
+test_module.run()

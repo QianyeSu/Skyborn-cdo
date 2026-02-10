@@ -1,0 +1,24 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+FMS=["srv","grb","nc"] if HAS_NETCDF else ["srv","grb"]
+OPERATORS=["ydrunmin","ydrunmax","ydrunsum","ydrunavg","ydrunmean","ydrunstd","ydrunstd1","ydrunvar","ydrunvar1"]
+IFILE=f'{DATAPATH}/ts_1d_5years'
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    for FM in FMS:
+        t.add(f'{CDO}  -f {FM} {OPERATOR},8 {IFILE} {OFILE}')
+        t.add(f'{CDO}  diff,abslim=0.004 {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

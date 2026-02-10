@@ -1,0 +1,32 @@
+#! @PYTHON@
+from cdoTest import *
+import os
+
+HAS_THREADS = cdo_check_req("has-threads")
+
+os.environ['CDO_FILE_SUFFIX'] = "NULL"
+os.environ['CDO_WEIGHT_MODE'] = "off"
+
+FORMAT="-f srv -b 32"
+OPERATORS=["eofcoeff","eofcoeff3d"]
+
+IFILE=f'{DATAPATH}/psl_DJF_anom.grb'
+RFILE=f'{DATAPATH}/pcoeff00000'
+OFILE="res_pcoeff"
+
+MODES=["jacobi","danielson_lanczos"]
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    for MODE in MODES:
+        if HAS_THREADS:
+            os.environ["CDO_SVD_MODE"]=MODE
+            t=TAPTest(f'{OPER} {MODE}')
+            t.add(f'{CDO} {FORMAT} {OPER} {DATAPATH}/eof_ref {IFILE} {OFILE}')
+            t.add(f'{CDO} diff,abslim=0.02 -abs {OFILE}00000 -abs {RFILE}')
+            test_module.clean(OFILE+"00000")
+            test_module.add(t)
+        else:
+            test_module.add_skip("threads not enabled")
+
+test_module.run()

@@ -1,0 +1,34 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/import_cmsaf'
+
+FORMAT="-f srv -b 32"
+
+HAS_HDF5=cdo_check_req("has-hdf5")
+OPERATOR="import_cmsaf"
+FILES=["CFCdm200901020000310150010101IA.hdf","CTTdm200901020000300070010301CA.hdf","CTYin200505011445200050016499CA.hdf","SISdm200901010000302070010801CA.hdf"]
+
+test_module=TestModule()
+for FILE in FILES:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+
+    if (not HAS_HDF5):
+        test_module.add_skip("HDF5 not enabled")
+        continue
+
+    IFILE=f'{XTESTDIR}/{FILE}'
+    OFILE=FILE[:5]
+    RFILE=f'{XTESTDIR}/{OFILE}_ref'
+    t=TAPTest(f'{OPERATOR} {FILE}')
+    t.add(f'HDF5_DISABLE_VERSION_CHECK=1 {CDO} {FORMAT} {OPERATOR} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

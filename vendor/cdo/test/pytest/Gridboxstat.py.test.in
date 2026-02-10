@@ -1,0 +1,23 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["gridboxmin","gridboxmax","gridboxrange","gridboxsum","gridboxavg","gridboxmean","gridboxstd","gridboxstd1","gridboxvar","gridboxvar1","gridboxkurt","gridboxskew","gridboxmedian"]
+
+IFILE=f'{DATAPATH}/t21_geosp_tsurf.grb'
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/fld{OPERATOR[7:]}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t = TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR},64,32 {IFILE} {OFILE}')
+    t.diff(OFILE,RFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

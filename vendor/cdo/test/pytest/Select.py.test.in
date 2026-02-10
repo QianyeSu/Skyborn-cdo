@@ -1,0 +1,24 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+IFILE=f'{DATAPATH}/pl_data.grb'
+OPERATORS=["select","delete"]
+#
+SELARGS={ "select":
+["code=130,152","code=130,152,level=9000,90","code=130,152,level=9000,90,timestep=2,3,5","code=130","level=90000"], "delete" :
+["code=129","code=129,130,level=90000,900","code=129,130,level=90000,900,timestep=1,4"]}
+#
+test_module = TestModule()
+#
+for OPER in OPERATORS:
+    for TNUM,SELECT in enumerate(SELARGS[OPER],1):
+        RFILE=f'{DATAPATH}/select{TNUM}_ref'
+        OFILE=f'{OPER}{TNUM}_res'
+        t=TAPTest(f'{OPER} {SELECT}')
+        t.add(f'{CDO} {OPER},{SELECT} {IFILE} {OFILE}')
+        t.add(f'{CDO}  diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+#
+test_module.run()

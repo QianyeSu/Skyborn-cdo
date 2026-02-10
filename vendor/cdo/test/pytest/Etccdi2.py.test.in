@@ -1,0 +1,100 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+FORMAT=""
+
+YEARMIN=1961
+YEARMAX=1990
+PRDATA=f'{DATAPATH}/pr_{YEARMIN}-{YEARMAX}.nc'
+TASDATA=f'{DATAPATH}/tas_{YEARMIN}-{YEARMAX}.nc'
+
+test_module=TestModule()
+
+if (not HAS_NETCDF):
+    test_module.add_skip("NetCDF not enabled")
+else:
+
+    # Threshold exceedances
+
+    OPERATOR="etccdi_fd"
+    RFILE=f'{DATAPATH}/{OPERATOR}.nc'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR} {TASDATA} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+
+    # Create Percentiles
+
+    OPERATOR="ydrunpctl"
+
+    windowDays=5
+    readMethod="c"
+    percentileMethod="r8"
+
+    RUNMIN="tas_runmin.nc"
+    RUNMAX="tas_runmax.nc"
+    test_module.prepare(f'{CDO} {FORMAT} ydrunmin,{windowDays},rm={readMethod} {TASDATA} {RUNMIN}')
+    test_module.prepare(f'{CDO} {FORMAT} ydrunmax,{windowDays},rm={readMethod} {TASDATA} {RUNMAX}')
+
+    os.environ['CDO_PCTL_NBINS'] = "302"
+
+    TN10THRESH="tn10thresh_res"
+    PN=10
+
+    t=TAPTest(f'{OPERATOR}')
+    RFILE=f'{DATAPATH}/tn{PN}thresh.nc'
+    OFILE=TN10THRESH
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{PN},{windowDays},rm={readMethod},pm={percentileMethod} {TASDATA} {RUNMIN} {RUNMAX} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    test_module.add(t)
+
+
+    # Duration indices
+
+    OPERATOR="etccdi_csdi"
+    RFILE=f'{DATAPATH}/{OPERATOR}.nc'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR},6,freq=year {TASDATA} {TN10THRESH} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE,TN10THRESH)
+    test_module.add(t)
+
+
+    # Wet days
+
+    OPERATOR="etccdi_cwd"
+    RFILE=f'{DATAPATH}/{OPERATOR}.nc'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR} {PRDATA} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+
+    # Percentile based indices
+
+    os.environ['CDO_PCTL_NBINS'] = "302"
+
+    OPERATOR="etccdi_tn10p"
+    RFILE=f'{DATAPATH}/{OPERATOR}.nc'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR},5,{YEARMIN},{YEARMAX} {TASDATA} {RUNMIN} {RUNMAX} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE,RUNMIN,RUNMAX)
+    test_module.add(t)
+
+test_module.run()

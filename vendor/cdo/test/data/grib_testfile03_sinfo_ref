@@ -1,0 +1,14 @@
+   File format : GRIB
+    -1 : Institut Source   T Steptype Levels Num    Points Num Dtype : Parameter ID
+     1 : ECMWF    unknown  v instant       1   1     35718   1  P16  : 151.128       
+   Grid coordinates :
+     1 : gaussian_reduced         : points=35718  nlat=160  N80
+                              lon : 0 to 358.878 [degrees_east]
+                              lat : 89.14152 to -89.14152 [degrees_north]
+   Vertical coordinates :
+     1 : surface                  : levels=1
+   Time coordinate :
+                             time : 1 step
+     RefTime =  1958-09-01 00:00:00  Units = hours  Calendar = proleptic_gregorian
+  YYYY-MM-DD hh:mm:ss  YYYY-MM-DD hh:mm:ss  YYYY-MM-DD hh:mm:ss  YYYY-MM-DD hh:mm:ss
+  1958-09-01 00:00:00

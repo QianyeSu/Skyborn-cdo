@@ -1,0 +1,29 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATORS=["timcor","timcovar"]
+FMS=["srv","grb"]
+
+test_module = TestModule()
+
+IFILE=f'{DATAPATH}/ts_mm_5years'
+IFILE1="ts_mm_2years1"
+test_module.prepare(f'{CDO} selyear,1991,1992 {IFILE} {IFILE1}')
+
+IFILE2="ts_mm_2years2"
+test_module.prepare(f'{CDO} selyear,1993,1994 {IFILE} {IFILE2}')
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(f'(srv/grb) {OPERATOR}')
+    for FM in FMS:
+        t.add(f'{CDO}  -f {FM} {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+        t.add(f'{CDO}  diff,abslim=0.004 {OFILE} {RFILE}')
+        t.clean(OFILE)
+    test_module.add(t)
+
+test_module.clean(IFILE1,IFILE2)
+test_module.run()

@@ -1,0 +1,38 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATORS=["detrend","trend","subtrend","regres"]
+
+IFILE=f'{DATAPATH}/detrend_data'
+
+RFILE=f'{DATAPATH}/detrend_ref'
+OFILE="detrend_res"
+
+test_module = TestModule()
+t = TAPTest(OPERATORS[0])
+t.add(f'{CDO} {OPERATORS[0]} {IFILE} {OFILE}')
+t.add(f'{CDO} diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+#----------------------
+t = TAPTest(OPERATORS[1])
+t.add(f'{CDO} {OPERATORS[1]} {IFILE} ta tb')
+t.clean(OFILE)
+test_module.add(t)
+#----------------------
+t = TAPTest(OPERATORS[2])
+t.add(f'{CDO} {OPERATORS[2]} {IFILE} ta tb {OFILE}')
+t.add(f'{CDO} diff {OFILE} {RFILE}')
+t.clean(OFILE,"ta","tb")
+test_module.add(t)
+#----------------------
+RFILE=f'{DATAPATH}/regres_ref'
+OFILE="regres_res"
+t = TAPTest(OPERATORS[3])
+t.add(f'{CDO} {OPERATORS[3]} {IFILE} {OFILE}')
+t.add(f'{CDO} diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+test_module.run()

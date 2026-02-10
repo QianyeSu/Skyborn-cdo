@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+ABSLIM=0.001
+
+OPERATOR="remapeta"
+
+test_module = TestModule()
+for FILE_ID in [1,2]:
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    RFILE=f'{DATAPATH}/remapeta_ref'
+    VCT=f'{DATAPATH}/VCT.L62'
+    IFILE=f'{DATAPATH}/remapeta{FILE_ID}.nc'
+    OFILE='remapeta_res'
+
+    t=TAPTest(f'{OPERATOR}  dataset {FILE_ID}')
+    t.add(f'{CDO} {OPERATOR},{VCT} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim={ABSLIM} {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

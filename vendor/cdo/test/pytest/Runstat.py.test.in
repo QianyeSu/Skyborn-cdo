@@ -1,0 +1,37 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATORS=["runmin","runmax","runrange","runsum","runavg","runmean","runstd","runstd1","runvar","runvar1"]
+FMS=["srv","grb"]
+
+test_module=TestModule()
+
+IFILE=f'{DATAPATH}/ts_mm_5years'
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t =TAPTest(OPERATOR)
+    for FM in FMS:
+        t.add(f'{CDO}  -f {FM} {OPERATOR},12 {IFILE} {OFILE}')
+        t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+RMODI="m"
+IFILE=f'{DATAPATH}/ts_mm_5years_{RMODI}'
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}{RMODI}_ref'
+    OFILE=f'{OPERATOR}{RMODI}_res'
+
+    t =TAPTest(f'{OPERATOR}  +missvals')
+    for FM in FMS:
+        t.add(f'{CDO}  -f {FM} {OPERATOR},12 {IFILE} {OFILE}')
+        t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,88 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+IFILE=DATAPATH + "/bathy4.grb"
+
+test_module=TestModule()
+
+OPERATOR="selregion"
+GRIDTYPES=["regular", "curvilinear", "unstructured"]
+
+f=open("sregion0", "w")
+f.write("-180 -90\n")
+f.write("180 -90\n")
+f.write("180 90\n")
+f.write("-180 90\n")
+f.close()
+
+f=open("sregion1", "w")
+f.write("-31 -9\n")
+f.write("51 -9\n")
+f.write("51 41\n")
+f.write("-31 41\n")
+f.close()
+
+f=open("sregion2", "w")
+f.write("140 -9\n")
+f.write("220 -9\n")
+f.write("220 41\n")
+f.write("140 41\n")
+f.close()
+
+for GRIDTYPE in GRIDTYPES:
+    SETGRID=f'-setgridtype,{GRIDTYPE}' if (GRIDTYPE != "regular") else ""
+    for INDEX in [0, 1, 2]:
+        RFILE=f'{DATAPATH}/{OPERATOR}_{GRIDTYPE[0]}{INDEX}_ref'
+        OFILE=f'{OPERATOR}_{GRIDTYPE[0]}{INDEX}_res'
+
+        t=TAPTest(f'{OPERATOR} {GRIDTYPE} region{INDEX}')
+        command=f'{CDO} {FORMAT} {OPERATOR},sregion{INDEX} {SETGRID} {IFILE} {OFILE}'
+        t.add(command)
+        t.add(f'{CDO} diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+t.clean("sregion0","sregion1","sregion2")
+
+
+OPERATOR="sellonlatbox"
+GRIDTYPES=["regular", "curvilinear", "unstructured"]
+
+LONLATBOX=["-180,180,-90,90", "-31,51,-9,41", "140,220,-9,41"]
+
+for GRIDTYPE in GRIDTYPES:
+    SETGRID=f'-setgridtype,{GRIDTYPE}' if (GRIDTYPE != "regular") else ""
+    for INDEX in [0, 1, 2]:
+        RFILE=f'{DATAPATH}/{OPERATOR}_{GRIDTYPE[0]}{INDEX}_ref'
+        OFILE=f'{OPERATOR}_{GRIDTYPE[0]}{INDEX}_res'
+
+        t=TAPTest(f'{OPERATOR} {GRIDTYPE} lonlatbox{INDEX}')
+        command=f'{CDO} {FORMAT} {OPERATOR},{LONLATBOX[INDEX]} {SETGRID} {IFILE} {OFILE}'
+        t.add(command)
+        t.add(f'{CDO} diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+
+OPERATOR="selindexbox"
+GRIDTYPES=["regular", "curvilinear"]
+
+INDEXBOX=["1,90,1,45", "38,58,21,33"]
+
+for GRIDTYPE in GRIDTYPES:
+    SETGRID=f'-setgridtype,{GRIDTYPE}' if (GRIDTYPE != "regular") else ""
+    for INDEX in [0, 1]:
+        RFILE=f'{DATAPATH}/{OPERATOR}_{GRIDTYPE[0]}{INDEX}_ref'
+        OFILE=f'{OPERATOR}_{GRIDTYPE[0]}{INDEX}_res'
+
+        t=TAPTest(f'{OPERATOR} {GRIDTYPE} indexbox{INDEX}')
+        command=f'{CDO} {FORMAT} {OPERATOR},{INDEXBOX[INDEX]} {SETGRID} {IFILE} {OFILE}'
+        t.add(command)
+        t.add(f'{CDO} diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

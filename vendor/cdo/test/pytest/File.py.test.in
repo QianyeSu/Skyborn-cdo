@@ -1,0 +1,34 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATORS=["cdiwrite","copy"]
+FORMATS=["srv","ext","ieg","grb","grb2","nc","nc2","nc4"]
+DATATYPES=["F32","F64"]
+
+test_module = TestModule()
+
+for FMS in FORMATS:
+    enabled, fileformat_name = fileformat(FMS)
+    print(enabled,fileformat_name)
+    if (enabled == True):
+        for DATATYPE in DATATYPES:
+
+            FILE=f'file{DATATYPE}_{FMS}'
+            RFILE=f'{DATAPATH}/file_F32_srv_ref'
+
+            t_cdiwrite = TAPTest(f'cdiwrite {FMS} {DATATYPE}')
+            t_cdiwrite.add(f'{CDO} -f {FMS} -b {DATATYPE} cdiwrite,nruns=1,grid=global_10,nvars=3,nlevs=3,nsteps=3 {FILE}')
+            t_cdiwrite.add(f'{CDO} diff,abslim=0.0001 {FILE} {RFILE}')
+            test_module.add(t_cdiwrite)
+
+            OFILE=f'_file{DATATYPE}_{FMS}_res'
+            t_copy = TAPTest(f'copy {FMS} {DATATYPE}')
+            t_copy.add(f'{CDO} copy {FILE} {OFILE}')
+            t_copy.clean(FILE,OFILE)
+
+            test_module.add(t_copy)
+    else:
+        test_module.add_skip(f'File format {fileformat_name} not enabled')
+
+test_module.run()

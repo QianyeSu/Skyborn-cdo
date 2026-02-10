@@ -1,0 +1,24 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+ABSLIMMAX=0.001
+
+IFILE=f'{DATAPATH}/t21_geosp_tsurf_sea.grb'
+
+SMOOTHOPT=["smooth,radius=5deg", "smooth,radius=5deg,maxpoints=3", "smooth,radius=5deg,nsmooth=9"]
+
+test_module = TestModule()
+
+for NTEST,SO in enumerate(SMOOTHOPT,1):
+    RFILE=f'{DATAPATH}/{SO[:6]}{NTEST}_ref'
+    OFILE=f'smooth{NTEST}_res'
+    t=TAPTest(f'parameter set {NTEST}')
+    t.add(f'{CDO}  {FORMAT} {SO} {IFILE} {OFILE}')
+    t.add(f'{CDO}  diff,abslim={ABSLIMMAX} {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

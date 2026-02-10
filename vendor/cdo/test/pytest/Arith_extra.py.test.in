@@ -1,0 +1,129 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/arith/'
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+OPERATORS=["add","sub","mul","div"]
+
+test_module = TestModule();
+
+for OPERATOR in OPERATORS:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE1=f'{XTESTDIR}/infile2.nc'
+    IFILE2=f'{XTESTDIR}/infile1.grb'
+    OFILE=f'arith1_{OPERATOR}_res'
+    RFILE=f'{XTESTDIR}/arith1_{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} t1')
+    t.add(f'{CDO}  {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+for OPERATOR in OPERATORS:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE1=f'{XTESTDIR}/infile1.grb'
+    IFILE2=f'{XTESTDIR}/infile2.nc'
+    OFILE=f'arith2_{OPERATOR}_res'
+    RFILE=f'{XTESTDIR}/arith2_{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} t2')
+    t.add(f'{CDO}  {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+for OPERATOR in OPERATORS:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE1=f'{XTESTDIR}/infile3.nc'
+    IFILE2=f'{XTESTDIR}/infile1.grb'
+    OFILE=f'arith3_{OPERATOR}_res'
+    RFILE=f'{XTESTDIR}/arith3_{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} t3')
+    t.add(f'{CDO}  {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+for OPERATOR in OPERATORS:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE1=f'{XTESTDIR}/infile3.nc'
+    IFILE2=f'{XTESTDIR}/infile2.nc'
+    OFILE=f'arith5_{OPERATOR}_res'
+    RFILE=f'{XTESTDIR}/arith5_{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} t4')
+    t.add(f'{CDO}  {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+for OPERATOR in OPERATORS:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE1=f'{XTESTDIR}/infile2.nc'
+    IFILE2=f'{XTESTDIR}/infile3.nc'
+    OFILE=f'arith6_{OPERATOR}_res'
+    RFILE=f'{XTESTDIR}/arith6_{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} t5')
+    t.add(f'{CDO}  {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+for OPERATOR in OPERATORS:
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE1=f'{XTESTDIR}/mask.nc'
+    IFILE2=f'{XTESTDIR}/mask.nc'
+    OFILE=f'arith_{OPERATOR}_res'
+    RFILE=f'{XTESTDIR}/arith_{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} t6')
+    t.add(f'{CDO}  {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

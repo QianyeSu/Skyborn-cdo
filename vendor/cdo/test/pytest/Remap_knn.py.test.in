@@ -1,0 +1,34 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+
+HAS_THREADS=cdo_check_req("has-threads")
+
+FORMAT="-f srv -b 32"
+OPERATOR="remapknn"
+
+test_module=TestModule()
+
+KNNNAMES=["remapnn", "remapdis", "remapknn_avg", "remapknn_gauss", "remapknn_rbf"]
+KNNPARAMS=["k=1,weighted=dist,extrapolate=1", "k=4,kmin=1,weighted=dist,extrapolate=1", "k=9,weighted=avg", "k=16,weighted=gauss,gauss_scale=2", "k=4,weighted=rbf,rbf_scale=2"]
+
+SRCGRIDS=["global_2", "global_5", "global_5"]
+TGTGRIDS=["global_5", "global_2", "global_5"]
+
+for KNNNAME,KNNPARAM in zip(KNNNAMES,KNNPARAMS):
+    for SRCGRID,TGTGRID in zip(SRCGRIDS,TGTGRIDS):
+        if (not HAS_THREADS):
+            test_module.add_skip("POSIX threads not enabled")
+            continue
+
+        OFILE=f'temp_{OPERATOR}_{SRCGRID}_to_{TGTGRID}_res'
+        RFILE=f'{DATAPATH}/temp_{KNNNAME}_{SRCGRID}_to_{TGTGRID}_ref'
+
+        t=TAPTest(f'{KNNNAME}  {SRCGRID} to {TGTGRID}')
+        t.add(f'{CDO}  {FORMAT} {OPERATOR},grid={TGTGRID},{KNNPARAM} -temp,{SRCGRID} {OFILE}')
+        t.add(f'{CDO} diff,abslim=0.001 {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,15 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+os.environ['CDO_PATH'] = CDO
+
+test_module = TestModule()
+
+t=TAPTest("cdotest")
+t.add(f'{BUILD_DIR}/src/cdotest')
+t.clean("in.srv","in1.srv","in2.srv","out.srv")
+test_module.add(t)
+
+test_module.run()

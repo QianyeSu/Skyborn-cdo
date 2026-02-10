@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+OPERATORS=["timselmin","timselmax","timselrange","timselsum","timselavg","timselmean","timselstd","timselstd1","timselvar","timselvar1"]
+FORMATS=["srv","grb"]
+if (HAS_NETCDF):
+    FORMATS += ["nc"]
+IFILE=f'{DATAPATH}/ts_mm_5years'
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/year{OPERATOR[6:]}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(OPERATOR)
+    for FM in FORMATS:
+        t.add(f'{CDO}  -f {FM} {OPERATOR},12 {IFILE} {OFILE}')
+        t.add(f'{CDO}  diff,abslim=0.004 {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,19 @@
+#! @BASH@
+echo 0..1
+
+test -n "$CDO"      || CDO="@abs_top_builddir@/src/cdo $CDO_DEBUG"
+
+FORMAT="-f grb -b 32"
+STATS="splitsel"
+
+NTEST=1
+CDOTEST=""
+
+for STAT in $STATS; do
+    echo "Running test: $NTEST - splitsel $CDOTEST"
+    $CDO $FORMAT ${STAT},1 -topo out.splitsel.test.file
+    test $? -eq 0 && echo "ok $NTEST - $CDOTEST"
+    test $? -eq 0 || echo "not ok $NTEST - $CDOTEST"
+
+done
+rm -rf *out.splitsel.test.file

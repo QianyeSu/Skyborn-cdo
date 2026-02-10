@@ -1,0 +1,24 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+OPERATOR="timselpctl"
+PCTL=50
+IFILE=f'{DATAPATH}/ts_mm_5years'
+ARGS={"12": "year","60" : "tim"}
+
+test_module = TestModule()
+for NSETS in ARGS.keys():
+    RFILE=f'{DATAPATH}/{OPERATOR[:-4]}{NSETS}pctl{PCTL}_ref'
+    OFILE=f'{OPERATOR[:-4]}{NSETS}pctl{PCTL}_res'
+
+    t=TAPTest(f'nsets={NSETS}')
+
+    t.add(f'{CDO}  {FORMAT} {OPERATOR},{PCTL},{NSETS} {IFILE} {DATAPATH}/{ARGS[NSETS]}min_ref {DATAPATH}/{ARGS[NSETS]}max_ref {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

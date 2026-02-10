@@ -1,0 +1,44 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/remapgrid'
+
+HAS_THREADS=cdo_check_req("has-threads")
+HAS_NETCDF=cdo_check_req("has-nc")
+
+FORMAT="-f nc -b 32"
+OPERATORS=["remapdis","remapnn","remapcon","remaplaf"]
+ABSLIM=defaultdict(lambda : 0.002, {"remaplaf" : 30})
+
+test_module=TestModule()
+
+SRCNAMES=["R2B4.nc", "R2B6.nc", "R2B6.nc", "R2B4.nc", "R2B6.nc"]
+TGTNAMES=["global_2", "global_1", "R2B6.nc", "R2B6.nc", "R2B4.nc"]
+for SRCNAME,TGTNAME in zip(SRCNAMES,TGTNAMES):
+    SRCGRID=SRCNAME if (SRCNAME[:7] == "global_") else XTESTDIR + "/" + SRCNAME
+    TGTGRID=TGTNAME if (TGTNAME[:7] == "global_") else XTESTDIR + "/" + TGTNAME
+    for OPERATOR in OPERATORS:
+        if (not os.path.isdir(XTESTDIR)):
+            test_module.add_skip("test not enabled")
+            continue
+        if (not HAS_THREADS):
+            test_module.add_skip("POSIX threads not enabled")
+            continue
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        OFILE=f'temp_{OPERATOR}_{SRCNAME}_to_{TGTNAME}_res'
+        RFILE=f'{XTESTDIR}/temp_{OPERATOR}_{SRCNAME}_to_{TGTNAME}_ref'
+
+        t=TAPTest(f'{OPERATOR}  {SRCNAME} to {TGTNAME}')
+        t.add(f'{CDO}  {FORMAT} {OPERATOR},{TGTGRID} -temp,{SRCGRID} {OFILE}')
+        t.add(f'{CDO} diff,abslim={ABSLIM[OPERATOR]} {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

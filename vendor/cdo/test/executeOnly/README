@@ -1,0 +1,5 @@
+11.10.2019 Oliver Heidmann
+
+Test inside this folder do not contain any special tests for correctness of the operator
+and only checks wheather a general execution of this operator runs withough generating an
+error

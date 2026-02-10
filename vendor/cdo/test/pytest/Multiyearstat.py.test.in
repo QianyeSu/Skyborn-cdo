@@ -1,0 +1,51 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERTYPES=["ymon","yday","yhour","yseas"]
+OPERSTATS=["min","max","range","sum","avg","mean","std","std1","var","var1"]
+
+FMS=["srv","grb"]
+
+test_module = TestModule()
+
+IFILE=f'{DATAPATH}/ts_mm_5years'
+
+for TYPE in OPERTYPES:
+    for STAT in OPERSTATS:
+        OPERATOR=f'{TYPE}{STAT}'
+        RFILE=""
+        if (TYPE=="yhour"):
+            RFILE=f'{DATAPATH}/ymon{STAT}_ref'
+        else:
+            RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+
+        OFILE=f'{OPERATOR}_res'
+
+        t = TAPTest(f'{OPERATOR}')
+        for FM in FMS:
+            t.add(f'{CDO}  -f {FM} {OPERATOR} {IFILE} {OFILE}')
+            t.add(f'{CDO} --pedantic diff,abslim=0.004 {OFILE} {RFILE}')
+            t.clean(OFILE)
+        test_module.add(t)
+
+IFILE=f'{DATAPATH}/ts_mm_5years_m'
+
+for TYPE in OPERTYPES:
+    for STAT in OPERSTATS:
+        OPERATOR=f'{TYPE}{STAT}'
+        if (TYPE == "yhour"):
+            RFILE=f'{DATAPATH}/ymon{STAT}m_ref'
+        else:
+            RFILE=f'{DATAPATH}/{OPERATOR}m_ref'
+
+        OFILE=f'{OPERATOR}_res'
+
+        t = TAPTest(f'{OPERATOR}  +missvals')
+        for FM in FMS:
+            t.add(f'{CDO}  -f {FM} {OPERATOR} {IFILE} {OFILE}')
+            t.add(f'{CDO} --pedantic diff,abslim=0.004 {OFILE} {RFILE}')
+            t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

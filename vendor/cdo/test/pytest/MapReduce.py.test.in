@@ -1,0 +1,33 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+OPERATORS=["reducegrid"]
+GRIDS=["r18x9","icon_cell"]
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    for grid  in GRIDS:
+        REFGRID=f'{DATAPATH}/{grid}_grid'
+        REF=f'{DATAPATH}/griddes.{grid}'
+
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        t=TAPTest(f'{OPER} {grid}')
+        t.add(f'{CDO}  -f nc -temp,{REFGRID} data_{grid}.nc')
+        t.add(f'{CDO}  -f nc -gtc,273.15 -temp,{REFGRID} mask_{grid}.nc')
+        t.add(f'{CDO}  -f nc {OPER},mask_{grid}.nc data_{grid}.nc reduced_{grid}.nc')
+
+        t.add(f'{CDO} -s griddes reduced_{grid}.nc | grep -v scanningMode > griddes.{grid}')
+        t.add(f'diff griddes.{grid} {REF}')
+
+        t.clean(f'reduced_{grid}.nc',f'griddes.{grid}')
+        t.clean(f'data_{grid}.nc',f'mask_{grid}.nc')
+
+        test_module.add(t)
+
+test_module.run()

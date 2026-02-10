@@ -1,0 +1,30 @@
+#! @PYTHON@
+#
+from cdoTest import *
+import os
+#
+OPERATORS=["fldcor","fldcovar"]
+#
+IFILE=f'{DATAPATH}/t21_geosp_tsurf.grb'
+IFILE1=f'var1_{os.getpid()}'
+IFILE2=f'var2_{os.getpid()}'
+#
+FORMAT="-f srv -b 32"
+#
+test_module = TestModule()
+test_module.prepare(f'{CDO} selcode,129 {IFILE} {IFILE1}')
+test_module.prepare(f'{CDO} selcode,169 {IFILE} {IFILE2}')
+
+for OPER in OPERATORS:
+    OFILE=f'{OPER}_res'
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+
+    t = TAPTest(OPER)
+    t.add(f'{CDO} {FORMAT} {OPER} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.clean(IFILE1,IFILE2)
+test_module.run()
+

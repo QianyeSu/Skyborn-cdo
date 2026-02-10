@@ -1,0 +1,25 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATORS=["splityear","splitmon","splitsel"]
+
+RFILES={}
+RFILES["splityear"]=["splityear_2010.srv","splityear_2011.srv","splityear_2012.srv"]
+RFILES["splitmon"]=["splitmon_01.srv","splitmon_03.srv","splitmon_05.srv","splitmon_07.srv","splitmon_09.srv","splitmon_11.srv","splitmon_02.srv","splitmon_04.srv","splitmon_06.srv","splitmon_08.srv","splitmon_10.srv","splitmon_12.srv"]
+RFILES["splitsel"]=["splitsel_000001.srv","splitsel_000002.srv","splitsel_000003.srv"]
+
+IFILE=f'{DATAPATH}/splitdata.srv'
+
+test_module = TestModule()
+for OPERATOR in OPERATORS:
+    OBASE=f'{OPERATOR}_'
+    PARAM=",12" if OPERATOR == "splitsel" else ""
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {OPERATOR}{PARAM} {IFILE} {OBASE}')
+    for OFILE in RFILES[OPERATOR]:
+       t.add(f'{CDO} diff {OFILE} {DATAPATH}/{OFILE}')
+       t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

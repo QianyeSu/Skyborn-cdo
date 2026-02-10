@@ -1,0 +1,13 @@
+   File format : NetCDF
+    -1 : Institut Source   T Steptype Levels Num    Points Num Dtype : Parameter name
+     1 : unknown  unknown  v instant     105   1         1   1  F32  : O3            
+   Grid coordinates :
+     1 : generic                  : points=1
+   Vertical coordinates :
+     1 : pressure                 : levels=105
+                            level : 0.5000001 to 105000 [Pa]
+   Time coordinate :
+                             time : 1 step
+     RefTime =  1850-01-01 00:00:00  Units = months  Calendar = standard
+  YYYY-MM-DD hh:mm:ss  YYYY-MM-DD hh:mm:ss  YYYY-MM-DD hh:mm:ss  YYYY-MM-DD hh:mm:ss
+  1850-01-01 00:00:00

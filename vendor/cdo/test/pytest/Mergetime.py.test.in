@@ -1,0 +1,31 @@
+#! @PYTHON@
+#
+from cdoTest import *
+import os
+#
+FORMAT="-f srv -b 32"
+#
+IFILE1=f'{DATAPATH}/mergetime_y2'
+IFILE2=f'{DATAPATH}/mergetime_y12'
+OPERATOR="mergetime"
+#
+RFILE=f'{DATAPATH}/mergetime_ref'
+OFILE="mergetime_res"
+#
+os.environ["SKIP_SAME_TIME"] = "1"
+#
+test_module = TestModule()
+#
+t = TAPTest(f'{OPERATOR} dataset 1')
+t.add(f'{CDO}  {FORMAT} {OPERATOR} {IFILE1} {IFILE2} {OFILE}')
+t.add(f'{CDO}  diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+#
+t = TAPTest(f'{OPERATOR} dataset 2')
+t.add(f'{CDO}  {FORMAT} {OPERATOR} {IFILE2} {IFILE1} {OFILE}')
+t.add(f'{CDO}  diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+#
+test_module.run()

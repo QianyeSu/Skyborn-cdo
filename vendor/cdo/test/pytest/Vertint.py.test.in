@@ -1,0 +1,132 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+HAS_NETCDF=cdo_check_req("has-nc")
+
+test_module=TestModule()
+
+# ===============================================
+OPERATOR="intlevel"
+
+IFILE=f'{DATAPATH}/ml2plx_ref'
+RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+OFILE=f'{OPERATOR}_res'
+t=TAPTest(f'{OPERATOR}  parameter set 1')
+t.add(f'{CDO} {FORMAT} {OPERATOR},90000,80000,70000,30000 {IFILE} {OFILE}')
+t.add(f'{CDO}  diff,abslim=0.002 {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+IFILE=f'{DATAPATH}/pl_data.grb'
+RFILE=f'{DATAPATH}/{OPERATOR}_1_ref'
+OFILE=f'{OPERATOR}_1_res'
+t=TAPTest(f'{OPERATOR}  parameter set 2')
+t.add(f'{CDO} {FORMAT} {OPERATOR},level=90000,9000,900,90 {IFILE} {OFILE}')
+t.add(f'{CDO}  diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+IFILE=f'{DATAPATH}/pl_data.grb'
+RFILE=f'{DATAPATH}/{OPERATOR}_2_ref'
+OFILE=f'{OPERATOR}_2_res'
+t=TAPTest(f'{OPERATOR}  parameter set 3')
+t.add(f'{CDO} {FORMAT} {OPERATOR},level=50,500,5000,50000 {IFILE} {OFILE}')
+t.add(f'{CDO}  diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+# ===============================================
+OPERATOR="intlevel3d"
+#
+IFILE=f'{DATAPATH}/pl_data.grb'
+RFILE=f'{DATAPATH}/{OPERATOR}_1_ref'
+OFILE=f'{OPERATOR}_1_res'
+t=TAPTest(f'{OPERATOR}  dataset 1')
+t.add(f'{CDO} {FORMAT} {OPERATOR},{DATAPATH}/vert3D_c1.srv {IFILE} {DATAPATH}/vert3D_c1.srv {OFILE}')
+t.add(f'{CDO}  diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+IFILE=f'{DATAPATH}/pl_data.grb'
+RFILE=f'{DATAPATH}/{OPERATOR}_2_ref'
+OFILE=f'{OPERATOR}_2_res'
+t=TAPTest(f'{OPERATOR}  dataset 2')
+t.add(f'{CDO} {FORMAT} {OPERATOR},{DATAPATH}/vert3D_c2.srv {IFILE} {DATAPATH}/vert3D_c1.srv {OFILE}')
+t.add(f'{CDO}  diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+# ===============================================
+OPERATOR="ml2pl"
+
+IFILE=f'{DATAPATH}/hl_l19.grb'
+RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+OFILE=f'{OPERATOR}_res'
+t=TAPTest(OPERATOR)
+t.add(f'{CDO}  {FORMAT} {OPERATOR},100000,92500,85000,50000,20000 {IFILE} {OFILE}')
+t.add(f'{CDO}  diff,abslim=0.003 {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+# ===============================================
+OPERATOR="ml2plx"
+
+IFILE=f'{DATAPATH}/hl_l19.grb'
+RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+OFILE=f'{OPERATOR}_res'
+t=TAPTest(OPERATOR)
+t.add(f'{CDO}  {FORMAT} {OPERATOR},100000,92500,85000,50000,20000 {IFILE} {OFILE}')
+t.add(f'{CDO}  diff,abslim=0.003 {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+# ===============================================
+OPERATOR="ap2pl"
+
+if (not HAS_NETCDF):
+    test_module.add_skip("NetCDF not enabled")
+else:
+    IFILE=f'{DATAPATH}/ap_l47.nc'
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO}  {FORMAT} {OPERATOR},92500,85000,50000,20000 {IFILE} {OFILE}')
+    t.add(f'{CDO}  diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+# ===============================================
+OPERATOR="ap2pl"
+
+if (not HAS_NETCDF):
+    test_module.add_skip("NetCDF not enabled")
+else:
+    IFILE=f'{DATAPATH}/ap_l90.nc'
+    RFILE=f'{DATAPATH}/{OPERATOR}_l90_ref'
+    OFILE=f'{OPERATOR}_l90_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO}  {OPERATOR},92500,85000,50000,20000 {IFILE} {OFILE}')
+    t.add(f'{CDO}  diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+# ===============================================
+OPERATORS=["gh2hl","gh2hlx"]
+
+for OPERATOR in OPERATORS:
+    if (not HAS_NETCDF):
+        test_module.add_skip("NetCDF not enabled")
+        continue
+
+    IFILE=f'{DATAPATH}/gh_L191.nc'
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR},10,100,1000,10000,30000 {IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

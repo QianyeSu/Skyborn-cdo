@@ -1,0 +1,25 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+HAS_GRIB=cdo_check_req("has-grb")
+STATS=["sinfo","info"]
+FILES=["testfile01","testfile02","testfile03"]
+#
+test_module = TestModule()
+for OPERATOR in STATS:
+    for FILE in FILES:
+        if(not HAS_GRIB):
+            test_module.add_skip("GRIB not enabled")
+            continue 
+
+        IFILE=f'{DATAPATH}/grib_{FILE}.grb'
+        OFILE=f'grib_{FILE}_{OPERATOR}'
+        RFILE=f'{DATAPATH}/{OFILE}_ref'
+        t=TAPTest(f'{OPERATOR} {FILE}')
+        t.add(f'{CDO} -s {OPERATOR} {IFILE} > {OFILE}')
+        t.add(f'diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

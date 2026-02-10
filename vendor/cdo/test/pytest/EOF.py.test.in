@@ -1,0 +1,35 @@
+#! @PYTHON@
+from cdoTest import *
+import os
+
+HAS_THREADS = cdo_check_req("has-threads")
+
+os.environ['CDO_FILE_SUFFIX'] = "NULL"
+os.environ['CDO_WEIGHT_MODE'] = "off"
+
+FORMAT="-f srv -b 32"
+OPERATORS=["eof","eof3d"]
+
+IFILE=f'{DATAPATH}/psl_DJF_anom.grb'
+RFILE1=f'{DATAPATH}/eval_ref'
+RFILE2=f'{DATAPATH}/eof_ref'
+OFILE1="eval_res"
+OFILE2="eof_res"
+
+MODES=["jacobi","danielson_lanczos"]
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    for MODE in MODES:
+        if HAS_THREADS:
+            os.environ["CDO_SVD_MODE"]=MODE
+            t=TAPTest(f'{OPER} {MODE}')
+            t.add(f'{CDO} {FORMAT} {OPER},1 {IFILE} {OFILE1} {OFILE2}')
+            t.add(f'{CDO} diff,abslim=1e-8 {OFILE1} {RFILE1}')
+            t.add(f'{CDO} diff,abslim=1e-7 -abs {OFILE2} -abs {RFILE2}')
+            t.clean(OFILE1,OFILE2,"00000")
+            test_module.add(t)
+        else:
+            test_module.add_skip("threads not enabled")
+
+test_module.run()

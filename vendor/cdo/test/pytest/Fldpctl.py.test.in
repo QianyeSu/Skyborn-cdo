@@ -1,0 +1,25 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#
+FORMAT="-f srv -b 32"
+#
+PCTLS=[1, 20, 25, 33, 50, 66, 75, 80, 99, 100]
+#
+IFILE=f'{DATAPATH}/t21_geosp_tsurf.grb'
+#
+OPER="fldpctl"
+#
+test_module = TestModule()
+#
+for PCTL in PCTLS:
+    RFILE=f'{DATAPATH}/fldpctl{PCTL}_ref'
+    OFILE=f'{OPER}_res'
+
+    t = TAPTest(f'{OPER} {PCTL}')
+    t.add(f'{CDO} {FORMAT} {OPER},{PCTL} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

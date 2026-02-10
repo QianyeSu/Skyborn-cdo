@@ -1,0 +1,81 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+HAS_THREADS=cdo_check_req("has-threads")
+
+OPERATOR="ngridpoints"
+GRIDS=["r18x9","ni4","ni96","global_10","t63grid"]
+
+expected_results={
+"r18x9" : 162,
+"ni4" : 250,
+"ni96" : 94090,
+"global_10" : 648,
+"t63grid" : 18432
+}
+
+test_module = TestModule()
+
+for grid in GRIDS:
+    if (not HAS_THREADS):
+        test_module.add_skip("POSIX threads not enabled")
+        continue
+
+    OFILE=f'{OPERATOR}_res'
+    RFILE=f'{OPERATOR}_ref'
+
+    t=TAPTest(f'{OPERATOR} {grid}')
+    t.add(f'echo {expected_results[grid]} > {RFILE}')
+    t.add(f'{CDO}  -s {OPERATOR} -topo,{grid} > {OFILE}')
+    t.add(f'diff {OFILE} {RFILE}')
+    t.clean(OFILE,RFILE)
+    test_module.add(t)
+
+
+OPERATOR="ngrids"
+OFILE=f'{OPERATOR}_res'
+RFILE=f'{OPERATOR}_ref'
+# some addional test for operator: ngrids
+if (not HAS_THREADS):
+    test_module.add_skip("POSIX threads not enabled")
+else:
+    t=TAPTest(f'{OPERATOR} global_10')
+    t.add(f'{CDO} -O -s {OPERATOR} -topo,global_10')
+    t.clean(OFILE,RFILE)
+    test_module.add(t)
+
+
+for grid in ["r1x1","global_1"]:
+    if (not HAS_THREADS):
+        test_module.add_skip("POSIX threads not enabled")
+        continue
+
+    t=TAPTest(f'{OPERATOR} {grid}')
+    t.add(f'echo 1 > {RFILE}')
+    t.add(f'{CDO} -O -s {OPERATOR} -topo,{grid} > {OFILE}')
+    t.add(f'diff {OFILE} {RFILE}')
+    t.clean(OFILE,RFILE)
+    test_module.add(t)
+
+
+# create temporary data
+if (not HAS_THREADS):
+    test_module.add_skip("POSIX threads not enabled")
+elif (not HAS_NETCDF):
+    test_module.add_skip("NetCDF not enabled")
+else:
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} -O -f nc -temp,r18x9 temp.small')
+    t.add(f'{CDO} -O -f nc -temp,global_10 temp.global')
+    t.add(f'{CDO} -O -f nc -merge temp.small temp.global temp.2grids')
+
+    t.add(f'echo 2 > {RFILE}')
+    t.add(f'{CDO} -O -s {OPERATOR} temp.2grids > {OFILE}')
+    t.add(f'diff {OFILE} {RFILE}')
+    t.clean(OFILE,RFILE)
+    t.clean("temp.small","temp.global","temp.2grids")
+    test_module.add(t)
+
+test_module.run()

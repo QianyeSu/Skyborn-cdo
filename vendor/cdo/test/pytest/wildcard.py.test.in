@@ -1,0 +1,31 @@
+#! @PYTHON@
+
+from cdoTest import *
+import glob
+
+HAS_WORDEXP=cdo_check_req("has-wordexp")
+
+# Checks whether cdo handles the inputargument right,
+# most of the operators accept only one input argument.
+# to make them one argument.
+IFILES=["testfile01","testfile0?","test*0?"]
+
+test_module=TestModule()
+for IFILE in IFILES:
+    FILES=glob.glob(f'{DATAPATH}/grib_{IFILE}.grb')
+    FILES.sort()
+    INFILES=" ".join(FILES)
+    if (not HAS_WORDEXP):
+        test_module.add_skip("WORDEXP not enabled")
+        continue
+
+    for OPER in ["info","sinfo"]:
+        t=TAPTest(f'{OPER} {IFILE}')
+        t.add(f'{CDO} -s {OPER} {INFILES} > ref1')
+        t.add(f'{CDO} -s {OPER} {DATAPATH}/grib_{IFILE}.grb > ref2')
+        t.add(f'diff ref1 ref2')
+        t.clean("ref1", "ref2")
+        test_module.add(t)
+
+test_module.run()
+

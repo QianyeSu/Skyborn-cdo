@@ -1,0 +1,25 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["ydrunpctl"]
+
+PARAMS="50,8"
+
+IFILE=f'{DATAPATH}/ts_1d_5years'
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO}  {FORMAT} {OPERATOR},{PARAMS} {IFILE} {DATAPATH}/ydrunmin_ref {DATAPATH}/ydrunmax_ref {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

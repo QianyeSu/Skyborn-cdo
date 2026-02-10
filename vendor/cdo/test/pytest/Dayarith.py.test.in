@@ -1,0 +1,22 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+IFILE1=f'{DATAPATH}/ts_6h_1mon'
+IFILE2=f'{DATAPATH}/ts_1d_1year'
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["dayadd", "daysub", "daymul", "daydiv"]
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+    OFILE=f'{OPER}_res'
+    t = TAPTest(OPER)
+    t.add(f'{CDO} {FORMAT} {OPER} {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

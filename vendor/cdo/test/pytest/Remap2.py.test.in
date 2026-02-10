@@ -1,0 +1,31 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+FORMAT="-f srv -b 32"
+GRID=f'{DATAPATH}/spain.grid'
+
+IFILE=f'{DATAPATH}/tsurf_spain.grb'
+
+OPERATORS=["remapdis","remapnn","remapbil","remapbic","remapcon","remaplaf"]
+ABSLIMS=defaultdict(lambda : 0.0001, {"remapdis" : 0.001})
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    for extra in ["","off","on"]:
+
+        os.environ['REMAP_EXTRAPOLATE'] = extra
+        OFILE=f'tsurf_spain_{OPERATOR[5:]}_{extra}_{os.getpid()}'
+        RFILE=f'{DATAPATH}/tsurf_spain_{OPERATOR[5:]}_{extra}_ref'
+
+        t=TAPTest(f'{OPERATOR} regional->regional')
+        t.add(f'{CDO} {FORMAT} {OPERATOR},{GRID} {IFILE} {OFILE}')
+        t.add(f'{CDO} diff,abslim={ABSLIMS[OPERATOR]} {OFILE} {RFILE}')
+        t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

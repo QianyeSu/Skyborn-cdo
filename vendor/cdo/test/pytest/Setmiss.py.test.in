@@ -1,0 +1,26 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+ABSLIMMAX=0.001
+
+IFILE=f'{DATAPATH}/t21_geosp_tsurf_sea.grb'
+OPERATORS=["setmisstoc","setmisstonn","setmisstodis"]
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    CDOTEST=f'{OPERATOR}'
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+    OPT=",0" if OPERATOR[-3:] == "toc" else ""
+
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO}  {FORMAT} {OPERATOR}{OPT} {IFILE} {OFILE}')
+    t.add(f'{CDO}  diff,abslim={ABSLIMMAX} {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

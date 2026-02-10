@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+test_module = TestModule()
+
+OPERATOR="cat"
+
+IFILE=DATAPATH+"/t21_geosp_tsurf.grb"
+
+RFILE="catdata_ref"
+OFILE="catdata"
+
+t = TAPTest(OPERATOR)
+t.add(f'cp {IFILE} {RFILE}')
+t.add(f'chmod u+w  {RFILE}')
+t.add(f'cat {IFILE} >> {RFILE}')
+
+t.add(f'cp {IFILE} {OFILE}')
+t.add(f'chmod u+w  {OFILE}')
+t.add(f'{CDO} {OPERATOR} {IFILE} {OFILE}')
+t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+t.clean(RFILE,OFILE)
+
+test_module.add(t)
+test_module.run()
+

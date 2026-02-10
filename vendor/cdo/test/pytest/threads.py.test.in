@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_THREADS=cdo_check_req("has-threads")
+
+OFORMAT="-f srv -b 32"
+INSTRINGS=["-fldmean -timmean -select,code=129,130,152"]
+IFILE=f'{DATAPATH}/pl_data'
+
+RFILE=f'{DATAPATH}/thread1_ref'
+OFILE=f'tsformat1_res'
+
+test_module = TestModule()
+
+for INSTR in INSTRINGS:
+    if (not HAS_THREADS):
+        test_module.add_skip("threads not enabled")
+        continue
+
+    t=TAPTest(INSTR)
+    t.add(f'{CDO} {OFORMAT} {INSTR} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

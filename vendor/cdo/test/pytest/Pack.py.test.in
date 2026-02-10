@@ -1,0 +1,43 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+FORMAT="-f nc4"
+
+ABSLIMMAX=0.002
+
+IFILE=f'{DATAPATH}/tsurf_5steps_land.nc'
+
+OPERATOR="pack"
+
+test_module = TestModule()
+
+for NBITS in ["i16", "i8", "u16", "u8"]:
+    RFILE=f'{DATAPATH}/{OPERATOR}_{NBITS}_ref'
+    OFILE=f'{OPERATOR}_{NBITS}_res'
+    if (HAS_NETCDF):
+        t=TAPTest(f'{OPERATOR} {NBITS}')
+        t.add(f'{CDO}  {FORMAT} -b {NBITS} {OPERATOR} {IFILE} {OFILE}')
+        t.add(f'{CDO}  diff,abslim={ABSLIMMAX} {RFILE} {OFILE}')
+        t.clean(OFILE)     
+        test_module.add(t)
+    else:
+        test_module.add_skip("NetCDF not enabled")
+
+OPERATOR="unpack"
+
+for NBITS in ["i16", "i8", "u16", "u8"]:
+    RFILE=f'{DATAPATH}/pack_{NBITS}_ref'
+    OFILE=f'{OPERATOR}_{NBITS}_res'
+    if (HAS_NETCDF):
+        t=TAPTest(f'{OPERATOR} {NBITS}')
+        t.add(f'{CDO}  -f nc {OPERATOR} {RFILE} {OFILE}')
+        t.add(f'{CDO}  diff,abslim={ABSLIMMAX} {RFILE} {OFILE}')
+        t.clean(OFILE)     
+        test_module.add(t)
+    else:
+        test_module.add_skip("NetCDF not enabled")
+
+test_module.run()

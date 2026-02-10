@@ -1,0 +1,28 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+IFILE=f'{DATAPATH}/ts_ym_5years'
+
+OPER="intyear"
+YEARS=["1992"]
+IFILE1="infile1"
+IFILE2="infile2"
+
+test_module = TestModule()
+test_module.prepare(f'{CDO} selyear,1991 {IFILE} {IFILE1}')
+test_module.prepare(f'{CDO} selyear,1995 {IFILE} {IFILE2}')
+
+for YEAR in YEARS:
+    RFILE=f'{DATAPATH}/{OPER}{YEAR}_ref'
+    OBASE=f'{OPER}'
+    OFILE=f'{OPER}{YEAR}.srv'
+    t=TAPTest(f'{OPER}')
+    t.add(f'{CDO} {FORMAT} {OPER},{YEAR} {IFILE1} {IFILE2} {OBASE}')
+    t.diff(RFILE,OFILE)
+    t.clean(OFILE,IFILE2,IFILE1)
+    test_module.add(t)
+
+test_module.run()

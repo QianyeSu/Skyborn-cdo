@@ -1,0 +1,30 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_CGRIBEX=cdo_check_req("has-cgribex")
+
+FORMAT="-f srv -b 32"
+OPERATORS=["remapcon"]
+ABSLIM=0.001
+
+test_module=TestModule()
+
+SRCGRIDS=["gme32", "global_2", "gme16"]
+TGTGRIDS=["global_5", "gme16", "gme16"]
+for SRCGRID,TGTGRID in zip(SRCGRIDS,TGTGRIDS):
+    for OPERATOR in OPERATORS:
+        if (not HAS_CGRIBEX):
+           test_module.add_skip("CGRIBEX not enabled")
+           continue
+           
+        OFILE=f'temp_{OPERATOR}_{SRCGRID}_to_{TGTGRID}_res'
+        RFILE=f'{DATAPATH}/temp_{OPERATOR}_{SRCGRID}_to_{TGTGRID}_ref'
+
+        t=TAPTest(f'{OPERATOR}  {SRCGRID} to {TGTGRID}')
+        t.add(f'{CDO}  {FORMAT} {OPERATOR},{TGTGRID} {DATAPATH}/temp_{SRCGRID}.grb {OFILE}')
+        t.add(f'{CDO} diff,abslim={ABSLIM} {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

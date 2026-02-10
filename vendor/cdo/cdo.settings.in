@@ -1,0 +1,65 @@
+{
+  "build" : {
+    "tools" : {
+      "CXX"                : "@CXX@",
+      "CC"                 : "@CC@",
+      "CPP"                : "@CPP@",
+      "CPPFLAGS"           : "@CPPFLAGS@",
+      "CXXFLAGS"           : "@CXXFLAGS@",
+      "CFLAGS"             : "@CFLAGS@",
+      "F77"                : "@F77@",
+      "FFLAGS"             : "@FFLAGS@",
+      "LDFLAGS"            : "@LDFLAGS@",
+      "LIBS"               : "@LIBS@",
+      "FCFLAGS"            : "@FCFLAGS@",
+      "INCLUDES"           : "@INCLUDES@",
+      "LD"                 : "@LD@",
+      "NM"                 : "@NM@",
+      "AR"                 : "@AR@",
+      "AS"                 : "@AS@",
+      "DLLTOOL"            : "@DLLTOOL@",
+      "OBJDUMP"            : "@OBJDUMP@",
+      "STRIP"              : "@STRIP@",
+      "RANLIB"             : "@RANLIB@",
+      "INSTALL"            : "@INSTALL@",
+    },
+    "libraries" : {
+      "threads"    : {
+        "lib"      : "@THREADS_LIBS@",
+        "include"  : "@THREADS_INCLUDE@"
+      },
+      "szlib"      : {
+        "lib"      : "@SZLIB_LIBS@",
+        "include"  : "@SZLIB_INCLUDE@"
+      },
+      "hdf5"       : {
+        "lib"      : "@HDF5_LIBS@",
+        "include"  : "@HDF5_INCLUDE@"
+      },
+      "netcdf"     : {
+        "lib"      : "@NETCDF_LIBS@",
+        "include"  : "@NETCDF_INCLUDE@"
+      },
+      "udunits2"   : {
+        "lib"      : "@UDUNITS_LDFLAGS@",
+        "include"  : "@UDUNITS_INCLUDE@"
+      },
+      "proj"       : {
+        "lib"      : "@PROJ_LDFLAGS@",
+        "include"  : "@PROJ_INCLUDE@"
+      },
+      "magics"       : {
+        "lib"      : "@MAGICS_LIBS@",
+        "include"  : "@MAGICS_INCLUDE@"
+      }
+    },
+    "platform" : {
+      "SYSTEM_TYPE" : "@SYSTEM_TYPE@"
+    },
+  },
+  "features" : {
+    "enable_cdi_lib" : @ENABLE_CDI_LIB@,
+    "enable_fortran" : @ENABLE_FORTRAN@,
+    "fortran_works"  : "@FORTRAN_WORKS@",
+  }
+}

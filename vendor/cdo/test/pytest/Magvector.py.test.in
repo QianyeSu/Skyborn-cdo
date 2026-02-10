@@ -1,0 +1,35 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_MAGICS=cdo_check_req("has-magics")
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/magics'
+
+DEVICE="png"
+OPERATORS=["vector"]
+
+test_module=TestModule()
+
+for OPER in OPERATORS:
+    if (not HAS_MAGICS):
+        test_module.add_skip("Magics not enabled")
+        continue
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+
+    IFILE=f'{XTESTDIR}/uv_data.grb'
+    OBASE=f'res_mag_{OPER}'
+    OFILE=f'{OBASE}.1.png'
+    RFILE=f'{XTESTDIR}/ref_mag_{OPER}.1.png'
+
+    t=TAPTest(f'{OPER},device={DEVICE}')
+    t.add(f'{CDO} {OPER},device={DEVICE} -chname,u10,u,v10,v {IFILE} {OBASE}')
+#    t.add(f'cmp {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

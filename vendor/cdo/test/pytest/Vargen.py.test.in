@@ -1,0 +1,75 @@
+#! @PYTHON@
+from cdoTest import *
+import os
+
+FORMAT="-f grb"
+OPERATORS=["add","sub","mul","div"]
+
+test_module = TestModule()
+CDO_TEST_DATA_LOCATION = os.getenv("CDO_TEST_DATA_LOCATION")
+if(CDO_TEST_DATA_LOCATION):
+    VARGEN_TEST_DATA=CDO_TEST_DATA_LOCATION + "/Vargen"
+    griddes_file = f'{CDO_TEST_DATA_LOCATION}/griddes_input'
+    for OPER in ["topo", "temp", "mask"]:
+        for ARG,REF  in zip([" ", ",global_3",","+griddes_file],["","_global3", "_griddes"]):
+            t=TAPTest(f'{OPER}{ARG}')
+            OFILE=f'{OPER}_res'
+            RFILE=f'{VARGEN_TEST_DATA}/vargen_{OPER}{REF}_ref.grb'
+            t.add(f'{CDO} {OPER}{ARG} {OFILE}')
+            t.add(f'{CDO} diff {OFILE} {RFILE}')
+            test_module.add(t)
+
+#
+
+    correct_input_without_increment = ",0,10"
+    correct_input_with_increment = ",0,10,2"
+    corrent_input_with_increment_unaligned_increment = ",0,10,3"
+    seq_arguments = [
+        correct_input_without_increment                   ,
+        correct_input_with_increment                      ,
+        corrent_input_with_increment_unaligned_increment
+    ]
+    for arg in seq_arguments:
+        t = TAPTest(f'-seq,{arg[1:]}')
+        name=arg[1:].replace(',',"_")
+        OFILE = f'vargen_seq_{name}_res'
+        RFILE = f'{VARGEN_TEST_DATA}/vargen_seq_{name}_ref.grb'
+        t.add(f'{CDO} -seq{arg} {OFILE}')
+        t.add(f'{CDO} diff {OFILE} {RFILE}')
+        test_module.add(t)
+
+
+    #seq negative tests
+    #
+    not_enough_arguments = ",0"
+    to_many_arguments = ",1,2,3,4"
+    seq_arguments = [
+        not_enough_arguments                              ,
+        to_many_arguments                                 ]
+
+    expected_ret_val = 1
+    for arg in seq_arguments:
+        t = TAPTest(f'-seq,{arg[1:]}')
+        name=arg[1:].replace(',',"_")
+        OFILE = f'vargen_seq_negative_{name}_res'
+        t.add(f'{CDO} -seq{arg} {OFILE}',expected_ret_val)
+        test_module.add(t)
+
+
+    #STDATM
+    #
+    #
+    #SINCOS, COSHILL, TESFIELD
+    #generic grid , other grid, generic grid with units = "m"
+    #cdo griddes -random,global_3 > mygrid
+    #
+    #
+    #const,val,grid
+    #
+    #
+    test_module.run()
+
+else:
+    test_module.add_skip("Vargen tests require extended internal test data")
+
+test_module.run()

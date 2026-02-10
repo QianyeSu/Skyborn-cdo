@@ -1,0 +1,23 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+PCTLS=[1, 20, 25, 33, 50, 66, 75, 80, 99, 100]
+
+IFILE=f'{DATAPATH}/ts_mm_5years'
+OPER="runpctl"
+
+test_module = TestModule()
+for PCTL in PCTLS:
+    RFILE=f'{DATAPATH}/runpctl{PCTL}_ref'
+    OFILE=f'runpctl{OPER}_res'
+
+    t=TAPTest(f'{OPER} {PCTL},12')
+    t.add(f'{CDO}  {FORMAT} {OPER},{PCTL},12 {IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

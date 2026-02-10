@@ -1,0 +1,29 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+MODULE="etccdi"
+PARAMS="5,1991,1995"
+
+IFILE=f'{DATAPATH}/ts_1d_5years'
+
+OPERATORS=["etccdi_tx90p","etccdi_tx10p"]
+
+test_module=TestModule()
+
+DATAPATH_etccdi=f'{DATAPATH}/{MODULE}'
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+    MIN_REF=f'{DATAPATH_etccdi}_min_ref'
+    MAX_REF=f'{DATAPATH_etccdi}_max_ref'
+    t = TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{PARAMS} {IFILE} {MIN_REF} {MAX_REF} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

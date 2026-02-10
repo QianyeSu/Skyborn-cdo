@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+
+OPERATORS=["fldmin","fldmax","fldrange","fldsum","fldavg","fldmean","fldstd","fldstd1","fldvar","fldvar1","fldkurt","fldskew","fldmedian"]
+
+IFILES=defaultdict(lambda : f'{DATAPATH}/t21_geosp_tsurf.grb',{"_m" : f'-setmissval,NAN {DATAPATH}/t21_geosp_tsurf_sea.grb'})
+
+FORMAT="-f srv -b 32"
+
+test_module = TestModule()
+
+for FILE_MOD in ["","_m"]:
+    WITHMISSVALS="+missvals/NAN" if FILE_MOD == "_m" else ""
+    IFILE=IFILES[FILE_MOD]
+    for OPERATOR in OPERATORS:
+        OFILE=f'{OPERATOR}{FILE_MOD}_res'
+        RFILE=f'{DATAPATH}/{OPERATOR}{FILE_MOD}_ref'
+
+        t = TAPTest(f'{OPERATOR} {WITHMISSVALS}')
+        t.add(f'{CDO} {FORMAT} {OPERATOR} {IFILE} {OFILE}')
+        t.diff(OFILE,RFILE)
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

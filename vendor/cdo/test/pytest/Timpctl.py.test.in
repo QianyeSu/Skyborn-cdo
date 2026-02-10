@@ -1,0 +1,43 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["seaspctl","timpctl","yearpctl","monpctl","daypctl","yseaspctl","ymonpctl","ydaypctl"]
+
+PCTL=50
+
+INFILES=defaultdict(lambda : f'{DATAPATH}/ts_mm_5years',{"daypctl" : f'{DATAPATH}/ts_6h_1mon',"monpctl" : f'{DATAPATH}/ts_1d_1year'})
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    IFILE=INFILES[OPERATOR]
+    RFILE=f'{DATAPATH}/{OPERATOR}{PCTL}_ref'
+    OFILE=f'{OPERATOR}{PCTL}_res'
+
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{PCTL} {IFILE} {DATAPATH}/{OPERATOR[:-4]}min_ref {DATAPATH}/{OPERATOR[:-4]}max_ref {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+
+    test_module.add(t)
+
+OPERATOR="timpctl"
+INFILE="ts_mm_5years"
+for FILE_MOD in ["m","c"]:
+    INPUTVALS="+missvals" if FILE_MOD == "m" else "+constant"
+    IFILE=f'{DATAPATH}/{INFILE}_{FILE_MOD}'
+    RFILE=f'{DATAPATH}/{OPERATOR}{PCTL}_{FILE_MOD}_ref'
+    OFILE=f'{OPERATOR}{PCTL}_{FILE_MOD}_res'
+
+    t=TAPTest(f'{OPERATOR} {INPUTVALS}')
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{PCTL} {IFILE} {DATAPATH}/{OPERATOR[:-4]}min{FILE_MOD}_ref {DATAPATH}/{OPERATOR[:-4]}max{FILE_MOD}_ref {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+
+    test_module.add(t)
+
+test_module.run()

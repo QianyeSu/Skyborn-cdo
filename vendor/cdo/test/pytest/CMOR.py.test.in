@@ -1,0 +1,33 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_CMOR=cdo_check_req("has-cmor")
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/cmor'
+
+OPERATOR="cmor"
+
+test_module=TestModule()
+
+if (not HAS_CMOR):
+    test_module.add_skip("CMOR not enabled")
+elif (not os.path.isdir(XTESTDIR)):
+    test_module.add_skip("test not enabled")
+else:
+    IFILE=f'{XTESTDIR}/example_interface.nc'
+    RFILE=f'{XTESTDIR}/tas_Amon_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_185001-185012.nc_ref'
+    CHUNKFILE=".CHUNK_FILE_tas_Amon_historical_r1i1p1f1_none.txt"
+
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {OPERATOR},{XTESTDIR}/cmip6_tables/MIP_tables/Tables/CMIP6_Amon.json,cn=tas,info={XTESTDIR}/cdocmorinfo {IFILE}')
+    t.add(f'OFILE=`cat {CHUNKFILE}`; {CDO} diff {RFILE} $OFILE')
+#    t.add(f'export OFILE=`cat {CHUNKFILE}`')
+#    t.add(f'{CDO} diff {RFILE} $OFILE')
+    t.add(f'rm -rf CMIP6')
+    t.clean(CHUNKFILE)
+    test_module.add(t)
+
+test_module.run()

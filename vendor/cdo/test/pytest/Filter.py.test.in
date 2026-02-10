@@ -1,0 +1,23 @@
+#! @PYTHON@
+
+from cdoTest import *
+test_module = TestModule();
+
+OPERS = ["lowpass", "highpass", "bandpass"]
+OPER_ARGS = ["1", "1", "0.5,5"]
+IFILE = DATAPATH + "/" + "ts_mm_5years"
+
+OPER_CALLS = zip(OPERS,OPER_ARGS)
+
+for oper in OPER_CALLS:
+    OFILE = oper[0]+"_res"
+    RFILE = DATAPATH+"/"+oper[0] +"_ref"
+    cdo_call = ",".join(oper) 
+    t = TAPTest(cdo_call)
+    t.add(f'{CDO} {cdo_call} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()
+

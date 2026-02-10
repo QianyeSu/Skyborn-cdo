@@ -1,0 +1,35 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_MAGICS=cdo_check_req("has-magics")
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/magics/'
+
+DEVICE="png"
+OPERATORS=["shaded","grfill"]
+
+test_module=TestModule()
+
+for OPER in OPERATORS:
+    if (not HAS_MAGICS):
+        test_module.add_skip("Magics not enabled")
+        continue
+    if (not os.path.isdir(XTESTDIR)):
+        test_module.add_skip("test not enabled")
+        continue
+
+    IFILE=f'{XTESTDIR}/tsurf_data.grb'
+    OBASE=f'res_mag_{OPER}'
+    OFILE=f'{OBASE}_tsurf.png'
+    RFILE=f'{XTESTDIR}/ref_mag_{OPER}_tsurf.png'
+
+    t=TAPTest(f'{OPER},device={DEVICE}')
+    t.add(f'{CDO} {OPER},"device={DEVICE},list=200;240;250;260;270;280;290;300;340" {IFILE} {OBASE}')
+#    t.add(f'cmp {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

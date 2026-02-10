@@ -1,0 +1,32 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+FORMAT="-f srv -b 32"
+OPERATORS=["remapnn", "remapdis", "remapcon"]
+ABSLIM=0.001
+
+test_module=TestModule()
+
+SRCGRIDS=["hp32_nest", "global_2", "hp16_nest"]
+TGTGRIDS=["global_5", "hp16_nest", "hp16_nest"]
+for SRCGRID,TGTGRID in zip(SRCGRIDS,TGTGRIDS):
+    for OPERATOR in OPERATORS:
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        OFILE=f'temp_{OPERATOR}_{SRCGRID}_to_{TGTGRID}_res'
+        RFILE=f'{DATAPATH}/temp_{OPERATOR}_{SRCGRID}_to_{TGTGRID}_ref'
+
+        FORCE="--force" if (OPERATOR == "remapcon") else ""
+
+        t=TAPTest(f'{OPERATOR}  {SRCGRID} to {TGTGRID}')
+        t.add(f'{CDO}  {FORMAT} {FORCE} {OPERATOR},{TGTGRID} {DATAPATH}/temp_{SRCGRID}.nc {OFILE}')
+        t.add(f'{CDO} diff,abslim={ABSLIM} {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,29 @@
+#! @PYTHON@
+from cdoTest import *
+test_module = TestModule();
+
+test_module = TestModule()
+
+t=TAPTest("Checking Version Return Value")
+t.add(f'{CDO} --version', 0)
+test_module.add(t)
+t=TAPTest("--operators")
+t.add(f'{CDO} --operators',0)
+test_module.add(t)
+t=TAPTest("-h")
+t.add(f'{CDO} -h', 0)
+test_module.add(t)
+t=TAPTest("--help")
+t.add(f'{CDO} --help',0)
+test_module.add(t)
+#causing some parser error
+t=TAPTest("Parser error")
+t.add(f'{CDO} -add FILE_THAT_DOES_NOT_EXIST',1)
+test_module.add(t)
+#sucessfull run
+t=TAPTest("success")
+t.add(f'{CDO} -info -topo',0)
+test_module.add(t)
+
+test_module.run()
+

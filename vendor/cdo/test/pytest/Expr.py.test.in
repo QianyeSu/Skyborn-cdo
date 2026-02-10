@@ -1,0 +1,43 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["expr","aexpr"]
+ABSLIMMAX="0.001"
+
+IFILE=f'{DATAPATH}/pl_data'
+
+INSTR_LIST=[
+"var152;C1=0.287;_clev=clev(var130);pottemp=var130*((100000/_clev)^C1);",
+"C1=0;C2=273.15;C3=1;var1=var129>C1?var130-C2:C3*var152;",
+"C1=3+4;C2=C1-7;r1=C2+fldmean(var130);r2=vertmean(var130)+C2;"
+]
+
+test_module = TestModule()
+for I,INSTR in enumerate(INSTR_LIST,1):
+    t = TAPTest(f'expr/aexpr instruction set {I}')
+    for OPERATOR in OPERATORS:
+        RFILE=f'{DATAPATH}/{OPERATOR}{I}_ref'
+        OFILE=f'{OPERATOR}{I}_res'
+        t.add(f'{CDO} {FORMAT} {OPERATOR},"{INSTR}" {IFILE} {OFILE}')
+        t.add(f'{CDO} diff,abslim={ABSLIMMAX} {RFILE} {OFILE}')
+        t.clean(OFILE)
+    test_module.add(t)
+
+# heat index
+
+IFILE=f'{DATAPATH}/temp_and_hum.srv'
+
+INSTR="_tF = ((var0 - 273.15) * 1.8) + 32; _hi = -42.379 + (2.04901523 * _tF) + (10.14333127 * var1) - (0.22475541 * _tF * var1) - (6.83783 * pow(10, -3) * pow(_tF, 2)) - (5.481717 * pow(10, -2) * pow(var1, 2)) + (1.22874 * pow(10, -3) * pow(_tF, 2) * var1) + (8.5282 * pow(10, -4) * _tF * pow(var1, 2)) - (1.99 * pow(10, -6) * pow(_tF, 2) * pow(var1, 2)); _hi = _tF < 80 ? _tF : _hi; heatx = (_hi - 32) * 0.55555556 + 273.15;"
+
+t = TAPTest("heat index")
+RFILE=f'{DATAPATH}/heat_index.srv'
+OFILE="heat_index_res"
+t.add(f'{CDO} {FORMAT} expr,\'{INSTR}\' {IFILE} {OFILE}')
+t.add(f'{CDO} diff,abslim={ABSLIMMAX} {RFILE} {OFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+test_module.run()

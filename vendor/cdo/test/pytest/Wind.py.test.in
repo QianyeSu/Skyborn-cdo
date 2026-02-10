@@ -1,0 +1,21 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+
+OPERATORS=["dv2ps","dv2uv" , "uv2dv" , "dv2uvl", "uv2dvl"]
+INFILES=["t31_dv.grb","t31_dv.grb","dv2uv_ref","t31_dv.grb","dv2uvl_ref"]
+ABSLIM=defaultdict(lambda : 0.001, {"dv2ps" : 2})
+
+test_module= TestModule()
+
+for OPERATOR,IFILE in zip(OPERATORS,INFILES):
+    OFILE=f'{OPERATOR}_res'
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {OPERATOR} {DATAPATH}/{IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim={ABSLIM[OPERATOR]} {RFILE} {OFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

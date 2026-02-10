@@ -1,0 +1,39 @@
+#! @PYTHON@
+from cdoTest import *
+#
+FORMAT="-f srv -b 32"
+OPERATORS=["addc","subc","mulc","divc"]
+SYMBOLS=["+","-","*","/"]
+#
+IFILE=DATAPATH+"/pl_data"
+#
+VALUES=[-777,-1,0,1,777]
+#
+test_module = TestModule()
+for OPER,SYM in zip(OPERATORS,SYMBOLS):
+    OFILE="stat%s_res" % OPER
+    t = TAPTest(f'{OPER} {SYM}')
+    for VAL in VALUES:
+        CFILE="constval"
+        OFILE2="stat%s_res" % OPER
+        OFILE3="arithc_expr%s_res" % OPER
+        XOPER=OPER[:3]
+        CDO_EXE=f'{CDO} {FORMAT}'
+
+        t.add(f'{CDO} -f srv -b 64 const,{VAL},{IFILE} {CFILE}')
+
+        t.add(f'{CDO_EXE} {XOPER} {IFILE} {CFILE} {OFILE}')
+        t.add(f'{CDO} {FORMAT} {OPER},{VAL} {IFILE} {OFILE2}')
+        t.add(f'{CDO} diff {OFILE} {OFILE2}')
+        # expr,instr var
+
+        #!!!! CAUTION using output from previous results
+        t.add(f'{CDO} -f srv -b 64 const,{VAL},{IFILE} {CFILE}')
+        instr="var130=var130{sym}{val};var152=var152{sym}{val};var129=var129{sym}{val};"
+        instr = instr.format(sym=SYM,val=VAL)
+        t.add(f'{CDO} expr,"{instr}" {IFILE} {OFILE3}')
+        t.add(f'{CDO} diff {OFILE} {OFILE3}')
+        t.clean(OFILE2, OFILE3,OFILE,CFILE)
+    test_module.add(t)
+
+test_module.run()

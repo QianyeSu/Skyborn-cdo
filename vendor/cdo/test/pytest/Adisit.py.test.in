@@ -1,0 +1,23 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+IFILES=(f'{DATAPATH}/mpiom_tho_sao.srv', f'{DATAPATH}/adisit_ref', f'{DATAPATH}/adisit_ref')
+
+FORMAT="-f srv -b 32"
+OPERATORS=["adisit", "adipot", "rhopot"]
+
+test_module = TestModule()
+
+for OPER,IFILE in zip(OPERATORS, IFILES):
+    tapTest = TAPTest(f'{OPER}')
+
+    OFILE=OPER+"_res"
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+
+    tapTest.add(f'{CDO} {FORMAT} {OPER} {IFILE} {OFILE}')
+    tapTest.diff(OFILE, RFILE)
+    tapTest.clean(OFILE)
+    test_module.add(tapTest)
+
+test_module.run()

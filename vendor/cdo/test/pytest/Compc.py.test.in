@@ -1,0 +1,21 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+OPERATORS=["eqc","nec","lec","ltc","gec","gtc"]
+CONST=300
+
+IFILE=f'{DATAPATH}/comptest.srv'
+
+test_module = TestModule()
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/comp_{OPERATOR}_ref'
+    OFILE=f'comp_{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR},{CONST} {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

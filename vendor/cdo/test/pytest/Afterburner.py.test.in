@@ -1,0 +1,155 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_CGRIBEX=cdo_check_req("has-cgribex")
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/after'
+
+OPERATOR="after"
+AFTERTESTFILE="ECHAM5_T42L19.grb"
+ABSLIMMAX=0.0001
+
+test_module = TestModule()
+
+# Test 1
+
+SELECT="TYPE=20 FORMAT=1"
+
+IFILE=f'{DATAPATH}/gp2sp_ref'
+RFILE=f'{DATAPATH}/sp2gp_ref'
+OFILE="sp2gp_res"
+
+t=TAPTest(SELECT)
+t.add(f'echo {SELECT} | {CDO} {OPERATOR} {IFILE} {OFILE}')
+t.add(f'{CDO} diff,abslim={ABSLIMMAX} {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+# Test 2
+
+if (not HAS_CGRIBEX):
+    test_module.add_skip("CGRIBEX not enabled")
+elif (not os.path.isdir(XTESTDIR)):
+    test_module.add_skip("test not enabled")
+else:
+    SELECT="bot_mean"
+    SELFILE="select_" + SELECT
+
+    with open(SELFILE, 'w') as f:
+        f.write('CODE=91,92,93,94,95,96,97,102,103,104,105,106,107,108,109,110,111,112,113,')
+        f.write('     114,115,116,117,119,120,121,122,123,124,125,126,')
+        f.write('     129,134,139,140,141,142,143,144,145,146,147,150,151,160,161,164,165,166,')
+        f.write('     167,168,169,171,175,176,177,178,179,180,181,182,184,')
+        f.write('     185,186,187,188,193,197,203,204,205,206,207,208,209,')
+        f.write('     210,211,213,214,216,218,221,222,230,231,233,260')
+        f.write('TYPE=20')
+        f.write('FORMAT=1')
+        f.write('MEAN=1')
+
+    IFILE=f'{XTESTDIR}/{AFTERTESTFILE}'
+    RFILE=f'{XTESTDIR}/after_{SELECT}_ref'
+    OFILE=f'after_{SELECT}_res'
+
+    t=TAPTest(SELECT)
+    t.add(f'{CDO} {OPERATOR} {IFILE} {OFILE} < {SELFILE}')
+    t.add(f'{CDO} diff,abslim={ABSLIMMAX} {OFILE} {RFILE}')
+    t.clean(OFILE, SELFILE)
+    test_module.add(t)
+
+# Test 3
+
+if (not HAS_CGRIBEX):
+    test_module.add_skip("CGRIBEX not enabled")
+elif (not os.path.isdir(XTESTDIR)):
+    test_module.add_skip("test not enabled")
+else:
+    SELECT="atm_mean"
+    SELFILE="select_" + SELECT
+
+    with open(SELFILE, 'w') as f:
+        f.write('CODE=130,131,132,133,135,153,154,156,157,223')
+        f.write('LEVEL=100000,92500,85000,77500,70000,60000,50000,40000,30000,25000,20000,15000,10000,7000,5000,3000,2000,1000,700,500,300,200,100,50,20,10')
+        f.write('TYPE=30')
+        f.write('FORMAT=1')
+        f.write('MEAN=1')
+
+    IFILE=f'{XTESTDIR}/{AFTERTESTFILE}'
+    RFILE=f'{XTESTDIR}/after_{SELECT}_ref'
+    OFILE=f'after_{SELECT}_res'
+
+    t=TAPTest(SELECT)
+    t.add(f'{CDO} {OPERATOR} {IFILE} {OFILE} < {SELFILE}')
+    t.add(f'{CDO} diff,abslim={ABSLIMMAX} {OFILE} {RFILE}')
+    t.clean(OFILE, SELFILE)
+    test_module.add(t)
+
+# Test 4
+
+if (not HAS_CGRIBEX):
+    test_module.add_skip("CGRIBEX not enabled")
+elif (not os.path.isdir(XTESTDIR)):
+    test_module.add_skip("test not enabled")
+else:
+    SELECT="atm2_mean"
+    SELFILE="select_" + SELECT
+
+    with open(SELFILE, 'w') as f:
+        f.write('CODE=138,148,149,155')
+        f.write('LEVEL=100000,92500,85000,77500,70000,60000,50000,40000,30000,25000,20000,15000,10000,7000,5000,3000,2000,1000,700,500,300,200,100,50,20,10')
+        f.write('TYPE=70')
+        f.write('FORMAT=1')
+        f.write('MEAN=1')
+
+    IFILE=f'{XTESTDIR}/{AFTERTESTFILE}'
+    RFILE=f'{XTESTDIR}/after_{SELECT}_ref'
+    OFILE=f'after_{SELECT}_res'
+
+    t=TAPTest(SELECT)
+    t.add(f'{CDO} {OPERATOR} {IFILE} {OFILE} < {SELFILE}')
+    t.add(f'{CDO} diff,abslim={ABSLIMMAX} {OFILE} {RFILE}')
+    t.clean(OFILE, SELFILE)
+    test_module.add(t)
+
+# Test 5
+
+if (not HAS_CGRIBEX):
+    test_module.add_skip("CGRIBEX not enabled")
+elif (not os.path.isdir(XTESTDIR)):
+    test_module.add_skip("test not enabled")
+else:
+    SELECT="atm_mean"
+
+    IFILE=f'{XTESTDIR}/{AFTERTESTFILE}'
+    RFILE=f'{XTESTDIR}/after_{SELECT}_ref'
+    OFILE=f'after_{SELECT}_res'
+
+    t=TAPTest(f'{SELECT}:timmean/ml2pl/sp2gp/gheight_half')
+    t.add(f'{CDO} timmean -ml2plx,100000,92500,85000,77500,70000,60000,50000,40000,30000,25000,20000,15000,10000,7000,5000,3000,2000,1000,700,500,300,200,100,50,20,10 -sp2gp -merge {IFILE} -gheight_half -sp2gp {IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim={ABSLIMMAX},names=intersect {OFILE} {RFILE}')
+    t.clean(OFILE, SELFILE)
+    test_module.add(t)
+
+# Test 6
+
+if (not HAS_CGRIBEX):
+    test_module.add_skip("CGRIBEX not enabled")
+elif (not os.path.isdir(XTESTDIR)):
+    test_module.add_skip("test not enabled")
+else:
+    OPERATORS=["pressure", "pressure_half", "gheight", "gheight_half"]
+
+    IFILE=f'{XTESTDIR}/{AFTERTESTFILE}'
+    for OPERATOR in OPERATORS:
+        RFILE=f'{XTESTDIR}/{OPERATOR}_ref'
+        OFILE=f'{OPERATOR}_res'
+
+        t=TAPTest(f'{OPERATOR}')
+        t.add(f'{CDO} timmean -{OPERATOR} -sp2gp {IFILE} {OFILE}')
+        t.add(f'{CDO} diff,abslim={ABSLIMMAX},names=intersect {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,23 @@
+#! @PYTHON@
+#
+from cdoTest import *
+#test_module = TestModule()
+#
+OPERATORS=["abs","int","nint","sqr","sqrt","exp","ln","log10","sin","cos","tan","asin","acos","atan","reci","not"]
+
+IFILE=f'{DATAPATH}/math_data'
+FORMAT="-f srv -b 32"
+#
+test_module = TestModule()
+#
+for OPER in OPERATORS:
+    RFILE=f'{DATAPATH}/math_{OPER}_ref'
+    OFILE=f'math_{OPER}_res'
+
+    t=TAPTest(OPER)
+    t.add(f'{CDO}  {FORMAT} {OPER} {IFILE} {OFILE}')
+    t.add(f'{CDO}  diff,abslim=1.e-6 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,33 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+test_module = TestModule()
+
+OPERATORS=["gp2sp","gp2spl"]
+IFILE="t21_geosp_tsurf.grb"
+
+for OPERATOR in OPERATORS:
+    OFILE=f'{OPERATOR}_res'
+    RFILE=f'{OPERATOR}_ref'
+
+    t = TAPTest(OPERATOR)
+    t.add(f'{CDO} {OPERATOR} {DATAPATH}/{IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.008 {OFILE} {DATAPATH}/{RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+OPERATORS=["sp2gp","sp2gpl"]
+IFILES=["gp2sp_ref","gp2spl_ref"]
+
+for OPERATOR,IFILE in zip(OPERATORS,IFILES):
+    OFILE=f'{OPERATOR}_res'
+    RFILE=f'{OPERATOR}_ref'
+
+    t = TAPTest(OPERATOR)
+    t.add(f'{CDO} {OPERATOR} {DATAPATH}/{IFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {DATAPATH}/{RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

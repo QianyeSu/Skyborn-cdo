@@ -1,0 +1,21 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+IFILE=f'{DATAPATH}/ts_1d_1year'
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["consects", "consecsum"]
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+    OFILE=f'{OPER}_res'
+    t = TAPTest(OPER)
+    t.add(f'{CDO} {FORMAT} {OPER} -ltc,300 {IFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

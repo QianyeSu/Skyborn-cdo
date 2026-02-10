@@ -1,0 +1,32 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATOR="collgrid"
+GRIDTYPES=["regular", "generic", "curvilinear"]
+DISTS=["4,3", "12,1", "1,6"]
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+test_module = TestModule()
+for GRIDTYPE in GRIDTYPES:
+    for DIST in DISTS:
+        FILE=f'data{GRIDTYPE[0]}.nc'
+        IFILE=f'{DATAPATH}/{FILE}'
+        OFILE=f'{OPERATOR}_{FILE}'
+
+        if (HAS_NETCDF):
+            argument=""
+            if (GRIDTYPE!="regular"):
+                argument = "," + DIST.split(',')[0]
+
+            t = TAPTest(f'{GRIDTYPE} {DIST}')
+            t.add(f'{CDO} distgrid,{DIST} {IFILE} xxx')
+            t.add(f'{CDO} -O {OPERATOR}{argument} xxx* {OFILE}')
+            t.add(f'{CDO} diff {IFILE} {OFILE}')
+            t.clean(OFILE, "xxx*")
+            test_module.add(t)
+        else:
+            test_module.add_skip("NetCDF not enabled")
+
+test_module.run()

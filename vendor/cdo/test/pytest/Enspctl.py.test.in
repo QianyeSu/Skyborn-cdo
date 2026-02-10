@@ -1,0 +1,30 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+PCTLS=[1, 20, 25, 33, 50, 66, 75, 80, 99, 100]
+
+os.environ['CDO_FILE_SUFFIX'] = "NULL"
+
+test_module = TestModule()
+
+IFILE=f'{DATAPATH}/ts_mm_5years'
+test_module.prepare(f'{CDO} splityear {IFILE} {os.getpid()}ts_year')
+
+IFILES=f'{os.getpid()}ts_year'
+
+OPER="enspctl"
+for PCTL in PCTLS:
+    t = TAPTest(f'{OPER} {PCTL}')
+    RFILE=f'{DATAPATH}/enspctl{PCTL}_ref'
+    OFILE=f'{OPER}_res'
+
+    t.add(f'{CDO} {OPER},{PCTL} {IFILES}???? {OFILE}')
+    t.diff(OFILE,RFILE)
+
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.clean("*"+IFILES+"*")
+test_module.run()

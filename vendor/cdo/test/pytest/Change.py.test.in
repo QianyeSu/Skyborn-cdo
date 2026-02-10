@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_THREADS= cdo_check_req("has-threads")
+
+FORMAT="-f srv -b 32"
+SHOW=["showcode","showname","showunit","showlevel"]
+OPERATORS=["chcode","chname","chunit","chlevel"]
+PARAM_IN=["-1","topo","m","0"]
+PARAM_OUT=["101","newname","km","101"]
+IFILE="-topo"
+CDO_CALL=f'{CDO} -s {FORMAT}'
+RFILE="change_ref"
+OFILE="change_res"
+
+test_module = TestModule()
+
+for SHOW,OPERATOR,PIN,POUT in zip(SHOW,OPERATORS,PARAM_IN,PARAM_OUT):
+    t = TAPTest(f'{OPERATOR}')
+    t.add(f'echo {POUT} >> {RFILE}')
+    t.add(f'{CDO} {FORMAT} {SHOW} -{OPERATOR},{PIN},{POUT} {IFILE} >> {OFILE}')
+    t.add(f'diff -w {OFILE} {RFILE}')
+    t.clean(OFILE,RFILE)
+    test_module.add(t)
+
+test_module.run()

@@ -1,0 +1,26 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATOR="copy"
+
+FILES=["datar.nc", "datag.nc", "datac.nc", "datau.nc", "testfile01c.nc"]
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+test_module = TestModule()
+for FILE in FILES:
+    IFILE=f'{DATAPATH}/{FILE}'
+    OFILE=f'{OPERATOR}_{FILE}'
+
+    if (HAS_NETCDF):
+        t = TAPTest(f'copy {FILE}')
+        t.add(f'{CDO} {OPERATOR} {IFILE} {OFILE}')
+        t.add(f'{CDO} diff {IFILE} {OFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+    else:
+        test_module.add_skip("NetCDF not enabled")
+
+test_module.run()
+

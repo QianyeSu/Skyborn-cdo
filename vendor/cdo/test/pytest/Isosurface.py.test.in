@@ -1,0 +1,25 @@
+#! @PYTHON@
+#
+from cdoTest import *
+from collections import defaultdict
+#
+FORMAT="-f srv -b 32"
+OPERATORS=["isosurface","bottomvalue","topvalue"]
+#
+PARAMS=defaultdict(lambda: "", {"isosurface" : ",240"})
+IFILE=f'{DATAPATH}/pl_data.grb'
+
+test_module=TestModule()
+for OPER in OPERATORS:
+
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+    OFILE=f'{OPER}_res'
+
+    t=TAPTest(f'{OPER}{PARAMS[OPER]}')
+    t.add(f'{CDO} {FORMAT} {OPER}{PARAMS[OPER]} {IFILE} {OFILE}')
+    t.diff(OFILE,RFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()
+

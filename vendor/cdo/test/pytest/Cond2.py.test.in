@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+FORMAT="-f srv -b 32"
+OPERATORS=["ifthenelse"]
+CONST=-77
+
+IFILE1="infile1_cond2"
+IFILE2="infile2_cond2"
+CFILE="cfile_cond2"
+
+test_module = TestModule()
+test_module.prepare(f'{CDO} {FORMAT} gtc,0 -topo,global_10 {IFILE1}')
+test_module.prepare(f'{CDO} {FORMAT} -temp,global_10 {IFILE2}')
+test_module.prepare(f'{CDO} {FORMAT} const,{CONST},{IFILE1} {CFILE}')
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/cond_{OPERATOR}_ref'
+    OFILE=f'cond_{OPERATOR}_res'
+    t=TAPTest(OPERATOR)
+    t.add(f'{CDO} {FORMAT} {OPERATOR} {IFILE1} {IFILE2} {CFILE} {OFILE}')
+    t.add(f'{CDO} diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+t.clean(IFILE1,IFILE2,CFILE)
+test_module.run()

@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+HAS_NC=cdo_check_req("has-nc")
+
+OPERATORS=["sinfon","infon"]
+FILES=["testfile01","testfile02","testfile03"]
+
+test_module = TestModule()
+
+for OPERATOR in OPERATORS:
+    for FILE in FILES:
+        if (not HAS_NC):
+            test_module.add_skip("NetCDF not enabled")
+            continue 
+
+        IFILE=f'{DATAPATH}/netcdf_{FILE}.nc'
+        OFILE=f'netcdf_{FILE}_{OPERATOR}'
+        RFILE=f'{DATAPATH}/{OFILE}_ref'
+        t=TAPTest(f'{OPERATOR} {FILE}')
+        t.add(f'{CDO} -s {OPERATOR} {IFILE} > {OFILE}')
+        t.add(f'diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

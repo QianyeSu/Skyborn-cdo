@@ -1,0 +1,54 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+ABSLIMMAX=0.001
+ABSLIMDIS=0.2
+ABSLIMSCON=0.25
+
+FORMAT="-f srv -b 32"
+GRIDS="F16","F32"
+
+IFILE=f'{DATAPATH}/bathy4.grb'
+
+HAS_NETCDF=cdo_check_req("has-nc")
+HAS_THREADS=cdo_check_req("has-threads")
+
+ABS=defaultdict(lambda : ABSLIMMAX,{"gendis" : ABSLIMDIS})
+#-------------------------------------------------------------------------
+test_module = TestModule()
+#-------------------------------------------------------------------------
+def GENWEIGHTS_TEST(GRIDTYPE,OPERATORS):
+    SETGRID=f'-setgridtype,{GRIDTYPE}' if (GRIDTYPE != "regular") else ""
+    for GRID in GRIDS:
+        for OPERATOR in OPERATORS:
+            if (not HAS_NETCDF):
+                test_module.add_skip("NetCDF not enabled")
+                continue
+
+            if (not HAS_THREADS):
+                test_module.add_skip("POSIX threads not enabled")
+                continue
+
+            OFILE=f'{GRID}_{OPERATOR}_{os.getpid()}'
+            RFILE=f'{DATAPATH}/{GRID}_{OPERATOR[3:]}_ref'
+
+            t = TAPTest(f'{GRIDTYPE} {GRID} {OPERATOR}')
+
+            t.add(f'{CDO} {FORMAT} {OPERATOR},{GRID} {SETGRID} {IFILE} remapweights')
+            t.add(f'{CDO} {FORMAT} remap,{GRID},remapweights {SETGRID} {IFILE} {OFILE}')
+            t.add(f'{CDO} diff,abslim={ABS[OPERATOR]} {OFILE} {RFILE}')
+            t.clean(OFILE,"remapweights")
+
+            test_module.add(t)
+#-------------------------------------------------------------------------
+USER=os.getenv("USER") or ""
+OPERATORS=["gendis","gennn","genbil","genbic","gencon"] if USER == "m214003" else ["genbil","genbic","gencon"]
+GENWEIGHTS_TEST("regular",OPERATORS)
+GENWEIGHTS_TEST("curvilinear",OPERATORS)
+OPERATORS=["gendis","gennn","gencon"] if USER == "m214003" else ["gencon"]
+GENWEIGHTS_TEST("unstructured",OPERATORS)
+#-------------------------------------------------------------------------
+test_module.run()

@@ -1,0 +1,27 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATORS=["meandiff2test","varquot2test"]
+
+test_module = TestModule()
+
+IFILE=f'{DATAPATH}/ts_anom_mm_5years'
+IFILE1="ts_anom_mm_1991"
+test_module.prepare(f'{CDO} selyear,1991 {IFILE} {IFILE1}')
+
+IFILE2="ts_anom_mm_1993"
+test_module.prepare(f'{CDO} selyear,1993 {IFILE} {IFILE2}')
+
+for OPERATOR in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPERATOR}_ref'
+    OFILE=f'{OPERATOR}_res'
+
+    t=TAPTest(f'{OPERATOR}')
+    t.add(f'{CDO}  {OPERATOR},3,0.05  {IFILE1} {IFILE2} {OFILE}')
+    t.add(f'{CDO}  diff,abslim=0.004 {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.clean(IFILE1,IFILE2)
+test_module.run()

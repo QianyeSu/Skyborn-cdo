@@ -1,0 +1,54 @@
+#! @PYTHON@
+from cdoTest import *
+test_module = TestModule();
+
+FORMAT="-f srv -b 32"
+OPERATORS=["add","sub","mul","div"]
+
+SYMBOLS=["+","-","*","/"]
+IFILES_1=[DATAPATH+"/"+ name for name  in ["arith1.srv", "arith2.srv"]]
+IFILES_2=[DATAPATH+"/"+ name for name  in ["arithmask.srv", "arith2mean.srv"]]
+PREFIX=["arith","arith2"]
+
+CDO_CALL="{cdo} {f}".format(cdo=CDO,f=FORMAT)
+#
+test_module = TestModule()
+
+for IFILE1,IFILE2,PREFIX in zip(IFILES_1,IFILES_2,PREFIX):
+    for OPER in OPERATORS:
+        OFILE=PREFIX+"{oper}_res".format(oper=OPER)
+        RFILE=DATAPATH+"/"+PREFIX+"%s_ref" % OPER
+
+        t=TAPTest(f'{OPER} {PREFIX}')
+        t.add("{} {} {} {} {}".format(CDO_CALL,OPER,IFILE1,IFILE2,OFILE))
+        t.add("{} diff {} {}".format(CDO,OFILE, RFILE))
+        t.clean(OFILE)
+        test_module.add(t)
+
+
+#for OPER in OPERATORS:
+#    IFILE1=DATAPATH+"/arith2.srv"
+#    IFILE2=DATAPATH+"/arith2mean.srv"
+#    OFILE="arith2{oper}_res".format(oper=OPER)
+#    RFILE=DATAPATH+"/arith2{oper}_ref".format(oper=OPER)
+#
+#    t=TAPTest()
+#    t.add("{} {} {} {} {}".format(CDO_CALL,OPER,IFILE1,IFILE2,OFILE))
+#    t.add("{} diff {} {}".format(CDO, OFILE, RFILE))
+#    t.clean(OFILE)
+#    test_module.add(t)
+
+for OPER,SYM in zip(OPERATORS,SYMBOLS):
+    RFILE=DATAPATH+"/arith{oper}_ref".format(oper=OPER)
+    IFILE=DATAPATH+"/expr1.srv"
+    OFILE="expr{oper}_res".format(oper=OPER)
+
+    INSTR="var215=var215{OP}var3;var216=var216{OP}var3;".format(OP=SYM)
+
+    t=TAPTest(f'expr {SYM}')
+    t.add("{} expr,\"{}\" {} {}".format(CDO_CALL,INSTR, IFILE, OFILE))
+    t.add("{} diff {} {}".format(CDO_CALL, OFILE, RFILE))
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

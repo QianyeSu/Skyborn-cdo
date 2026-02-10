@@ -1,0 +1,30 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+OPERATORS=["ensmin", "ensmax", "ensrange", "enssum", "ensavg", "ensmean", "ensstd", "ensstd1", "ensvar", "ensvar1", "ensskew", "enskurt", "ensmedian"]
+
+os.environ['CDO_FILE_SUFFIX'] = "NULL"
+
+test_module = TestModule()
+for DATATYPE in ["F32", "F64"]:
+    IFILES=f'{os.getpid()}ensmem_'
+    FILE=f'{DATAPATH}/ensdata_{DATATYPE}.srv'
+    test_module.prepare(f'{CDO} splitsel,1 {FILE} {os.getpid()}ensmem_')
+    for OPERATOR in OPERATORS:
+        RFILE=f'{DATAPATH}/{OPERATOR}_{DATATYPE}_ref'
+        OFILE=f'{OPERATOR}_{DATATYPE}_ref'
+        if (HAS_NETCDF):
+            t = TAPTest(f'{OPERATOR}   {DATATYPE}')
+            t.add(f'{CDO} -f nc {OPERATOR} {IFILES}?????? {OFILE}')
+            t.add(f'{CDO}  diff,abslim=0.00001 {OFILE} {RFILE}')
+            t.clean(OFILE)
+            test_module.add(t)
+        else:
+            test_module.add_skip("NetCDF not enabled")
+
+test_module.clean(IFILES+"*")
+test_module.run()

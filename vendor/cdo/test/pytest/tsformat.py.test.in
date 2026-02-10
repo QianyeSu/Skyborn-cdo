@@ -1,0 +1,43 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+HAS_THREADS=cdo_check_req("has-threads")
+
+OFORMAT="-f srv -b 32"
+
+FORMATS=["srv","ext","ieg","grb","grb2","nc","nc2","nc4"]
+
+IFILE=f'{DATAPATH}/pl_data'
+INSTR="-fldmin -timmean -select,code=130"
+INSET=1
+
+test_module = TestModule()
+
+for NTEST,FORMAT in enumerate(FORMATS,1):
+    ENABLED,FORMAT_NAME = fileformat(FORMAT)
+    if (not ENABLED):
+        test_module.add_skip(f'{FORMAT_NAME} not enabled')
+        continue
+
+    if (not HAS_THREADS):
+        test_module.add_skip("POSIX threads not enabled")
+        continue
+
+    RFILE=f'{DATAPATH}/tsformat{INSET}_ref'
+    OFILE=f'thread{NTEST}_res'
+    t=TAPTest(FORMAT)
+    OS_PROCESS_ID = os.getpid()
+    IFILE2=f'infile{OS_PROCESS_ID}'
+
+    t.add(f'{CDO}  -f {FORMAT} setgrid,r12x6 {IFILE} {IFILE2}')
+
+    for i in range(1,5):
+        t.add(f'{CDO} {INSTR} {IFILE2} {OFILE}')
+
+    t.add(f'{CDO}  diff -selcode,130 {RFILE} {OFILE}')
+    t.clean(OFILE,IFILE2)
+    test_module.add(t)
+
+test_module.run()

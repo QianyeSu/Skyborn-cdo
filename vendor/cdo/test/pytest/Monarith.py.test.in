@@ -1,0 +1,23 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+IFILE1=f'{DATAPATH}/ts_1d_1year'
+IFILE2=f'{DATAPATH}/ts_mm_1991'
+
+FORMAT="-f srv -b 32"
+
+OPERATORS=["monadd","monsub","monmul","mondiv"]
+
+test_module = TestModule()
+for OPER in OPERATORS:
+    RFILE=f'{DATAPATH}/{OPER}_ref'
+    OFILE=f'{OPER}_res'
+
+    t = TAPTest(OPER)
+    t.add(f'{CDO}  {FORMAT} {OPER} {IFILE1} {IFILE2} {OFILE}')
+    t.diff(OFILE,RFILE)
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()
