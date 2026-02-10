@@ -149,9 +149,11 @@ CPPFLAGS="-I${PREFIX}/include" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
     --disable-static \
     --enable-netcdf-4 \
     --disable-dap \
+    --disable-dap4 \
     --disable-byterange \
     --disable-testsets \
-    --disable-libxml2
+    --disable-libxml2 \
+    --disable-nczarr
 make -j"${JOBS}"
 make install
 echo "--- NetCDF-C installed ---"
@@ -172,7 +174,7 @@ cmake .. \
     -DENABLE_MEMFS=ON \
     -DENABLE_NETCDF=ON \
     -DENABLE_JPG=OFF \
-    -DENABLE_PNG=ON \
+    -DENABLE_PNG=OFF \
     -DENABLE_AEC=ON \
     -DAEC_DIR="${PREFIX}" \
     -DHDF5_DIR="${PREFIX}" \
