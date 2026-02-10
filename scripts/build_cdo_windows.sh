@@ -38,6 +38,20 @@ if [[ -f "${PATCH_FILE}" ]]; then
     patch -p1 --forward < "${PATCH_FILE}" || true
 fi
 
+# Prevent make from trying to regenerate autotools files.
+# The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
+# but git checkout sets all timestamps to the same time, which can cause make
+# to think the generated files are stale and try to re-run aclocal/autoconf.
+# Touch the generated files to ensure they appear newer than their sources.
+echo "[skyborn-cdo] Fixing autotools timestamps..."
+find . -name configure -exec touch {} +
+find . -name 'configure.ac' -exec touch {} +
+find . -name aclocal.m4 -exec touch {} +
+sleep 1
+find . -name configure -exec touch {} +
+find . -name Makefile.in -exec touch {} +
+find . -name config.h.in -exec touch {} +
+
 # If configure doesn't exist, run autoreconf
 if [[ ! -f configure ]]; then
     echo "[skyborn-cdo] Running autoreconf..."
