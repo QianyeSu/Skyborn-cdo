@@ -23,11 +23,11 @@ echo "  PREFIX:    ${PREFIX}"
 echo "  JOBS:      ${JOBS}"
 echo "============================================"
 
-# NOTE: Base packages (gcc, cmake, hdf5, netcdf, fftw, proj, etc.) are
-#       installed by the GitHub Actions workflow via setup-msys2 `install:`.
+# NOTE: Base packages (gcc, cmake, hdf5, netcdf, fftw, proj, eccodes, etc.)
+#       are installed by the GitHub Actions workflow via setup-msys2 `install:`.
 #       This script only builds libraries NOT available in MSYS2 repos.
 
-# ecCodes and UDUNITS2 are not in MSYS2 repos, build from source
+# UDUNITS2 and libaec are not in MSYS2 repos, build from source
 mkdir -p "${BUILD_DIR}"
 
 export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
@@ -35,31 +35,6 @@ export CFLAGS="-O2"
 export CXXFLAGS="-O2"
 export LDFLAGS="-L${PREFIX}/lib"
 export CPPFLAGS="-I${PREFIX}/include"
-
-# ---- ecCodes ----
-ECCODES_VERSION="2.38.0"
-echo "--- Building ecCodes ---"
-cd "${BUILD_DIR}"
-wget -q "https://confluence.ecmwf.int/download/attachments/45757960/eccodes-${ECCODES_VERSION}-Source.tar.gz" -O "eccodes-${ECCODES_VERSION}.tar.gz" || \
-    wget -q "https://github.com/ecmwf/eccodes/archive/refs/tags/${ECCODES_VERSION}.tar.gz" -O "eccodes-${ECCODES_VERSION}.tar.gz"
-export MSYS=winsymlinks:lnk
-tar xf "eccodes-${ECCODES_VERSION}.tar.gz"
-cd "eccodes-${ECCODES_VERSION}"* || cd "eccodes-${ECCODES_VERSION}-Source"*
-mkdir -p build && cd build
-cmake .. -G "MinGW Makefiles" \
-    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DENABLE_FORTRAN=OFF \
-    -DENABLE_PYTHON=OFF \
-    -DENABLE_MEMFS=ON \
-    -DENABLE_NETCDF=ON \
-    -DENABLE_JPG=OFF \
-    -DENABLE_PNG=ON \
-    -DENABLE_AEC=OFF \
-    -DBUILD_SHARED_LIBS=ON
-mingw32-make -j"${JOBS}"
-mingw32-make install
-echo "--- ecCodes installed ---"
 
 # ---- UDUNITS2 ----
 UDUNITS_VERSION="2.2.28"

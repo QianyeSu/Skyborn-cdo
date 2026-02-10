@@ -18,7 +18,7 @@ This installs a pre-compiled CDO binary along with all required libraries (NetCD
 |----------|-------------|--------|
 | Linux    | x86_64      | ✅ Supported |
 | macOS    | arm64 (Apple Silicon) | ✅ Supported |
-| Windows  | x86_64      | ⚠️ Experimental |
+| Windows  | x86_64      | ✅ Supported |
 
 ## Usage
 
@@ -38,9 +38,15 @@ cdo("cdo -O -f nc4 sellonlatbox,0,30,0,30 input.nc output.nc")
 from skyborn_cdo import Cdo
 
 cdo = Cdo()
-cdo.mergetime(input="in1.nc in2.nc", output="out.nc")
+
+# Single input/output
 cdo.sellonlatbox("0,30,0,30", input="input.nc", output="output.nc")
-info = cdo.info(input="input.nc")
+
+# Multiple input files (use a list)
+cdo.mergetime(input=["in1.nc", "in2.nc", "in3.nc"], output="out.nc")
+
+# Info operators return text output
+info = cdo.sinfon(input="input.nc")
 print(info)
 ```
 
@@ -59,13 +65,20 @@ ds = cdo.sellonlatbox("0,30,0,30", input="input.nc", returnXArray=True)
 print(ds)
 ```
 
+### Pipeline (chained operators)
+
+```python
+# CDO supports chaining operators via nested syntax
+cdo.remapbil("r360x180", input="-mergetime in1.nc in2.nc in3.nc", output="out.nc")
+```
+
 ### Integration with Skyborn
 
 ```python
 # In Skyborn main package:
 from skyborn_cdo import Cdo
 cdo = Cdo()
-cdo.mergetime(input="*.nc", output="all_time.nc")
+cdo.mergetime(input=["model_jan.nc", "model_feb.nc"], output="all_time.nc")
 ```
 
 ## CLI
@@ -83,12 +96,14 @@ skyborn-cdo -f nc4 copy input.nc output.nc
 ## CDO Version
 
 This package bundles **CDO 2.5.3** with the following libraries:
-- NetCDF-C 4.9.2
-- HDF5 1.14.4
-- ecCodes 2.38.0
+- NetCDF-C 4.9.x
+- HDF5 1.14.x
+- ecCodes 2.38+
 - FFTW3 3.3.10
-- PROJ 9.5.1
+- PROJ 9.5.x
 - UDUNITS2 2.2.28
+
+Exact library versions vary by platform (Linux/macOS build from source, Windows uses MSYS2 packages).
 
 ## Development
 
@@ -97,11 +112,6 @@ git clone --recurse-submodules https://github.com/QianyeSu/skyborn-cdo.git
 cd skyborn-cdo
 pip install -e ".[test]"
 pytest tests/
-```
-
-To build CDO from source locally:
-```bash
-SKYBORN_CDO_BUILD=1 pip install -e .
 ```
 
 ## License

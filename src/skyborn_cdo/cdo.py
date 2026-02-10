@@ -210,7 +210,8 @@ class Cdo:
                 if os.name == 'nt':
                     input_files = shlex.split(input, posix=False)
                     # Remove surrounding quotes that shlex leaves in posix=False mode
-                    input_files = [f.strip('"').strip("'") for f in input_files]
+                    input_files = [f.strip('"').strip("'")
+                                   for f in input_files]
                 else:
                     input_files = shlex.split(str(input))
             else:

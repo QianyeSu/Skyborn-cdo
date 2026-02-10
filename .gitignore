@@ -71,3 +71,4 @@ autom4te.cache/
 # Temporary/helper files
 *.txt.bak
 *.sh.bak
+*.txt

@@ -26,7 +26,7 @@ ARCH="$(uname -m)"
 ZLIB_VERSION="1.3.1"
 LIBAEC_VERSION="1.1.3"
 HDF5_VERSION="1.14.4-3"
-HDF5_DIR_VERSION="1.14.4"
+HDF5_TAG="1.14.4.3"
 NETCDF_VERSION="4.9.2"
 ECCODES_VERSION="2.38.0"
 FFTW_VERSION="3.3.10"
@@ -99,11 +99,11 @@ echo "--- libaec installed ---"
 # ---- 3. HDF5 ----
 echo "--- Building HDF5 ---"
 cd "${BUILD_DIR}"
-HDF5_URL="https://github.com/HDFGroup/hdf5/releases/download/hdf5_${HDF5_VERSION}/hdf5-${HDF5_DIR_VERSION}.tar.gz"
-curl -fsSL "${HDF5_URL}" -o "hdf5-${HDF5_DIR_VERSION}.tar.gz" || \
-    curl -fsSL "https://support.hdfgroup.org/releases/hdf5/v${HDF5_DIR_VERSION}/downloads/hdf5-${HDF5_DIR_VERSION}.tar.gz" -o "hdf5-${HDF5_DIR_VERSION}.tar.gz"
-tar xf "hdf5-${HDF5_DIR_VERSION}.tar.gz"
-cd "hdf5-${HDF5_DIR_VERSION}"*
+HDF5_URL="https://github.com/HDFGroup/hdf5/releases/download/hdf5_${HDF5_TAG}/hdf5-${HDF5_VERSION}.tar.gz"
+curl -fsSL "${HDF5_URL}" -o "hdf5-${HDF5_VERSION}.tar.gz" || \
+    curl -fsSL "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-${HDF5_VERSION}/src/hdf5-${HDF5_VERSION}.tar.gz" -o "hdf5-${HDF5_VERSION}.tar.gz"
+tar xf "hdf5-${HDF5_VERSION}.tar.gz"
+cd "hdf5-${HDF5_VERSION}"*
 ./configure \
     --prefix="${PREFIX}" \
     --enable-shared \
