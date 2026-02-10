@@ -43,10 +43,10 @@ mkdir -p "${PREFIX}" "${BUILD_DIR}"
 # Install system-level build tools that manylinux_2_28 might be missing
 if command -v dnf &>/dev/null; then
     dnf install -y cmake gcc-c++ gcc-gfortran wget perl openssl-devel \
-        sqlite-devel libtiff-devel 2>/dev/null || true
+        sqlite-devel libtiff-devel libxml2-devel expat-devel 2>/dev/null || true
 elif command -v yum &>/dev/null; then
     yum install -y cmake3 gcc-c++ gcc-gfortran wget perl openssl-devel \
-        sqlite-devel libtiff-devel 2>/dev/null || true
+        sqlite-devel libtiff-devel libxml2-devel expat-devel 2>/dev/null || true
 fi
 
 # Ensure cmake is available (some images have cmake3)
@@ -150,7 +150,8 @@ CPPFLAGS="-I${PREFIX}/include" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
     --enable-netcdf-4 \
     --disable-dap \
     --disable-byterange \
-    --disable-testsets
+    --disable-testsets \
+    --disable-libxml2
 make -j"${JOBS}"
 make install
 echo "--- NetCDF-C installed ---"

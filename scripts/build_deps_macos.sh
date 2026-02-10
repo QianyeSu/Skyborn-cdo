@@ -133,7 +133,8 @@ CPPFLAGS="-I${PREFIX}/include" LDFLAGS="-L${PREFIX}/lib -arch ${ARCH}" \
     --enable-netcdf-4 \
     --disable-dap \
     --disable-byterange \
-    --disable-testsets
+    --disable-testsets \
+    --disable-libxml2
 make -j"${JOBS}"
 make install
 echo "--- NetCDF-C installed ---"
