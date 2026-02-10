@@ -19,7 +19,7 @@ PROJECT_DIR="$(dirname "${SCRIPT_DIR}")"
 CDO_SOURCE="${CDO_SOURCE_DIR:-${PROJECT_DIR}/vendor/cdo}"
 DEPS_PREFIX="${CDO_DEPS_PREFIX:-/opt/cdo-deps}"
 INSTALL_PREFIX="${CDO_INSTALL_PREFIX:-/opt/cdo-install}"
-JOBS="${PARALLEL_JOBS:-$(nproc)}"
+JOBS="${PARALLEL_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)}"
 
 echo "============================================"
 echo "Building CDO"
