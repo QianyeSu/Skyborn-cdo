@@ -359,6 +359,65 @@ class Cdo:
         """Check if a CDO operator is available."""
         return name in self.operators()
 
+    def help(self, operator: Optional[str] = None) -> str:
+        """
+        Get help text for a CDO operator, or general usage help.
+
+        Parameters
+        ----------
+        operator : str, optional
+            Name of the CDO operator (e.g. "sellonlatbox", "mergetime").
+            If None, returns a general usage summary.
+
+        Returns
+        -------
+        str
+            Help text from CDO or a usage summary.
+
+        Examples
+        --------
+        >>> cdo = Cdo()
+        >>> print(cdo.help("sellonlatbox"))   # CDO operator help
+        >>> print(cdo.help())                 # general usage
+        """
+        if operator is None:
+            return (
+                "skyborn-cdo: Python wrapper for CDO (Climate Data Operators)\n"
+                "\n"
+                "Command-line style:\n"
+                '  cdo("cdo -O mergetime in1.nc in2.nc out.nc")\n'
+                '  cdo("-O -f nc4 sellonlatbox,0,30,0,30 input.nc output.nc")\n'
+                "\n"
+                "Method-call style:\n"
+                '  cdo.mergetime(input="in1.nc in2.nc", output="out.nc")\n'
+                '  cdo.sellonlatbox("0,30,0,30", input="in.nc", output="out.nc")\n'
+                "\n"
+                "Chained operators:\n"
+                '  cdo("-O -fldmean -sellonlatbox,70,140,10,55 in.nc out.nc")\n'
+                '  cdo.fldmean(input="-sellonlatbox,70,140,10,55 in.nc", output="out.nc")\n'
+                "\n"
+                "Useful methods:\n"
+                '  cdo.help("operator")  - help for a specific operator\n'
+                "  cdo.operators()       - set of all available operators\n"
+                '  cdo.has_operator("x") - check if operator exists\n'
+                "  cdo.version()         - CDO version string\n"
+                "\n"
+                "Common options: -O (overwrite), -s (silent), -f nc4 (format)\n"
+                '  cdo = Cdo(options="-O -s")\n'
+            )
+
+        try:
+            result = self._runner.run(
+                args=["-h", operator],
+                return_output=True,
+            )
+            return result
+        except CdoError as e:
+            # CDO -h writes to stderr and may return non-zero; include stderr
+            if e.stderr:
+                return e.stderr.strip()
+            raise
+
     def cleanup(self):
         """Remove all temporary files created by this instance."""
         for f in self._tempfiles:
