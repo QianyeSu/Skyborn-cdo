@@ -5,6 +5,9 @@ dist/
 *.egg
 wheelhouse/
 
+# Local stress/dev test scripts (not for distribution)
+tests/test_stress.py
+
 # Compiled CDO binaries and libs (shipped in wheels, not in git)
 src/skyborn_cdo/bin/cdo
 src/skyborn_cdo/bin/cdo.exe
