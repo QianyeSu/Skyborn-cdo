@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skyborn-cdo"
-version = "2.5.3.0"
+version = "2.5.3.1"
 description = "Pre-compiled CDO (Climate Data Operators) binary distributed as a Python package — backend for Skyborn"
 readme = "README.md"
 authors = [{ name = "Qianye Su", email = "suqianye2000@gmail.com" }]

@@ -31,7 +31,7 @@ from skyborn_cdo.cdo import Cdo
 from skyborn_cdo._cdo_binary import get_cdo_path, get_cdo_version
 from skyborn_cdo._runner import CdoError
 
-__version__ = "2.5.3.0"
+__version__ = "2.5.3.1"  # Format: CDO_VERSION.WRAPPER_VERSION
 __cdo_version__ = "2.5.3"
 __author__ = "Qianye Su"
 __email__ = "suqianye2000@gmail.com"
