@@ -29,9 +29,12 @@ Integration with Skyborn::
 
 from skyborn_cdo.cdo import Cdo
 from skyborn_cdo._cdo_binary import get_cdo_path, get_cdo_version
+from skyborn_cdo._runner import CdoError
 
 __version__ = "2.5.3.0"
 __cdo_version__ = "2.5.3"
+__author__ = "Qianye Su"
+__email__ = "suqianye2000@gmail.com"
 
-__all__ = ["Cdo", "get_cdo_path", "get_cdo_version",
+__all__ = ["Cdo", "CdoError", "get_cdo_path", "get_cdo_version",
            "__version__", "__cdo_version__"]
