@@ -305,13 +305,15 @@ jobs:
   # =========================================================================
   # Publish to PyPI (on tag push)
   # =========================================================================
+  # Two authentication methods available:
+  # 1. API Token (current): Set PYPI_API_TOKEN in GitHub Secrets
+  # 2. Trusted Publisher: Remove password, add "permissions: id-token: write"
+  # =========================================================================
   publish:
     name: Publish to PyPI
     needs: [test_install, build_sdist]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      id-token: write
 
     steps:
       - uses: actions/download-artifact@v4
@@ -322,3 +324,4 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+          password: ${{ secrets.PYPI_API_TOKEN }}
