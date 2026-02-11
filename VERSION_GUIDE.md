@@ -1,185 +1,185 @@
-# skyborn-cdo 版本管理指南
+# skyborn-cdo Version Management Guide
 
-## 版本号格式
+## Version Number Format
 
 ```
 CDO_MAJOR.CDO_MINOR.CDO_PATCH.WRAPPER_VERSION
-例如: 2.5.3.1
+Example: 2.5.3.1
 ```
 
-- **前三位** (2.5.3): 跟随上游 CDO 版本
-- **最后一位** (.1, .2, .3...): skyborn-cdo 包装器的版本号
+- **First three digits** (2.5.3): Follow upstream CDO version
+- **Last digit** (.1, .2, .3...): skyborn-cdo wrapper version number
 
-## 何时更新版本号
+## When to Update Version Number
 
-### 更新最后一位（包装器版本）- 仅 skyborn-cdo 代码变更，CDO 版本不变
+### Update the last digit (wrapper version) - Only skyborn-cdo code changes, CDO version unchanged
 
-**场景：**
-- ✅ 修复 Bug（如 Windows 进程挂起问题）
-- ✅ 添加新功能（如通配符支持、help 系统）
-- ✅ 性能优化
-- ✅ 文档改进
-- ✅ **添加新 Python 版本支持**（如 Python 3.14）
-- ✅ 改进错误处理
-- ✅ API 增强
+**Scenarios:**
+- ✅ Bug fixes (e.g., Windows process hanging issue)
+- ✅ New features (e.g., wildcard support, help system)
+- ✅ Performance optimizations
+- ✅ Documentation improvements
+- ✅ **Add new Python version support** (e.g., Python 3.14)
+- ✅ Error handling improvements
+- ✅ API enhancements
 
-**操作：**
+**Operation:**
 ```
 2.5.3.1 → 2.5.3.2 → 2.5.3.3 ...
 ```
 
-**需要修改的文件：**
-1. `src/skyborn_cdo/__init__.py` 中的 `__version__`
-2. `pyproject.toml` 中的 `version`
+**Files to modify:**
+1. `__version__` in `src/skyborn_cdo/__init__.py`
+2. `version` in `pyproject.toml`
 
-### 更新前三位（CDO 版本升级）
+### Update first three digits (CDO version upgrade)
 
-**场景：**
-- 🔄 升级到 CDO 2.5.4
-- 🔄 升级到 CDO 2.6.0
-- 🔄 升级到 CDO 3.0.0
+**Scenarios:**
+- 🔄 Upgrade to CDO 2.5.4
+- 🔄 Upgrade to CDO 2.6.0
+- 🔄 Upgrade to CDO 3.0.0
 
-**操作：**
+**Operation:**
 ```
-2.5.3.x → 2.5.4.1  (CDO 2.5.3 → 2.5.4, 重置包装版本为 .1)
+2.5.3.x → 2.5.4.1  (CDO 2.5.3 → 2.5.4, reset wrapper version to .1)
 2.5.4.x → 2.6.0.1  (CDO 2.5.4 → 2.6.0)
 ```
 
-**需要修改的文件：**
-1. `src/skyborn_cdo/__init__.py` 中的 `__version__` 和 `__cdo_version__`
-2. `pyproject.toml` 中的 `version`
-3. 重新编译 CDO 二进制文件
+**Files to modify:**
+1. `__version__` and `__cdo_version__` in `src/skyborn_cdo/__init__.py`
+2. `version` in `pyproject.toml`
+3. Recompile CDO binary files
 
-## 版本演进示例
+## Version Evolution Examples
 
-### 场景 1: 首次发布
+### Scenario 1: First Release
 ```
-2.5.3.1  ← 首次发布到 PyPI（2026-02-12）
+2.5.3.1  ← First PyPI release (2026-02-12)
 ```
 
-### 场景 2: 添加 Python 3.14 支持
+### Scenario 2: Add Python 3.14 Support
 ```
-2.5.3.1  ← 当前版本
+2.5.3.1  ← Current version
 ↓
-2.5.3.2  ← 添加 Python 3.14 wheel 构建（只更新包装器版本）
+2.5.3.2  ← Add Python 3.14 wheel builds (only update wrapper version)
 ```
 
-**修改：**
-- `pyproject.toml`: 添加 `"Programming Language :: Python :: 3.14"` 分类器
-- `.github/workflows/build_wheels.yml`: 添加 Python 3.14 构建
-- 更新版本号到 `2.5.3.2`
+**Modifications:**
+- `pyproject.toml`: Add `"Programming Language :: Python :: 3.14"` classifier
+- `.github/workflows/build_wheels.yml`: Add Python 3.14 builds
+- Update version to `2.5.3.2`
 
-### 场景 3: 修复 Bug
+### Scenario 3: Bug Fix
 ```
-2.5.3.2  ← 当前版本
+2.5.3.2  ← Current version
 ↓
-2.5.3.3  ← 修复错误处理 Bug
+2.5.3.3  ← Fix error handling bug
 ```
 
-### 场景 4: 添加新功能
+### Scenario 4: Add New Feature
 ```
-2.5.3.3  ← 当前版本
+2.5.3.3  ← Current version
 ↓
-2.5.3.4  ← 添加进度回调功能
+2.5.3.4  ← Add progress callback feature
 ```
 
-### 场景 5: 升级 CDO 版本
+### Scenario 5: Upgrade CDO Version
 ```
-2.5.3.4  ← 基于 CDO 2.5.3 的最后版本
+2.5.3.4  ← Last version based on CDO 2.5.3
 ↓
-2.5.4.1  ← 升级到 CDO 2.5.4（重置包装版本号）
+2.5.4.1  ← Upgrade to CDO 2.5.4 (reset wrapper version)
 ```
 
-**修改：**
-- 重新编译 CDO 2.5.4 二进制
-- 更新 `__version__ = "2.5.4.1"`
-- 更新 `__cdo_version__ = "2.5.4"`
-- 测试所有功能
+**Modifications:**
+- Recompile CDO 2.5.4 binaries
+- Update `__version__ = "2.5.4.1"`
+- Update `__cdo_version__ = "2.5.4"`
+- Test all functionality
 
-## 发布清单
+## Release Checklist
 
-每次发布到 PyPI 前检查：
+Before each PyPI release, verify:
 
-- [ ] 更新 `src/skyborn_cdo/__init__.py` 中的 `__version__`
-- [ ] 更新 `pyproject.toml` 中的 `version`
-- [ ] 更新 `README.md`（如果有功能变更）
-- [ ] 运行完整测试套件
-- [ ] 检查 CHANGELOG（如果维护的话）
-- [ ] Git 提交并打标签：`git tag v2.5.3.1`
-- [ ] 构建 wheels：`python -m build`
-- [ ] 上传到 PyPI：`twine upload dist/*`
+- [ ] Update `__version__` in `src/skyborn_cdo/__init__.py`
+- [ ] Update `version` in `pyproject.toml`
+- [ ] Update `README.md` (if feature changes)
+- [ ] Run complete test suite
+- [ ] Check CHANGELOG (if maintaining one)
+- [ ] Git commit and tag: `git tag v2.5.3.1`
+- [ ] Build wheels: `python -m build`
+- [ ] Upload to PyPI: `twine upload dist/*`
 
-## 版本号比较（PEP 440）
+## Version Number Comparison (PEP 440)
 
-Python 会按以下规则比较版本号：
+Python compares version numbers using these rules:
 
 ```
 2.5.3.1 < 2.5.3.2 < 2.5.3.10 < 2.5.4.1 < 2.6.0.1
 ```
 
-✅ 这确保了包管理器能正确识别新版本。
+✅ This ensures package managers correctly identify newer versions.
 
-## 常见问题
+## FAQ
 
-**Q: 为什么不从 0.1.0 开始？**  
-A: 因为 skyborn-cdo 是 CDO 的包装器，版本号跟随 CDO 能让用户立即知道绑定的 CDO 版本。
+**Q: Why not start from 0.1.0?**  
+A: Because skyborn-cdo is a CDO wrapper, version numbers that follow CDO let users immediately know which CDO version is bundled.
 
-**Q: 如果只更新文档需要发布新版本吗？**  
-A: 看情况。如果是重大文档更新（如添加大量示例），可以发布补丁版本（如 2.5.3.2）。小改动可以在下次版本一起发布。
+**Q: Do we need to publish a new version for documentation-only updates?**  
+A: It depends. For major documentation updates (e.g., adding many examples), consider releasing a patch version (e.g., 2.5.3.2). Minor changes can be batched in the next release.
 
-**Q: 如何处理 breaking changes？**  
-A: 如果是 API 不兼容变更，考虑：
-- 在 CHANGELOG 中明确标注
-- 在 README 中添加迁移指南
-- 如果变更很大，可以考虑主版本号跳跃（但这应该很少见，因为主要跟随 CDO）
+**Q: How to handle breaking changes?**  
+A: If API-incompatible changes occur, consider:
+- Clearly mark in CHANGELOG
+- Add migration guide in README
+- For major changes, consider a major version bump (though this should be rare since we follow CDO versioning)
 
-**Q: 如果 CDO 有安全补丁怎么办？**  
-A: 立即升级 CDO 并发布新版本（如 2.5.3.5 包含 CDO 2.5.3 的安全补丁）。
+**Q: What if CDO issues a security patch?**  
+A: Immediately upgrade CDO and release a new version (e.g., 2.5.3.5 containing CDO 2.5.3 security patches).
 
-## 自动化建议
+## Automation Suggestions
 
-可以考虑使用工具自动同步版本号：
+Consider using tools to automatically sync version numbers:
 
 ```bash
-# 使用 bump2version 或 bumpver
+# Using bump2version or bumpver
 pip install bumpver
 
-# 配置 .bumpversion.cfg 或 pyproject.toml
-# 然后可以：
+# Configure .bumpversion.cfg or pyproject.toml
+# Then:
 bumpver update --patch  # 2.5.3.1 → 2.5.3.2
 ```
 
-或者创建一个简单的 Python 脚本：
+Or create a simple Python script:
 
 ```python
 # scripts/bump_version.py
 import re
 
 def bump_wrapper_version():
-    # 读取当前版本
+    # Read current version
     with open("src/skyborn_cdo/__init__.py") as f:
         content = f.read()
     
-    # 提取版本
+    # Extract version
     match = re.search(r'__version__ = "(\d+)\.(\d+)\.(\d+)\.(\d+)"', content)
     major, minor, patch, wrapper = match.groups()
     
-    # 递增包装版本
+    # Increment wrapper version
     new_wrapper = int(wrapper) + 1
     new_version = f"{major}.{minor}.{patch}.{new_wrapper}"
     
-    # 更新所有文件
-    # ... 实现自动更新逻辑
+    # Update all files
+    # ... implement automatic update logic
     
     print(f"Version bumped: {match.group(1)} → {new_version}")
 ```
 
-## 总结
+## Summary
 
-**当前版本：** `2.5.3.1` （首次 PyPI 发布）
+**Current version:** `2.5.3.1` (First PyPI release)
 
-**未来更新：**
-- 小更新/Bug 修复/Python 版本支持 → 增加最后一位：`.2`, `.3`, `.4` ...
-- CDO 版本升级 → 更新前三位并重置最后一位：`2.5.4.1`, `2.6.0.1` ...
+**Future updates:**
+- Minor fixes/Bug fixes/Python version support → Increment last digit: `.2`, `.3`, `.4` ...
+- CDO version upgrade → Update first three digits and reset last digit: `2.5.4.1`, `2.6.0.1` ...
 
-这个方案简单、清晰，符合 Python 包管理规范（PEP 440）。
+This approach is simple, clear, and complies with Python packaging standards (PEP 440).
