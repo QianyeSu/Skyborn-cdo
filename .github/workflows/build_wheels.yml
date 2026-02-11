@@ -71,26 +71,17 @@ jobs:
             (cp -a /opt/cdo-deps/lib/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             (cp -a /opt/cdo-deps/lib64/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             (cp -a /opt/cdo-install/lib/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
+            bash {project}/scripts/fix_linux_deps.sh {project}/src/skyborn_cdo /opt/cdo-install/bin/cdo &&
             mkdir -p {project}/src/skyborn_cdo/share &&
             (cp -r /opt/cdo-deps/share/proj {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
             (cp -r /opt/cdo-deps/share/udunits {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
             find {project}/src/skyborn_cdo/share/proj/ -type f ! -name 'proj.db' -delete 2>/dev/null || true &&
-            strip --strip-unneeded {project}/src/skyborn_cdo/bin/cdo 2>/dev/null || true &&
-            find {project}/src/skyborn_cdo/lib/ -name '*.so*' -exec strip --strip-unneeded {} + 2>/dev/null || true &&
-            echo '=== Fixing RPATH (prevent auditwheel conflicts) ===' &&
-            patchelf --set-rpath '$ORIGIN/../lib' {project}/src/skyborn_cdo/bin/cdo &&
-            find {project}/src/skyborn_cdo/lib/ -name '*.so*' -type f -exec patchelf --set-rpath '$ORIGIN' {} + 2>/dev/null || true &&
-            echo '=== RPATH verification ===' &&
-            readelf -d {project}/src/skyborn_cdo/bin/cdo 2>/dev/null | grep -iE 'rpath|runpath' || true &&
+            find {project}/src/skyborn_cdo/lib/ -name '*.so*' -type f -exec strip --strip-unneeded {} + 2>/dev/null || true &&
             echo '=== Pre-build CDO test ===' &&
-            LD_LIBRARY_PATH={project}/src/skyborn_cdo/lib {project}/src/skyborn_cdo/bin/cdo --version 2>&1 | head -3 || true &&
+            LD_LIBRARY_PATH={project}/src/skyborn_cdo/lib /opt/cdo-install/bin/cdo --version 2>&1 | head -3 || true &&
             echo '=== Packaging size check ===' &&
-            du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true &&
-            ls -la {project}/src/skyborn_cdo/bin/
+            du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
-            echo '=== auditwheel show ===' &&
-            LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
-            auditwheel show {wheel} &&
             LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
             auditwheel repair -w {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >
