@@ -72,15 +72,32 @@ jobs:
             (cp -a /opt/cdo-deps/lib64/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             (cp -a /opt/cdo-install/lib/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             mkdir -p {project}/src/skyborn_cdo/share &&
-            (cp -r /opt/cdo-deps/share/eccodes {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
             (cp -r /opt/cdo-deps/share/proj {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
             (cp -r /opt/cdo-deps/share/udunits {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
+            find {project}/src/skyborn_cdo/share/proj/ -type f ! -name 'proj.db' -delete 2>/dev/null || true &&
+            strip --strip-unneeded {project}/src/skyborn_cdo/bin/cdo 2>/dev/null || true &&
+            find {project}/src/skyborn_cdo/lib/ -name '*.so*' -exec strip --strip-unneeded {} + 2>/dev/null || true &&
+            echo '=== Packaging size check ===' &&
+            du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true &&
             ls -la {project}/src/skyborn_cdo/bin/
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
             auditwheel repair -w {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >
             python -c "from skyborn_cdo import Cdo; print(Cdo().version())"
+
+      - name: Check wheel sizes
+        run: |
+          echo '=== Wheel file sizes ==='
+          ls -lh wheelhouse/*.whl
+          for f in wheelhouse/*.whl; do
+            size=$(stat --format=%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null)
+            echo "$f: $size bytes"
+            if [ "$size" -gt 104857600 ]; then
+              echo "ERROR: $f exceeds 100MB PyPI limit!"
+              exit 1
+            fi
+          done
 
       - uses: actions/upload-artifact@v6
         with:
@@ -129,15 +146,32 @@ jobs:
             (cp -a /opt/cdo-deps/lib/*.dylib {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             (cp -a /opt/cdo-install/lib/*.dylib {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             mkdir -p {project}/src/skyborn_cdo/share &&
-            (cp -r /opt/cdo-deps/share/eccodes {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
             (cp -r /opt/cdo-deps/share/proj {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
             (cp -r /opt/cdo-deps/share/udunits {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
+            find {project}/src/skyborn_cdo/share/proj/ -type f ! -name 'proj.db' -delete 2>/dev/null || true &&
+            strip -x {project}/src/skyborn_cdo/bin/cdo 2>/dev/null || true &&
+            find {project}/src/skyborn_cdo/lib/ -name '*.dylib' -exec strip -x {} + 2>/dev/null || true &&
+            echo '=== Packaging size check ===' &&
+            du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true &&
             ls -la {project}/src/skyborn_cdo/bin/
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
             DYLD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-install/lib
             delocate-wheel --require-archs arm64 -w {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >
             python -c "from skyborn_cdo import Cdo; print(Cdo().version())"
+
+      - name: Check wheel sizes
+        run: |
+          echo '=== Wheel file sizes ==='
+          ls -lh wheelhouse/*.whl
+          for f in wheelhouse/*.whl; do
+            size=$(stat -f%z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null)
+            echo "$f: $size bytes"
+            if [ "$size" -gt 104857600 ]; then
+              echo "ERROR: $f exceeds 100MB PyPI limit!"
+              exit 1
+            fi
+          done
 
       - uses: actions/upload-artifact@v6
         with:
@@ -214,7 +248,7 @@ jobs:
             cp "$dll" src/skyborn_cdo/bin/
           done
 
-          # Copy data files
+          # Copy data files (eccodes definitions needed on Windows — no MEMFS)
           mkdir -p src/skyborn_cdo/share
           if [ -d /mingw64/share/eccodes ]; then
             cp -r /mingw64/share/eccodes src/skyborn_cdo/share/
@@ -228,6 +262,21 @@ jobs:
           if [ -d /mingw64/share/udunits ]; then
             cp -r /mingw64/share/udunits src/skyborn_cdo/share/
           fi
+
+          # Strip debug symbols from binaries and DLLs
+          strip --strip-unneeded src/skyborn_cdo/bin/cdo.exe 2>/dev/null || true
+          find src/skyborn_cdo/bin/ -name '*.dll' -exec strip --strip-unneeded {} + 2>/dev/null || true
+
+          # Trim PROJ data (keep only proj.db)
+          find src/skyborn_cdo/share/proj/ -type f ! -name 'proj.db' -delete 2>/dev/null || true
+
+          # Remove eccodes samples/memfs to save space (keep only definitions)
+          rm -rf src/skyborn_cdo/share/eccodes/samples 2>/dev/null || true
+          rm -rf src/skyborn_cdo/share/eccodes/ifs_samples 2>/dev/null || true
+
+          # Size check
+          echo '=== Packaging size check ==='
+          du -sh src/skyborn_cdo/bin/ src/skyborn_cdo/share/ 2>/dev/null || true
 
       - name: Install cibuildwheel
         run: pip install cibuildwheel==2.22.0 delvewheel
@@ -243,6 +292,20 @@ jobs:
             delvewheel repair -w {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >
             python -c "from skyborn_cdo import Cdo; print(Cdo().version())"
+
+      - name: Check wheel sizes
+        shell: bash
+        run: |
+          echo '=== Wheel file sizes ==='
+          ls -lh wheelhouse/*.whl
+          for f in wheelhouse/*.whl; do
+            size=$(stat --format=%s "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || wc -c < "$f")
+            echo "$f: $size bytes"
+            if [ "$size" -gt 104857600 ]; then
+              echo "ERROR: $f exceeds 100MB PyPI limit!"
+              exit 1
+            fi
+          done
 
       - uses: actions/upload-artifact@v6
         with:
