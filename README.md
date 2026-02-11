@@ -85,7 +85,14 @@ cdo.topo(output="topo.nc")
 # Multiple input files (space-separated string or list)
 cdo.mergetime(input="in1.nc in2.nc in3.nc", output="merged.nc")
 cdo.mergetime(input=["in1.nc", "in2.nc", "in3.nc"], output="merged.nc")
+
+# Wildcard / glob patterns (automatically expanded)
+cdo.mergetime(input="data_2020*.nc", output="merged.nc")
+cdo.mergetime(input="/path/to/data_20200?.nc", output="merged.nc")
+cdo.ensmean(input="ensemble_*.nc", output="ensmean.nc")
 ```
+
+> **Wildcards**: Both `cdo.operator(input="*.nc")` and `cdo("mergetime *.nc out.nc")` support glob patterns (`*`, `?`, `[...]`). Files are sorted alphabetically before being passed to CDO.
 
 ### 3. Options
 
@@ -357,6 +364,69 @@ cdo.setattribute("varname@units=kg/m2", input="input.nc", output="units.nc")
 cdo.setmissval("-999", input="input.nc", output="newmiss.nc")
 ```
 
+#### Ensemble Operations
+
+```python
+cdo = Cdo(options="-O")
+
+# Ensemble mean (multiple realizations)
+cdo.ensmean(input="run_*.nc", output="ensemble_mean.nc")
+
+# Ensemble standard deviation
+cdo.ensstd(input="run_*.nc", output="ensemble_std.nc")
+
+# Ensemble variance
+cdo.ensvar(input="run_001.nc run_002.nc run_003.nc", output="ensemble_var.nc")
+
+# Ensemble sum
+cdo.enssum(input=["member_1.nc", "member_2.nc", "member_3.nc"], output="ens_sum.nc")
+
+# Ensemble percentiles
+cdo.enspctl("25,50,75", input="run_*.nc", output="ensemble_quartiles.nc")
+```
+
+#### Grid Information and Modification
+
+```python
+cdo = Cdo(options="-O")
+
+# Calculate grid cell areas
+cdo.gridarea(input="input.nc", output="grid_areas.nc")
+
+# Calculate grid weights (for weighted averaging)
+cdo.gridweights(input="input.nc", output="weights.nc")
+
+# Set grid type
+cdo.setgridtype("regular", input="curvilinear.nc", output="regular.nc")
+
+# Show grid description
+print(cdo.griddes(input="input.nc"))
+
+# Invert latitude direction (flip N-S)
+cdo.invertlat(input="input.nc", output="flipped.nc")
+```
+
+#### Advanced Statistical Operations
+
+```python
+cdo = Cdo(options="-O")
+
+# Field percentiles
+cdo.fldpctl("10,50,90", input="input.nc", output="field_percentiles.nc")
+
+# Field range (max - min)
+cdo.fldrange(input="input.nc", output="field_range.nc")
+
+# Time series percentiles
+cdo.timpctl("25,50,75", input="timeseries.nc", output="time_percentiles.nc")
+
+# Running mean (e.g., 5-timestep window)
+cdo.runmean("5", input="input.nc", output="smoothed.nc")
+
+# Trend removal
+cdo.detrend(input="input.nc", output="detrended.nc")
+```
+
 ### 8. Error Handling
 
 skyborn-cdo captures all CDO errors and raises them as `CdoError` exceptions with full diagnostic information.
@@ -466,6 +536,66 @@ skyborn-cdo --operators
 skyborn-cdo -O -f nc4 copy input.nc output.nc
 skyborn-cdo mergetime in1.nc in2.nc out.nc
 skyborn-cdo -O -f nc4 -sp2gpl -setgridtype,regular spectral.nc regular.nc
+```
+
+## CDO Operators
+
+skyborn-cdo provides access to **938 CDO operators** covering all aspects of climate data processing. Check operator availability:
+
+```python
+cdo = Cdo()
+print(len(cdo.operators()))  # 938
+cdo.has_operator("sellonlatbox")  # True
+print(cdo.help("sellonlatbox"))  # Get operator documentation
+```
+
+### Operator Categories
+
+| Category | Count | Examples | Use Cases |
+|----------|-------|----------|-----------|
+| **Time Operations** | 208 | `timmean`, `timstd`, `mergetime`, `seldate`, `monmean`, `yearsum` | Time series analysis, temporal statistics, date/time selection |
+| **Statistical** | 222 | `fldmean`, `fldstd`, `ensmean`, `timavg`, `zonmean`, `mermean` | Spatial/temporal statistics, ensemble analysis |
+| **Spatial Selection** | 35 | `sellonlatbox`, `selindexbox`, `selgrid`, `sellevel`, `selcode` | Regional extraction, level selection |
+| **Grid/Remapping** | 64 | `remapbil`, `remapcon`, `remapnn`, `setgrid`, `gridarea` | Grid conversion, interpolation, regridding |
+| **Arithmetic** | 60 | `add`, `mul`, `expr`, `addc`, `sqrt`, `log` | Mathematical operations, calculations |
+| **Vertical Levels** | 13 | `ml2pl`, `intlevel`, `pressure`, `sealevelpressure` | Model level conversion, vertical interpolation |
+| **Format/IO** | 47 | `copy`, `merge`, `split`, `cat`, `import_*`, `output*` | File operations, format conversion |
+| **Info/Query** | 50 | `info`, `showname`, `griddes`, `ntime`, `showdate` | File inspection, metadata extraction |
+| **Spectral/Grid Transform** | 28 | `sp2gp`, `gp2sp`, `sp2gpl`, `fourier` | Spectral transforms, Fourier analysis |
+| **Others** | 211 | Specialized operators for specific domains | Advanced climate computations |
+
+**Total: 938 operators**
+
+### Are All Operators Useful?
+
+**Commonly used** (daily work): ~80-100 operators
+- Space: `sellonlatbox`, `remapbil`, `remapcon`, `zonmean`, `mermean`
+- Time: `mergetime`, `timmean`, `monmean`, `yearsum`, `seldate`, `selyear`
+- Statistics: `fldmean`, `fldstd`, `fldmin`, `fldmax`, `ensmean`
+- Arithmetic: `add`, `sub`, `mul`, `div`, `addc`, `mulc`, `expr`
+- Info: `sinfo`, `showname`, `griddes`, `ntime`
+
+**Specialized operators** (400+): Domain-specific
+- Meteorology: `sealevelpressure`, `ml2pl`, `geopotheight`
+- Oceanography: `detrend`, `dmean`, `seasmean`
+- Climate indices: `eca_*` (extreme climate events), `ydrun*` (running means)
+- Statistical analysis: `trend`, `regres`, `corr`, `eof`
+- Spectral analysis: `sp2gp`, `gp2sp`, `dft`, `filter`
+
+**Legacy/Niche operators** (400+): Less frequently used but available
+- Format-specific imports (`import_cmsaf`, `import_grads`)
+- Experimental features (`remapavgtest`, `remapcon2test`)
+- Highly specialized computations
+
+**How to decide if you need an operator:**
+```python
+# Search operators by keyword
+cdo = Cdo()
+time_ops = [op for op in cdo.operators() if 'time' in op]
+print(f"Time-related: {len(time_ops)} operators")  # 208
+
+# Get detailed help for any operator
+print(cdo.help("operator_name"))
 ```
 
 ## CDO Version

@@ -109,6 +109,26 @@ class Cdo:
         >>> cdo("-O -s mergetime in1.nc in2.nc out.nc")
         """
         timeout = kwargs.get("timeout", self._timeout)
+
+        # Expand glob/wildcard patterns in the command string
+        if any(c in cmd_string for c in ("*", "?", "[")):
+            if os.name == 'nt':
+                parts = shlex.split(cmd_string, posix=False)
+                parts = [p.strip('"').strip("'") for p in parts]
+            else:
+                parts = shlex.split(cmd_string)
+            expanded_parts = []
+            for p in parts:
+                if any(c in p for c in ("*", "?", "[", "]")):
+                    matches = sorted(glob.glob(p))
+                    if matches:
+                        expanded_parts.extend(matches)
+                    else:
+                        expanded_parts.append(p)
+                else:
+                    expanded_parts.append(p)
+            cmd_string = " ".join(expanded_parts)
+
         result = self._runner.run_raw(cmd_string, timeout=timeout)
         if result.stdout.strip():
             return result.stdout.strip()
@@ -216,6 +236,21 @@ class Cdo:
                     input_files = shlex.split(str(input))
             else:
                 input_files = [str(input)]
+
+        # Expand glob/wildcard patterns (e.g. "*.nc", "data_202?.nc")
+        if input_files:
+            expanded = []
+            for f in input_files:
+                if any(c in f for c in ("*", "?", "[", "]")):
+                    matches = sorted(glob.glob(f))
+                    if matches:
+                        expanded.extend(matches)
+                    else:
+                        # No match — keep original so CDO reports the error
+                        expanded.append(f)
+                else:
+                    expanded.append(f)
+            input_files = expanded
 
         # Handle return types that need a temp file
         need_output_file = returnXArray or returnXDataset or returnCdf or returnArray or returnMaArray
