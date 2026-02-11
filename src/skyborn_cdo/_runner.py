@@ -96,6 +96,10 @@ class CdoRunner:
         if self.debug:
             print(f"[skyborn-cdo] Running: {' '.join(cmd)}")
 
+        # On Windows, prevent CDO from creating a visible console window
+        # or showing DLL-error dialogs that would block the process.
+        _creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+
         try:
             result = subprocess.run(
                 cmd,
@@ -104,6 +108,7 @@ class CdoRunner:
                 env=self.env,
                 timeout=timeout,
                 stdin=subprocess.DEVNULL,
+                creationflags=_creationflags,
             )
         except subprocess.TimeoutExpired as e:
             raise CdoError(
@@ -175,6 +180,8 @@ class CdoRunner:
         if self.debug:
             print(f"[skyborn-cdo] Running: {' '.join(cmd)}")
 
+        _creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+
         try:
             result = subprocess.run(
                 cmd,
@@ -183,6 +190,7 @@ class CdoRunner:
                 env=self.env,
                 timeout=timeout,
                 stdin=subprocess.DEVNULL,
+                creationflags=_creationflags,
             )
         except subprocess.TimeoutExpired as e:
             raise CdoError(

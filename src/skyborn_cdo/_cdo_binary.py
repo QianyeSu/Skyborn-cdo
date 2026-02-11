@@ -118,21 +118,34 @@ def get_bundled_env() -> dict:
     if udunits_xml.is_file():
         env["UDUNITS2_XML_PATH"] = str(udunits_xml)
 
-    # Library path — ensure bundled .so/.dylib/.dll can be found
+    # Library / DLL path — ensure bundled .so/.dylib/.dll can be found
     lib_dir = pkg_dir / "lib"
-    if lib_dir.is_dir():
-        system = platform.system()
-        if system == "Linux":
+    bin_dir = pkg_dir / "bin"
+    system = platform.system()
+
+    if system == "Linux":
+        if lib_dir.is_dir():
             existing = env.get("LD_LIBRARY_PATH", "")
             env["LD_LIBRARY_PATH"] = f"{lib_dir}:{existing}" if existing else str(
                 lib_dir)
-        elif system == "Darwin":
+    elif system == "Darwin":
+        if lib_dir.is_dir():
             existing = env.get("DYLD_LIBRARY_PATH", "")
             env["DYLD_LIBRARY_PATH"] = f"{lib_dir}:{existing}" if existing else str(
                 lib_dir)
-        elif system == "Windows":
+    elif system == "Windows":
+        # On Windows, DLLs are typically co-located with cdo.exe in bin/.
+        # Prepend both bin/ and lib/ (if they exist) to PATH so the
+        # dynamic linker can resolve all dependencies.
+        extra_dirs = []
+        if bin_dir.is_dir():
+            extra_dirs.append(str(bin_dir))
+        if lib_dir.is_dir():
+            extra_dirs.append(str(lib_dir))
+        if extra_dirs:
             existing = env.get("PATH", "")
-            env["PATH"] = f"{lib_dir};{existing}" if existing else str(lib_dir)
+            prefix = ";".join(extra_dirs)
+            env["PATH"] = f"{prefix};{existing}" if existing else prefix
 
     return env
 
@@ -153,6 +166,7 @@ def get_cdo_version(cdo_path: Optional[str] = None) -> str:
     """
     cdo = get_cdo_path(cdo_path)
     env = get_bundled_env()
+    _creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
     try:
         result = subprocess.run(
             [cdo, "--version"],
@@ -161,6 +175,7 @@ def get_cdo_version(cdo_path: Optional[str] = None) -> str:
             timeout=10,
             env=env,
             stdin=subprocess.DEVNULL,
+            creationflags=_creationflags,
         )
         # CDO prints version to stderr
         output = result.stderr.strip() or result.stdout.strip()
