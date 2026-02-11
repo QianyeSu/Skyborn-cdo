@@ -4,6 +4,13 @@ Pre-compiled [CDO (Climate Data Operators)](https://code.mpimet.mpg.de/projects/
 
 This is a backend module for [Skyborn](https://github.com/QianyeSu/Skyborn) — an atmospheric science research toolkit.
 
+### About CDO 2.5.3
+
+This package bundles **CDO 2.5.3** with all required dependencies. For detailed CDO documentation and release information, see:
+
+- **CDO Official Project**: https://code.mpimet.mpg.de/projects/cdo/files
+- **Local Documentation**: See [doc/](https://raw.githubusercontent.com/QianyeSu/skyborn-cdo/main/doc/) directory for PDF documentation and operator reference guides
+
 ## Installation
 
 ```bash
