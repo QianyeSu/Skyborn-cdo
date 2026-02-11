@@ -18,12 +18,68 @@ import tempfile
 
 
 def main():
-    from skyborn_cdo import Cdo
+    from skyborn_cdo import Cdo, get_cdo_path
 
     cdo = Cdo()
     tmpdir = tempfile.mkdtemp()
     passed = 0
     failed = 0
+
+    # ------------------------------------------------------------------
+    # Diagnostics: show package layout for debugging
+    # ------------------------------------------------------------------
+    import skyborn_cdo as _pkg
+
+    pkg_dir = os.path.dirname(_pkg.__file__)
+    print(f"Package dir: {pkg_dir}")
+    try:
+        cdo_bin = get_cdo_path()
+        print(f"CDO binary:  {cdo_bin}")
+    except FileNotFoundError as e:
+        print(f"CDO binary:  NOT FOUND - {e}")
+
+    for subdir in ["bin", "lib", "share"]:
+        full = os.path.join(pkg_dir, subdir)
+        if os.path.isdir(full):
+            files = os.listdir(full)
+            shown = files[:15]
+            suffix = f"... +{len(files) - 15} more" if len(files) > 15 else ""
+            print(f"  {subdir}/ ({len(files)} items): {shown}{suffix}")
+
+    # Check auditwheel .libs/ directory
+    libs_dir = os.path.join(os.path.dirname(pkg_dir), "skyborn_cdo.libs")
+    if os.path.isdir(libs_dir):
+        files = os.listdir(libs_dir)
+        print(f"  skyborn_cdo.libs/ ({len(files)} items): {files[:10]}")
+    else:
+        print("  skyborn_cdo.libs/ does not exist")
+
+    # On Linux, show RPATH and ldd for CDO binary
+    if sys.platform == "linux":
+        import subprocess as _sp
+
+        try:
+            cdo_bin = get_cdo_path()
+            r = _sp.run(
+                ["readelf", "-d", cdo_bin],
+                capture_output=True, text=True, timeout=5,
+            )
+            for line in r.stdout.splitlines():
+                if "RPATH" in line or "RUNPATH" in line:
+                    print(f"  RPATH: {line.strip()}")
+            r = _sp.run(
+                ["ldd", cdo_bin],
+                capture_output=True, text=True, timeout=5,
+            )
+            print(f"  ldd output ({len(r.stdout.splitlines())} libs):")
+            for line in r.stdout.splitlines()[:30]:
+                print(f"    {line.strip()}")
+            if "not found" in r.stdout:
+                print("  WARNING: some libraries not found!")
+        except Exception as e:
+            print(f"  Diagnostics error: {e}")
+
+    print()  # blank line before tests
 
     # ------------------------------------------------------------------
     # Test 1: CDO version

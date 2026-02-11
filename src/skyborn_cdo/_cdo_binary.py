@@ -147,10 +147,17 @@ def get_bundled_env() -> dict:
     system = platform.system()
 
     if system == "Linux":
+        paths = []
         if lib_dir.is_dir():
+            paths.append(str(lib_dir))
+        # auditwheel may place vendored .so files in a .libs/ sibling dir
+        auditwheel_libs = pkg_dir.parent / (pkg_dir.name + ".libs")
+        if auditwheel_libs.is_dir():
+            paths.append(str(auditwheel_libs))
+        if paths:
             existing = env.get("LD_LIBRARY_PATH", "")
-            env["LD_LIBRARY_PATH"] = f"{lib_dir}:{existing}" if existing else str(
-                lib_dir)
+            lib_path = ":".join(paths)
+            env["LD_LIBRARY_PATH"] = f"{lib_path}:{existing}" if existing else lib_path
     elif system == "Darwin":
         if lib_dir.is_dir():
             existing = env.get("DYLD_LIBRARY_PATH", "")
