@@ -118,6 +118,29 @@ def get_bundled_env() -> dict:
     if udunits_xml.is_file():
         env["UDUNITS2_XML_PATH"] = str(udunits_xml)
 
+    # Fallback for development mode on Windows: if bundled share/ data
+    # directories are missing, try to locate them from MSYS2/MinGW64.
+    if platform.system() == "Windows":
+        msys2_share = Path(r"C:\msys64\mingw64\share")
+        if msys2_share.is_dir():
+            if "ECCODES_DEFINITION_PATH" not in env:
+                fallback = msys2_share / "eccodes" / "definitions"
+                if fallback.is_dir():
+                    env["ECCODES_DEFINITION_PATH"] = str(fallback)
+            if "ECCODES_SAMPLES_PATH" not in env:
+                fallback = msys2_share / "eccodes" / "samples"
+                if fallback.is_dir():
+                    env["ECCODES_SAMPLES_PATH"] = str(fallback)
+            if "PROJ_DATA" not in env:
+                fallback = msys2_share / "proj"
+                if fallback.is_dir():
+                    env["PROJ_DATA"] = str(fallback)
+                    env["PROJ_LIB"] = str(fallback)
+            if "UDUNITS2_XML_PATH" not in env:
+                fallback = msys2_share / "udunits" / "udunits2.xml"
+                if fallback.is_file():
+                    env["UDUNITS2_XML_PATH"] = str(fallback)
+
     # Library / DLL path — ensure bundled .so/.dylib/.dll can be found
     lib_dir = pkg_dir / "lib"
     bin_dir = pkg_dir / "bin"
