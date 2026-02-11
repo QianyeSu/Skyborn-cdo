@@ -250,31 +250,6 @@ jobs:
           path: ./wheelhouse/*.whl
 
   # =========================================================================
-  # Source distribution
-  # =========================================================================
-  build_sdist:
-    name: Source distribution
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Build sdist
-        run: |
-          pip install build
-          python -m build --sdist
-
-      - uses: actions/upload-artifact@v6
-        with:
-          name: sdist
-          path: dist/*.tar.gz
-
-  # =========================================================================
   # Test installation
   # =========================================================================
   test_install:
@@ -311,7 +286,7 @@ jobs:
   # =========================================================================
   publish:
     name: Publish to PyPI
-    needs: [test_install, build_sdist]
+    needs: [test_install]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
 
