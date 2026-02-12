@@ -238,8 +238,7 @@ jobs:
           # Trim PROJ data (keep only proj.db)
           find src/skyborn_cdo/share/proj/ -type f ! -name 'proj.db' -delete 2>/dev/null || true
 
-          # Remove eccodes samples/memfs to save space (keep only definitions)
-          rm -rf src/skyborn_cdo/share/eccodes/samples 2>/dev/null || true
+          # Remove eccodes ifs_samples to save space (keep samples for GRIB encoding)
           rm -rf src/skyborn_cdo/share/eccodes/ifs_samples 2>/dev/null || true
 
           # Size check

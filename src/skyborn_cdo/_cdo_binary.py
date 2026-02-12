@@ -141,6 +141,10 @@ def get_bundled_env() -> dict:
                 if fallback.is_file():
                     env["UDUNITS2_XML_PATH"] = str(fallback)
 
+    # HDF5 file locking can cause hangs on Windows (and some network
+    # filesystems on Linux/macOS).  Disable it for the bundled CDO.
+    env.setdefault("HDF5_USE_FILE_LOCKING", "FALSE")
+
     # Library / DLL path — ensure bundled .so/.dylib/.dll can be found
     lib_dir = pkg_dir / "lib"
     bin_dir = pkg_dir / "bin"
