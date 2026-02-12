@@ -366,8 +366,143 @@ def main():
     run_test("mulc+addc", lambda: cdo(
         f"cdo -addc,273.15 -mulc,0.01 {topo_nc} {chain3_nc}", timeout=30) or assert_file(chain3_nc))
 
+    # Vertical interpolation
+    print("\n=== 12. Vertical / Level Ops ===")
+    ml2pl_nc = os.path.join(tmpdir, "ml2pl.nc")
+    run_test("intlevel", lambda: cdo.intlevel(
+        "0,5000,20000", input=stdatm_nc, output=ml2pl_nc) or assert_file(ml2pl_nc))
+
+    seltimestep_nc = os.path.join(tmpdir, "seltimestep.nc")
+    run_test("seltimestep", lambda: cdo.seltimestep(
+        "1,2,3", input=monthly_nc, output=seltimestep_nc) or assert_file(seltimestep_nc))
+
+    # Masking and conditional
+    print("\n=== 13. Masking ===")
+    setmiss_nc = os.path.join(tmpdir, "setmiss.nc")
+    run_test("setmissval", lambda: cdo.setmissval(
+        "-999", input=topo_nc, output=setmiss_nc) or assert_file(setmiss_nc))
+
+    setrtomiss_nc = os.path.join(tmpdir, "setrtomiss.nc")
+    run_test("setrtomiss", lambda: cdo.setrtomiss(
+        "-1000,0", input=topo_nc, output=setrtomiss_nc) or assert_file(setrtomiss_nc))
+
+    setmisstoc_nc = os.path.join(tmpdir, "setmisstoc.nc")
+    run_test("setmisstoc", lambda: cdo.setmisstoc(
+        "0", input=setrtomiss_nc, output=setmisstoc_nc) or assert_file(setmisstoc_nc))
+
+    # More statistics
+    print("\n=== 14. Extended Stats ===")
+    fldmin_nc = os.path.join(tmpdir, "fldmin.nc")
+    run_test("fldmin", lambda: cdo.fldmin(input=topo_nc,
+             output=fldmin_nc) or assert_file(fldmin_nc))
+
+    fldmax_nc = os.path.join(tmpdir, "fldmax.nc")
+    run_test("fldmax", lambda: cdo.fldmax(input=topo_nc,
+             output=fldmax_nc) or assert_file(fldmax_nc))
+
+    fldsum_nc = os.path.join(tmpdir, "fldsum.nc")
+    run_test("fldsum", lambda: cdo.fldsum(input=topo_nc,
+             output=fldsum_nc) or assert_file(fldsum_nc))
+
+    timmin_nc = os.path.join(tmpdir, "timmin.nc")
+    run_test("timmin", lambda: cdo.timmin(input=monthly_nc,
+             output=timmin_nc) or assert_file(timmin_nc))
+
+    timmax_nc = os.path.join(tmpdir, "timmax.nc")
+    run_test("timmax", lambda: cdo.timmax(input=monthly_nc,
+             output=timmax_nc) or assert_file(timmax_nc))
+
+    timsum_nc = os.path.join(tmpdir, "timsum.nc")
+    run_test("timsum", lambda: cdo.timsum(input=monthly_nc,
+             output=timsum_nc) or assert_file(timsum_nc))
+
+    mermean_nc = os.path.join(tmpdir, "mermean.nc")
+    run_test("mermean", lambda: cdo.mermean(input=topo_nc,
+             output=mermean_nc) or assert_file(mermean_nc))
+
+    # Grid description & manipulation
+    print("\n=== 15. Grid Manipulation ===")
+    run_test("gridarea", lambda: cdo.gridarea(input=topo_nc,
+             output=os.path.join(tmpdir, "gridarea.nc")) or assert_file(os.path.join(tmpdir, "gridarea.nc")))
+
+    run_test("gridweights", lambda: cdo.gridweights(input=topo_nc,
+             output=os.path.join(tmpdir, "gridweights.nc")) or assert_file(os.path.join(tmpdir, "gridweights.nc")))
+
+    setgrid_nc = os.path.join(tmpdir, "setgrid.nc")
+    run_test("setgridtype", lambda: cdo.setgridtype(
+        "regular", input=topo_nc, output=setgrid_nc) or assert_file(setgrid_nc))
+
+    # Metadata operations
+    print("\n=== 16. Metadata ===")
+    chname_nc = os.path.join(tmpdir, "chname.nc")
+
+    def _chname_test():
+        names = str(cdo.showname(input=topo_nc)).strip().split()
+        vname = names[0] if names else "topo"
+        cdo.chname(f"{vname},elevation", input=topo_nc, output=chname_nc)
+        assert_file(chname_nc)
+        new_names = str(cdo.showname(input=chname_nc)).strip()
+        assert_true("elevation" in new_names)
+    run_test("chname", _chname_test)
+
+    run_test("showyear", lambda: str(cdo.showyear(input=monthly_nc)))
+    run_test("nvar", lambda: assert_true(
+        int(str(cdo.nvar(input=topo_nc)).strip()) >= 1))
+    run_test("showlevel", lambda: str(cdo.showlevel(input=stdatm_nc)))
+    run_test("showcode", lambda: str(cdo.showcode(input=topo_nc)))
+
+    # Seasonal / monthly statistics
+    print("\n=== 17. Seasonal Stats ===")
+    ymonmean_nc = os.path.join(tmpdir, "ymonmean.nc")
+    run_test("ymonmean", lambda: cdo.ymonmean(input=monthly_nc,
+             output=ymonmean_nc) or assert_file(ymonmean_nc))
+
+    # File comparison / diff
+    print("\n=== 18. Comparison ===")
+    run_test("diff (identical)", lambda: cdo.diff(
+        input=f"{topo_nc} {topo_nc}"))
+
+    sub_nc = os.path.join(tmpdir, "sub.nc")
+    run_test("sub", lambda: cdo.sub(
+        input=f"{topo_nc} {topo_nc}", output=sub_nc) or assert_file(sub_nc))
+
+    mul_nc = os.path.join(tmpdir, "mul.nc")
+    run_test("mul", lambda: cdo.mul(
+        input=f"{topo_nc} {topo_nc}", output=mul_nc) or assert_file(mul_nc))
+
+    div_nc = os.path.join(tmpdir, "div.nc")
+    run_test("div", lambda: cdo.div(
+        input=f"{topo_nc} {addc_nc}", output=div_nc) or assert_file(div_nc))
+
+    # Advanced chains
+    print("\n=== 19. Advanced Chains ===")
+    chain4_nc = os.path.join(tmpdir, "chain4.nc")
+    run_test("fldmean+abs+mulc", lambda: cdo(
+        f"cdo -fldmean -abs -mulc,-1 {topo_nc} {chain4_nc}", timeout=30) or assert_file(chain4_nc))
+
+    chain5_nc = os.path.join(tmpdir, "chain5.nc")
+    run_test("zonmean+sellev", lambda: cdo(
+        f"cdo -zonmean -sellevel,0 {stdatm_nc} {chain5_nc}", timeout=30) or assert_file(chain5_nc))
+
+    chain6_nc = os.path.join(tmpdir, "chain6.nc")
+    run_test("timmean+selmon", lambda: cdo(
+        f"cdo -timmean -selmon,1,6 {monthly_nc} {chain6_nc}", timeout=30) or assert_file(chain6_nc))
+
+    # Ensemble / merge operations
+    print("\n=== 20. Merge / Ensemble ===")
+    merge_nc = os.path.join(tmpdir, "merge.nc")
+    run_test("merge", lambda: cdo.merge(
+        input=f"{topo_nc} {const_nc}", output=merge_nc) or assert_file(merge_nc))
+
+    run_test("splitlevel", lambda: cdo.splitlevel(
+        input=stdatm_nc, output=os.path.join(tmpdir, "splev")))
+
+    ensmean_nc = os.path.join(tmpdir, "ensmean.nc")
+    run_test("ensmean", lambda: cdo.ensmean(
+        input=f"{topo_nc} {topo_nc}", output=ensmean_nc) or assert_file(ensmean_nc))
+
     # Error handling
-    print("\n=== 12. Errors ===")
+    print("\n=== 21. Errors ===")
     run_test("invalid file", lambda: assert_raises(
         CdoError, lambda: cdo.info(input="/nonexistent.nc")))
     run_test("invalid params", lambda: assert_raises(CdoError, lambda: cdo.sellonlatbox(
