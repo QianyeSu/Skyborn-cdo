@@ -101,20 +101,32 @@ class CdoRunner:
         _creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
 
         try:
-            result = subprocess.run(
+            proc = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 env=self.env,
-                timeout=timeout,
-                stdin=subprocess.DEVNULL,
                 creationflags=_creationflags,
             )
-        except subprocess.TimeoutExpired as e:
+            stdout, stderr = proc.communicate(timeout=timeout)
+            result = subprocess.CompletedProcess(
+                cmd, proc.returncode, stdout, stderr)
+        except subprocess.TimeoutExpired:
+            # Ensure the process tree is fully killed
+            try:
+                proc.kill()
+            except OSError:
+                pass
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
             raise CdoError(
                 f"CDO command timed out after {timeout}s: {' '.join(cmd)}",
                 returncode=-1,
-                stderr=str(e),
+                stderr="",
                 cmd=" ".join(cmd),
             )
         except FileNotFoundError:
@@ -183,20 +195,31 @@ class CdoRunner:
         _creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
 
         try:
-            result = subprocess.run(
+            proc = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 env=self.env,
-                timeout=timeout,
-                stdin=subprocess.DEVNULL,
                 creationflags=_creationflags,
             )
-        except subprocess.TimeoutExpired as e:
+            stdout, stderr = proc.communicate(timeout=timeout)
+            result = subprocess.CompletedProcess(
+                cmd, proc.returncode, stdout, stderr)
+        except subprocess.TimeoutExpired:
+            try:
+                proc.kill()
+            except OSError:
+                pass
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
             raise CdoError(
                 f"CDO command timed out after {timeout}s: {cmd_string}",
                 returncode=-1,
-                stderr=str(e),
+                stderr="",
                 cmd=cmd_string,
             )
 

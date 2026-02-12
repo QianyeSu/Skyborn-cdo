@@ -58,7 +58,9 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: >
             bash {project}/scripts/build_deps_linux.sh &&
-            bash {project}/scripts/build_cdo.sh
+            bash {project}/scripts/build_cdo.sh &&
+            cp {project}/scripts/repair_linux_wheel.sh /tmp/repair_linux_wheel.sh &&
+            chmod +x /tmp/repair_linux_wheel.sh
           CIBW_ENVIRONMENT_LINUX: >
             SKYBORN_CDO_BUILD=0
             CDO_DEPS_PREFIX=/opt/cdo-deps
@@ -84,7 +86,7 @@ jobs:
             du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
-            bash {project}/scripts/repair_linux_wheel.sh {dest_dir} {wheel}
+            bash /tmp/repair_linux_wheel.sh {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >
             python {project}/tests/ci_wheel_test.py
 
