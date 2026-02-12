@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -87,8 +87,11 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
             bash /tmp/repair_linux_wheel.sh {dest_dir} {wheel}
-          CIBW_TEST_COMMAND: >
-            python {project}/tests/ci_wheel_test.py
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: wheels-linux-x86_64
+          path: wheelhouse/*.whl
 
   # =========================================================================
   # macOS arm64 (Apple Silicon)
@@ -99,7 +102,7 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -143,8 +146,11 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
             DYLD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-install/lib
             delocate-wheel --require-archs arm64 -w {dest_dir} {wheel}
-          CIBW_TEST_COMMAND: >
-            python {project}/tests/ci_wheel_test.py
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: wheels-macos-arm64
+          path: wheelhouse/*.whl
 
   # =========================================================================
   # Windows x86_64 (MSYS2/MinGW64)
@@ -155,7 +161,7 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -257,8 +263,36 @@ jobs:
             SKYBORN_CDO_BUILD=0
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
             delvewheel repair -w {dest_dir} {wheel}
-          CIBW_TEST_COMMAND: >
-            python {project}/tests/ci_wheel_test.py
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: wheels-windows-x86_64
+          path: wheelhouse/*.whl
+
+  # =========================================================================
+  # Source distribution
+  # =========================================================================
+  build_sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build sdist
+        run: |
+          pip install build
+          python -m build --sdist
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: sdist
+          path: dist/*.tar.gz
 
   # =========================================================================
   # Test installation
@@ -274,19 +308,27 @@ jobs:
         python-version: ["3.9", "3.10", "3.12"]
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: dist
           merge-multiple: true
 
-      - name: Install and test
-        run: |
-          pip install --find-links dist skyborn_cdo
-          python -c "from skyborn_cdo import Cdo; cdo = Cdo(); print(repr(cdo)); print(cdo.version())"
+      - name: Install wheel
+        run: pip install --find-links dist skyborn_cdo
+
+      - name: Verify installation
+        run: python -c "from skyborn_cdo import Cdo; cdo = Cdo(); print(repr(cdo)); print(cdo.version())"
+
+      - name: Run CI tests
+        run: python tests/ci_wheel_test.py
 
   # =========================================================================
   # Publish to PyPI (on tag push)
@@ -297,12 +339,12 @@ jobs:
   # =========================================================================
   publish:
     name: Publish to PyPI
-    needs: [test_install]
+    needs: [test_install, build_sdist]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: dist
           merge-multiple: true
