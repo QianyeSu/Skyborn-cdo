@@ -309,27 +309,18 @@ def main():
         input=sp_nc, output=sp2gp_nc) or assert_file(sp2gp_nc))
 
     complex_sp_nc = os.path.join(tmpdir, "complex_sp.nc")
-    if sys.platform != "win32":
-        run_test("sp2gpl chain nc4", lambda: cdo(
-            f"cdo -f nc4 -sp2gpl -setgridtype,regular {sp_nc} {complex_sp_nc}", timeout=60) or assert_file(complex_sp_nc))
-    else:
-        print("  [SKIP] sp2gpl chain nc4 -- nc4 hangs on Windows/MinGW")
+    run_test("sp2gpl chain nc4", lambda: cdo(
+        f"cdo -f nc4 -sp2gpl -setgridtype,regular {sp_nc} {complex_sp_nc}", timeout=60) or assert_file(complex_sp_nc))
 
     # Format conversion
     print("\n=== 9. Formats ===")
     nc4_nc = os.path.join(tmpdir, "nc4.nc")
-    if sys.platform != "win32":
-        run_test("NetCDF4", lambda: cdo.copy(input=topo_nc,
-                 output=nc4_nc, options="-f nc4") or assert_file(nc4_nc))
-    else:
-        print("  [SKIP] NetCDF4 -- HDF5 file locking hangs on Windows/MinGW")
+    run_test("NetCDF4", lambda: cdo.copy(input=topo_nc,
+             output=nc4_nc, options="-f nc4") or assert_file(nc4_nc))
 
     nc2_nc = os.path.join(tmpdir, "nc2.nc")
-    if sys.platform != "win32":
-        run_test("NetCDF2", lambda: cdo.copy(input=topo_nc,
-                 output=nc2_nc, options="-f nc2") or assert_file(nc2_nc))
-    else:
-        print("  [SKIP] NetCDF2 -- HDF5 file locking hangs on Windows/MinGW")
+    run_test("NetCDF2", lambda: cdo.copy(input=topo_nc,
+             output=nc2_nc, options="-f nc2") or assert_file(nc2_nc))
 
     grb_file = os.path.join(tmpdir, "topo.grb")
     run_test("GRIB1 encode", lambda: cdo.copy(input=topo_nc,
