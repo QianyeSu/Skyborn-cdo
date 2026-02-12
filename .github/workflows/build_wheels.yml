@@ -246,7 +246,7 @@ jobs:
           du -sh src/skyborn_cdo/bin/ src/skyborn_cdo/share/ 2>/dev/null || true
 
       - name: Install cibuildwheel
-        run: pip install cibuildwheel==2.22.0 delvewheel
+        run: pip install cibuildwheel==2.22.0
 
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
@@ -255,8 +255,11 @@ jobs:
           # CDO binaries already copied into package, skip build step
           CIBW_ENVIRONMENT_WINDOWS: >
             SKYBORN_CDO_BUILD=0
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
-            delvewheel repair -w {dest_dir} {wheel}
+          # Skip wheel repair: skyborn-cdo is a subprocess wrapper (not a
+          # Python C extension). All DLLs live in bin/ and are found via PATH
+          # set in get_bundled_env(). delvewheel's DLL name-mangling breaks
+          # HDF5/NetCDF internal loading, causing NetCDF writes to deadlock.
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: ""
           CIBW_TEST_COMMAND: >
             python {project}/tests/ci_wheel_test.py
 
