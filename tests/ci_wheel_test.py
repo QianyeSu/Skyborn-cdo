@@ -166,20 +166,20 @@ def main():
         try:
             fn()
             passed += 1
-            print(f"  ✅ {name}")
+            print(f"  [PASS] {name}")
         except Exception as e:
-            print(f"  ❌ {name} — {e}", file=sys.stderr)
+            print(f"  [FAIL] {name} -- {e}", file=sys.stderr)
             failed += 1
 
     # Basic functionality
-    print("\n═══ 1. Basic ═══")
+    print("\n=== 1. Basic ===")
     run_test("version", lambda: cdo.version())
     run_test("operators", lambda: assert_true(len(cdo.operators()) > 800))
     run_test("has_operator", lambda: assert_true(
         cdo.has_operator("mergetime")))
 
     # Synthetic data generation
-    print("\n═══ 2. Data Generation ═══")
+    print("\n=== 2. Data Generation ===")
     topo_nc = os.path.join(tmpdir, "topo.nc")
     run_test("topo", lambda: cdo.topo(output=topo_nc) or assert_file(topo_nc))
 
@@ -200,7 +200,7 @@ def main():
         f"cdo stdatm,0,10000,30000,50000 {stdatm_nc}", timeout=20) or assert_file(stdatm_nc))
 
     # Info queries
-    print("\n═══ 3. Info Queries ═══")
+    print("\n=== 3. Info Queries ===")
     run_test("sinfo", lambda: assert_true(
         len(str(cdo.sinfo(input=topo_nc))) > 10))
     run_test("griddes", lambda: assert_true(
@@ -210,7 +210,7 @@ def main():
     run_test("nlevel", lambda: cdo.nlevel(input=stdatm_nc))
 
     # Selection/clipping
-    print("\n═══ 4. Selection ═══")
+    print("\n=== 4. Selection ===")
     sellonlat_nc = os.path.join(tmpdir, "sellonlat.nc")
     run_test("sellonlatbox", lambda: cdo.sellonlatbox(
         "0,90,0,45", input=topo_nc, output=sellonlat_nc) or assert_file(sellonlat_nc))
@@ -228,7 +228,7 @@ def main():
              output=selmon_nc) or assert_file(selmon_nc))
 
     # Statistics
-    print("\n═══ 5. Statistics ═══")
+    print("\n=== 5. Statistics ===")
     fldmean_nc = os.path.join(tmpdir, "fldmean.nc")
     run_test("fldmean", lambda: cdo.fldmean(input=topo_nc,
              output=fldmean_nc) or assert_file(fldmean_nc))
@@ -250,7 +250,7 @@ def main():
              output=timstd_nc) or assert_file(timstd_nc))
 
     # Arithmetic
-    print("\n═══ 6. Arithmetic ═══")
+    print("\n=== 6. Arithmetic ===")
     mulc_nc = os.path.join(tmpdir, "mulc.nc")
     run_test("mulc", lambda: cdo.mulc("2.5", input=topo_nc,
              output=mulc_nc) or assert_file(mulc_nc))
@@ -268,15 +268,20 @@ def main():
              output=sqrt_nc) or assert_file(sqrt_nc))
 
     expr_nc = os.path.join(tmpdir, "expr.nc")
-    run_test("expr", lambda: cdo.expr("doubled=topo*2;",
-             input=topo_nc, output=expr_nc) or assert_file(expr_nc))
+
+    def _expr_test():
+        names = str(cdo.showname(input=topo_nc)).strip().split()
+        vname = names[0] if names else "topo"
+        cdo.expr(f"doubled={vname}*2;", input=topo_nc, output=expr_nc)
+        assert_file(expr_nc)
+    run_test("expr", _expr_test)
 
     add_nc = os.path.join(tmpdir, "add.nc")
     run_test("add files", lambda: cdo.add(
         input=f"{topo_nc} {mulc_nc}", output=add_nc) or assert_file(add_nc))
 
     # Grid operations
-    print("\n═══ 7. Grid Ops ═══")
+    print("\n=== 7. Grid Ops ===")
     remap_bil_nc = os.path.join(tmpdir, "remap_bil.nc")
     run_test("remapbil", lambda: cdo.remapbil("r72x36", input=topo_nc,
              output=remap_bil_nc) or assert_file(remap_bil_nc))
@@ -290,7 +295,7 @@ def main():
              output=remap_nn_nc) or assert_file(remap_nn_nc))
 
     # Spectral (CRITICAL)
-    print("\n═══ 8. Spectral (CRITICAL) ═══")
+    print("\n=== 8. Spectral (CRITICAL) ===")
     sp_nc = os.path.join(tmpdir, "spectral.nc")
     run_test("gp2sp T21", lambda: cdo(
         f"cdo gp2sp -remapbil,t21grid {topo_nc} {sp_nc}", timeout=60) or assert_file(sp_nc))
@@ -308,7 +313,7 @@ def main():
         f"cdo -f nc4 -sp2gpl -setgridtype,regular {sp_nc} {complex_sp_nc}", timeout=60) or assert_file(complex_sp_nc))
 
     # Format conversion
-    print("\n═══ 9. Formats ═══")
+    print("\n=== 9. Formats ===")
     nc4_nc = os.path.join(tmpdir, "nc4.nc")
     run_test("NetCDF4", lambda: cdo.copy(input=topo_nc,
              output=nc4_nc, options="-f nc4") or assert_file(nc4_nc))
@@ -331,7 +336,7 @@ def main():
                  output=grb_decode_nc) or assert_file(grb_decode_nc))
 
     # Time operations
-    print("\n═══ 10. Time Ops ═══")
+    print("\n=== 10. Time Ops ===")
     t1_nc = os.path.join(tmpdir, "t1.nc")
     t2_nc = os.path.join(tmpdir, "t2.nc")
     merged_nc = os.path.join(tmpdir, "merged.nc")
@@ -348,7 +353,7 @@ def main():
     run_test("showmon", lambda: str(cdo.showmon(input=monthly_nc)))
 
     # Chained operations
-    print("\n═══ 11. Chains ═══")
+    print("\n=== 11. Chains ===")
     chain1_nc = os.path.join(tmpdir, "chain1.nc")
     run_test("sel+remap", lambda:  cdo(
         f"cdo -remapbil,r72x36 -sellonlatbox,0,180,0,90 {topo_nc} {chain1_nc}", timeout=40) or assert_file(chain1_nc))
@@ -362,7 +367,7 @@ def main():
         f"cdo -addc,273.15 -mulc,0.01 {topo_nc} {chain3_nc}", timeout=30) or assert_file(chain3_nc))
 
     # Error handling
-    print("\n═══ 12. Errors ═══")
+    print("\n=== 12. Errors ===")
     run_test("invalid file", lambda: assert_raises(
         CdoError, lambda: cdo.info(input="/nonexistent.nc")))
     run_test("invalid params", lambda: assert_raises(CdoError, lambda: cdo.sellonlatbox(
@@ -371,10 +376,10 @@ def main():
     # ---- Summary ----
     elapsed = time.time() - t_start
     total = passed + failed
-    print(f"\n{'═'*60}")
+    print(f"\n{'='*60}")
     print(f"Results: {passed}/{total} passed, {failed} failed")
     print(f"Time: {elapsed:.1f}s")
-    print(f"{'═'*60}")
+    print(f"{'='*60}")
 
     if failed > 0:
         sys.exit(1)

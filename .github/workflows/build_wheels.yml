@@ -67,6 +67,7 @@ jobs:
             mkdir -p {project}/src/skyborn_cdo/bin &&
             cp /opt/cdo-install/bin/cdo {project}/src/skyborn_cdo/bin/ &&
             chmod +x {project}/src/skyborn_cdo/bin/cdo &&
+            strip -s {project}/src/skyborn_cdo/bin/cdo 2>/dev/null || true &&
             mkdir -p {project}/src/skyborn_cdo/lib &&
             (cp -a /opt/cdo-deps/lib/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
             (cp -a /opt/cdo-deps/lib64/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
@@ -83,7 +84,7 @@ jobs:
             du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
-            auditwheel repair -w {dest_dir} {wheel}
+            bash {project}/scripts/repair_linux_wheel.sh {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >
             python {project}/tests/ci_wheel_test.py
 
