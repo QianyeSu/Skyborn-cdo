@@ -24,7 +24,7 @@ public:
   {
     create(lons, lats);
   }
-  ~PointsearchKDtree()
+  ~PointsearchKDtree() override
   {
     if (m_kdtree) kd_destroyTree(m_kdtree);
   }

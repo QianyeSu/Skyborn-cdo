@@ -1,7 +1,7 @@
 complete -W "
---absolute_taxis \
 --apply \
 --argument_groups \
+--async_read \
 --attribs \
 --chunksize \
 --chunkspec \
@@ -16,6 +16,7 @@ complete -W "
 --enableexcept \
 --envvars \
 --file_suffix \
+--force \
 --gridsearchradius \
 --history \
 --history_info \
@@ -51,7 +52,6 @@ complete -W "
 -C, \
 -D, \
 -F, \
--L, \
 -M, \
 -O, \
 -P, \
@@ -72,6 +72,7 @@ complete -W "
 -k, \
 -l, \
 -m, \
+-p, \
 -r, \
 -s, \
 -t, \
@@ -409,7 +410,6 @@ ifthen -ifthen \
 ifthenc -ifthenc \
 ifthenelse -ifthenelse \
 im -im \
-import_amsr -import_amsr \
 import_binary -import_binary \
 import_cmsaf -import_cmsaf \
 import_e5ml -import_e5ml \

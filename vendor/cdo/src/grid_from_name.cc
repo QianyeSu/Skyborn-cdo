@@ -244,77 +244,94 @@ generate_grid_dcw(GridDesciption &grid, std::string const &gridname, double inc)
 static void
 generate_grid_gme(GridDesciption &grid, std::string const &gridname)
 {
-  if (gridname.size())
+  if (gridname.size() == 0) return;
+
+  char endChar = '?';
+  int intVal = 0;
+  auto numVals = std::sscanf(gridname.c_str(), "%d%c", &intVal, &endChar);
+  if (numVals == 0 || numVals > 1) return;
+  if (numVals == 1)
   {
-    char endChar = '?';
-    int intVal = 0;
-    auto numVals = std::sscanf(gridname.c_str(), "%d%c", &intVal, &endChar);
-    if (numVals == 0 || numVals > 1) return;
-    if (numVals == 1)
-    {
-      grid.type = GRID_GME;
-      grid.ni = intVal;
-      grid.nd = 10;
-      gme_factorni(grid.ni, &grid.ni2, &grid.ni3);
-      grid.size = (grid.ni + 1) * (grid.ni + 1) * 10;
-    }
+    grid.type = GRID_GME;
+    grid.ni = intVal;
+    grid.nd = 10;
+    gme_factorni(grid.ni, &grid.ni2, &grid.ni3);
+    grid.size = (grid.ni + 1) * (grid.ni + 1) * 10;
   }
 }
 
-static void
-scan_healpix_params(std::string const &gridname, bool isZoom, long &refinementLevel, HpOrder &hpOrder)
+static int
+scan_healpix_params(std::string const &gridname, bool isZoom, int &refinementLevel, HpOrder &hpOrder, bool &createIndices)
 {
   char underChar = '?';
   std::vector<char> orderString(gridname.size(), 0);
-  auto numVals = std::sscanf(gridname.c_str(), "%ld%c%s", &refinementLevel, &underChar, orderString.data());
-  if (numVals == 0 || numVals == 2 || numVals > 3) return;
-  if (numVals == 3 && underChar != '_') return;
-  if (isZoom && numVals != 1) return;
-  if (refinementLevel < 0) return;
+  auto numVals = std::sscanf(gridname.c_str(), "%d%c%s", &refinementLevel, &underChar, orderString.data());
+  if (refinementLevel < 0) return -1;
+  if (isZoom)
+  {
+    if (numVals == 2 && underChar == 'i')
+    {
+      createIndices = true;
+      return 0;
+    }
+    if (numVals == 1) return (numVals == 1) ? 0 : -1;
+  }
+
+  if (numVals == 0 || numVals == 2 || numVals > 3) return -1;
+  if (numVals == 3 && underChar != '_') return -1;
 
   if (orderString[0])
   {
     hpOrder = hp_get_order(orderString.data());
-    if (hpOrder == HpOrder::Undef || hpOrder == HpOrder::XY) return;
+    if (hpOrder == HpOrder::Undef || hpOrder == HpOrder::XY) return -1;
   }
+
+  return 0;
 }
 
 static void
 generate_proj_healpix(GridDesciption &grid, std::string const &gridname, bool isZoom = false)
 {
-  if (gridname.size())
-  {
-    long refinementLevel = -1;
-    HpOrder hpOrder(HpOrder::Nested);
-    scan_healpix_params(gridname, isZoom, refinementLevel, hpOrder);
+  if (gridname.size() == 0) return;
 
-    size_t nside = isZoom ? std::lround(std::pow(2.0, refinementLevel)) : refinementLevel;
+  int refinementLevel = -1;
+  HpOrder hpOrder(HpOrder::Nested);
+  bool createIndices{ false };
+  auto status = scan_healpix_params(gridname, isZoom, refinementLevel, hpOrder, createIndices);
+  if (status == -1) return;
 
-    size_t ncells = 12 * nside * nside;
-    grid.type = GRID_PROJECTION;
-    grid.projection = "healpix";
-    grid.size = ncells;
-    grid.healpixNside = nside;
-    grid.healpixOrder = (hpOrder == HpOrder::Ring) ? "ring" : "nested";
-  }
+  size_t nside = isZoom ? std::lround(std::pow(2, refinementLevel)) : refinementLevel;
+
+  size_t ncells = 12 * nside * nside;
+  grid.type = GRID_PROJECTION;
+  grid.projection = "healpix";
+  grid.size = ncells;
+  grid.healpixNside = nside;
+  grid.healpixOrder = (hpOrder == HpOrder::Ring) ? "ring" : "nested";
 }
 
 static void
 generate_grid_healpix(GridDesciption &grid, std::string const &gridname, bool isZoom = false)
 {
-  if (gridname.size())
+  if (gridname.size() == 0) return;
+
+  int refinementLevel = -1;
+  HpOrder hpOrder(HpOrder::Nested);
+  bool createIndices{ false };
+  auto status = scan_healpix_params(gridname, isZoom, refinementLevel, hpOrder, createIndices);
+  if (status == -1) return;
+
+  size_t nside = isZoom ? std::lround(std::pow(2, refinementLevel)) : refinementLevel;
+
+  size_t ncells = 12 * nside * nside;
+  grid.type = GRID_HEALPIX;
+  grid.size = ncells;
+  grid.refinementLevel = refinementLevel;
+  grid.healpixOrder = (hpOrder == HpOrder::Ring) ? "ring" : "nested";
+  if (createIndices)
   {
-    long refinementLevel = -1;
-    HpOrder hpOrder(HpOrder::Nested);
-    scan_healpix_params(gridname, isZoom, refinementLevel, hpOrder);
-
-    size_t nside = isZoom ? std::lround(std::pow(2.0, refinementLevel)) : refinementLevel;
-
-    size_t ncells = 12 * nside * nside;
-    grid.type = GRID_HEALPIX;
-    grid.size = ncells;
-    grid.refinementLevel = refinementLevel;
-    grid.healpixOrder = (hpOrder == HpOrder::Ring) ? "ring" : "nested";
+    grid.indices.resize(ncells);
+    for (size_t i = 0; i < ncells; ++i) { grid.indices[i] = i; }
   }
 }
 
@@ -605,56 +622,55 @@ generate_grid_gaussian(GridDesciption &grid, std::string gridname)
 static void
 generate_grid_gaussian_full(GridDesciption &grid, std::string const &gridname)
 {
-  if (gridname.size())
+  if (gridname.size() == 0) return;
+
+  // F<N> - full (regular) Gaussian grid with N latitude lines between the pole and equator
+  int intVal = 0;
+  std::vector<char> typeString(gridname.size(), 0);
+  auto numVals = std::sscanf(gridname.c_str(), "%d%s", &intVal, typeString.data());
+  // printf("%s: %d %d%s\n", gridname.c_str(), numVals, intVal, typeString.data());
+
+  if (numVals <= 0 || numVals > 2) return;
+  if (intVal < 0) return;
+
+  auto numLPE = intVal;
+
+  int index = 0;
+  if (typeString[index] == 'b')
   {
-    // F<N> - full (regular) Gaussian grid with N latitude lines between the pole and equator
-    int intVal = 0;
-    std::vector<char> typeString(gridname.size(), 0);
-    auto numVals = std::sscanf(gridname.c_str(), "%d%s", &intVal, typeString.data());
-    // printf("%s: %d %d%s\n", gridname.c_str(), numVals, intVal, typeString.data());
+    grid.genBounds = true;
+    index++;
+  }
 
-    if (numVals <= 0 || numVals > 2) return;
-    if (intVal < 0) return;
+  if (typeString[index] == '_') index++;
 
-    auto numLPE = intVal;
+  if (cdo_cmpstr(&typeString[index], "zon"))
+  {
+    grid.xsize = 1;
+    index += 3;
+  }
 
-    int index = 0;
-    if (typeString[index] == 'b')
-    {
-      grid.genBounds = true;
-      index++;
-    }
+  if (typeString[index] == 0)
+  {
+    grid.type = GRID_GAUSSIAN;
+    grid.numLPE = numLPE;
+    grid.ysize = numLPE * 2;
+    if (!grid.xsize) grid.xsize = nlat_to_nlon(grid.ysize);
 
-    if (typeString[index] == '_') index++;
+    grid.xfirst = 0.0;
+    grid.yfirst = 0.0;
+    /* this will change the result of remapcon
+    grid.yvals.resize(grid.ysize);
+    grid.ybounds.resize(grid.ysize * 2);
 
-    if (cdo_cmpstr(&typeString[index], "zon"))
-    {
-      grid.xsize = 1;
-      index += 3;
-    }
+    size_t nlat = grid.ysize;
+    Varray<double> lats(nlat), lat_bounds(nlat + 1);
+    gaussian_latitudes_in_degrees(lats, lat_bounds);
 
-    if (typeString[index] == 0)
-    {
-      grid.type = GRID_GAUSSIAN;
-      grid.numLPE = numLPE;
-      grid.ysize = numLPE * 2;
-      if (!grid.xsize) grid.xsize = nlat_to_nlon(grid.ysize);
-
-      grid.xfirst = 0.0;
-      grid.yfirst = 0.0;
-      /* this will change the result of remapcon
-      grid.yvals.resize(grid.ysize);
-      grid.ybounds.resize(grid.ysize * 2);
-
-      size_t nlat = grid.ysize;
-      Varray<double> lats(nlat), lat_bounds(nlat + 1);
-      gaussian_latitudes_in_degrees(lats, lat_bounds);
-
-      for (size_t j = 0; j < nlat; ++j) grid.yvals[j] = lats[j];
-      for (size_t j = 0; j < nlat; ++j) grid.ybounds[j * 2 + 1] = lat_bounds[j];
-      for (size_t j = 0; j < nlat; ++j) grid.ybounds[j * 2] = lat_bounds[j + 1];
-      */
-    }
+    for (size_t j = 0; j < nlat; ++j) grid.yvals[j] = lats[j];
+    for (size_t j = 0; j < nlat; ++j) grid.ybounds[j * 2 + 1] = lat_bounds[j];
+    for (size_t j = 0; j < nlat; ++j) grid.ybounds[j * 2] = lat_bounds[j + 1];
+    */
   }
 }
 

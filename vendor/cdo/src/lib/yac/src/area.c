@@ -8,7 +8,7 @@
 #include <float.h>
 
 #include "area.h"
-#include "basic_grid.h"
+#include "yac_types.h"
 #include "clipping.h"
 #include "geometry.h"
 #include "utils_core.h"
@@ -214,66 +214,119 @@ static inline double XYZtoLon(double a[3]) {
   return atan2(a[1] , a[0]);
 }
 
-static double
-lat_edge_correction(double base_vec[3], double a[3], double b[3]) {
+static double lat_edge_correction_(
+  double base_vec[3], double a[3], double b[3], double * middle_lat) {
+
+  //-------------------------------------------------------------------
+  // compute the area that is enclosed between a great circle edges and
+  // a lat circle edge using that go through the points a and b
+  //-------------------------------------------------------------------
 
   double const tol = 1e-8;
 
   YAC_ASSERT(
-    fabs(a[2]-b[2]) <= tol, "ERROR: latitude of both corners is not identical")
+    fabs(a[2]-b[2]) <= tol,
+    "ERROR(lat_edge_correction_): "
+    "latitude of both corners is not identical")
 
   double h = fabs(a[2]);
 
-  // if we are at the equator or at a pole
-  if (h < tol || fabs(1.0 - h) < tol)
-    return 0.0;
+  // if we are at the equator or at a pole -> area is zero
+  if (h < tol || fabs(1.0 - h) < tol) return 0.0;
 
+  // compute the norm vector of the plane going through a and b
+  // (if the angle between a and b is to small to compute a norm vector, then
+  //  the area is negligible)
+  double norm_ab[3];
+  if (compute_norm_vector(a, b, norm_ab)) return 0.0;
+
+  // compute the area of a triangle consisting of the lat edge and
+  // the reference pole
   double lat_area = fabs((1.0 - h) * get_angle(XYZtoLon(a), XYZtoLon(b)));
 
+  // compute the same area, but use a gc edge instead of a lat edge
   double pole[3] = {0, 0, (a[2] >= 0.0)?1.0:-1.0};
   double gc_area = tri_area(a, b, pole);
 
+  // the difference between the two triangle areas is the area enclosed
+  // between the points a and b using a lat and a gc edge
   double correction = MAX(lat_area - gc_area, 0.0);
 
-  double middle_lat[3] = {a[0]+b[0], a[1]+b[1], a[2]};
+  //-------------------------------------------------------------------
+  // now we have to decide whether this correction needs to be added or
+  // subtracted
+  //-------------------------------------------------------------------
+
+  // compute the middle point of the lat edge
+  middle_lat[0] = a[0]+b[0];
+  middle_lat[1] = a[1]+b[1];
+  middle_lat[2] = a[2];
   double scale = sqrt(middle_lat[0]*middle_lat[0]+middle_lat[1]*middle_lat[1]);
-
   YAC_ASSERT(fabs(scale) >= 1e-18, "internal error")
-
   scale = sqrt(1.0 - a[2]*a[2]) / scale;
-
   middle_lat[0] *= scale;
   middle_lat[1] *= scale;
 
-  double norm_ab[3];
-
-  // if the angle between a and b is to small to compute a norm vector
-  if (compute_norm_vector(a, b, norm_ab)) return 0.0;
-
+  // compute the cosine between norm vector and the base vector
+  // --> their sign indicates the ordering of vertices
   double scalar_base = scalar_product(norm_ab, base_vec);
-  double scalar_middle_lat = scalar_product(norm_ab, middle_lat);
+
+  int negative_correction_flag;
 
   // if the base point is on the same plane as a and b
   if (fabs(scalar_base) < 1e-11) {
 
+    // compute the norm vector of the lat edge middle point and the associated
+    // pole
+    // (if the angle between lat edge middle point and the pols is to small to
+    //  compute a norm vector, then the area is negligible)
     double norm_middle[3];
-
     if (compute_norm_vector(middle_lat, pole, norm_middle)) return 0.0;
 
     double scalar_a = scalar_product(norm_middle, a);
-
-    if (scalar_a > 0)
-      return correction;
-    else
-      return - correction;
+    negative_correction_flag = scalar_a <= 0;
 
   } else {
 
-    if (scalar_middle_lat < 0)
-      return correction;
-    else
-      return - correction;
+    // compute the cosine between the edge norm vector and the lat edge middle
+    // point
+    double scalar_middle_lat = scalar_product(norm_ab, middle_lat);
+    negative_correction_flag = scalar_middle_lat >= 0;
   }
+
+  return negative_correction_flag?-correction:correction;
+}
+
+static double lat_edge_correction(
+  double base_vec[3], double a[3], double b[3]) {
+
+  double middle_lat[3];
+  return lat_edge_correction_(base_vec, a, b, middle_lat);
+}
+
+static double lat_edge_correction_info(
+  double base_vec[3], double a[3], double b[3],
+  double * barycenter, double sign) {
+
+  double middle_lat[3];
+  double correction = lat_edge_correction_(base_vec, a, b, middle_lat);
+
+  if (correction == 0.0) return 0.0;
+
+  double middle_gc[3] = {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
+  normalise_vector(middle_gc);
+
+  double temp_barycenter[3] =
+    {middle_lat[0] + middle_gc[0],
+     middle_lat[1] + middle_gc[1],
+     middle_lat[2] + middle_gc[2]};
+  normalise_vector(temp_barycenter);
+
+  barycenter[0] += temp_barycenter[0] * correction * sign;
+  barycenter[1] += temp_barycenter[1] * correction * sign;
+  barycenter[2] += temp_barycenter[2] * correction * sign;
+
+  return correction * sign;
 }
 
 double yac_pole_area(struct yac_grid_cell cell) {
@@ -455,6 +508,7 @@ static double tri_area_info(
   double * corners[3] = {b, ref, a};
   double cross[3][3];
   struct sin_cos_angle angles[3];
+  int zero_angle_flag = 0;
   for (int i = 0, j = 2; i < 3; j = i++) {
     crossproduct_kahan(corners[j], corners[i], cross[i]);
     angles[i] =
@@ -462,7 +516,10 @@ static double tri_area_info(
                              cross[i][1]*cross[i][1] +
                              cross[i][2]*cross[i][2]),
                        scalar_product(corners[j], corners[i]));
+    zero_angle_flag |= angles[i].sin == 0.0;
   }
+
+  if (zero_angle_flag) return 0.0;
 
   double area = tri_area_(angles[0], angles[1], angles[2]);
 
@@ -518,9 +575,11 @@ double yac_huiliers_area_info(
 
         size_t i_ = (i+1)%cell.num_corners;
 
-        area += lat_edge_correction(cell.coordinates_xyz[0],
-                                    cell.coordinates_xyz[i],
-                                    cell.coordinates_xyz[i_]) * sign;
+        area += lat_edge_correction_info(
+          cell.coordinates_xyz[0],
+          cell.coordinates_xyz[i],
+          cell.coordinates_xyz[i_],
+          barycenter, sign);
       }
     }
   }

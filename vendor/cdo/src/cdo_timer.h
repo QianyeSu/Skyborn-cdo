@@ -100,7 +100,7 @@ public:
   void
   start()
   {
-    if (isRunning) fprintf(stderr, "timer::start: timer::stop call missing\n");
+    if (isRunning) std::fprintf(stderr, "timer::start: timer::stop call missing\n");
     isRunning = true;
     startPoint = clock::now();
   }
@@ -108,7 +108,7 @@ public:
   void
   stop()
   {
-    if (!isRunning) fprintf(stderr, "timer::stop: timer::start call missing\n");
+    if (!isRunning) std::fprintf(stderr, "timer::stop: timer::start call missing\n");
 
     auto dt = get_time_val(startPoint);
     dt -= timerShift;

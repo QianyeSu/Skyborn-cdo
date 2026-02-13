@@ -5,7 +5,7 @@
 #  libtool  2.4.2
 
 AC_PREREQ([2.69])
-AC_INIT([cdo],[2.5.3],[https://mpimet.mpg.de/cdo])
+AC_INIT([cdo],[2.5.4],[https://mpimet.mpg.de/cdo])
 
 AC_DEFINE_UNQUOTED(CDO, ["$PACKAGE_VERSION"], [CDO version])
 
@@ -208,6 +208,7 @@ AC_CONFIG_FILES([test/pytest/cdoTest.py
                 test/pytest/Etccdi.py.test
                 test/pytest/Etccdi2.py.test
                 test/pytest/Expr.py.test
+                test/pytest/Extra.py.test
                 test/pytest/File.py.test
                 test/pytest/Filter.py.test
                 test/pytest/Fldpctl.py.test
@@ -264,6 +265,7 @@ AC_CONFIG_FILES([test/pytest/cdoTest.py
                 test/pytest/Split.py.test
                 test/pytest/Splittime.py.test
                 test/pytest/threads.py.test
+                test/pytest/Timcumsum.py.test
                 test/pytest/Timfillmiss.py.test
                 test/pytest/Timpctl.py.test
                 test/pytest/Timselpctl.py.test

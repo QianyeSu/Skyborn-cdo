@@ -5,17 +5,24 @@ CI Wheel Comprehensive Stress Test — verifies CDO binary functionality.
 Executed by cibuildwheel after each wheel is installed.
 Tests as many CDO operations as possible within CI time constraints (~5 min).
 
-Test Coverage:
+Test Coverage (~115 tests):
   • Basic: version, operators, help
-  • Synthetic data: topo, randoperators, for, stdatm, const
-  • Info queries: sinfo, griddes, showname, ntime
-  • Selection: sellonlatbox, selindexbox, sellevel
-  • Statistics: fldmean, fldstd, zonmean, timmean
-  • Arithmetic: mulc, addc, abs, sqrt, expr  
-  • Grid ops: remapbil, remapcon, remapnn
-  • Spectral: gp2sp, sp2gpl (CRITICAL)
-  • Format: NetCDF4, NetCDF2, GRIB1, GRIB2
-  • Time: mergetime, settaxis, selmon
+  • Synthetic data: topo, random, for, stdatm, const
+  • Info queries: sinfo, griddes, showname, ntime, filedes, showformat
+  • Selection: sellonlatbox, selindexbox, sellevel, selmon
+  • Statistics: fldmean/std/min/max/sum, zonmean, timmean/std/min/max/sum
+  • Arithmetic: mulc, addc, subc, divc, abs, sqrt, sqr, expr, add/sub/mul/div
+  • Grid ops: remapbil, remapcon, remapnn, gridarea, gridweights, setgridtype
+  • Spectral: gp2sp, sp2gpl, sp2gp (CRITICAL)
+  • Format: NetCDF4/4c/2, GRIB1, GRIB2
+  • Time: mergetime, settaxis, selmon, monmean, seasmean, yearmean/min/max
+  • Vertical: intlevel, vertmean/sum/min/max, invertlev
+  • Masking: setmissval, setrtomiss, setmisstoc, ifthen, masklonlatbox
+  • Ensemble: ensmean, ensmin, ensmax, ensstd
+  • Trend: trend, detrend
+  • File ops: cat, duplicate, invertlat, sortname
+  • Metadata: chname, setstdname, showlevel, showcode, showunit
+  • Date/Time: showdate, showtime, showtimestamp, shifttime
   • Chained: complex multi-operator pipes
   • Error handling: invalid inputs
 """
@@ -522,8 +529,173 @@ def main():
     run_test("ensmean", lambda: cdo.ensmean(
         input=f"{topo_nc} {topo_nc}", output=ensmean_nc) or assert_file(ensmean_nc))
 
+    # File info queries
+    print("\n=== 22. File Info ===")
+    run_test("filedes", lambda: assert_true(
+        len(str(cdo.filedes(input=topo_nc))) > 5))
+    run_test("showformat", lambda: assert_true(
+        len(str(cdo.showformat(input=topo_nc)).strip()) > 0))
+    run_test("showunit", lambda: str(cdo.showunit(input=topo_nc)))
+    run_test("showtimestamp", lambda: str(cdo.showtimestamp(input=monthly_nc)))
+    run_test("showstdname", lambda: str(cdo.showstdname(input=topo_nc)))
+
+    # Time statistics
+    print("\n=== 23. Time Statistics ===")
+    monmean_nc = os.path.join(tmpdir, "monmean.nc")
+    run_test("monmean", lambda: cdo.monmean(input=monthly_nc,
+             output=monmean_nc) or assert_file(monmean_nc))
+
+    seasmean_nc = os.path.join(tmpdir, "seasmean.nc")
+    run_test("seasmean", lambda: cdo.seasmean(input=monthly_nc,
+             output=seasmean_nc) or assert_file(seasmean_nc))
+
+    yearmean_nc = os.path.join(tmpdir, "yearmean.nc")
+    run_test("yearmean", lambda: cdo.yearmean(input=monthly_nc,
+             output=yearmean_nc) or assert_file(yearmean_nc))
+
+    yearmin_nc = os.path.join(tmpdir, "yearmin.nc")
+    run_test("yearmin", lambda: cdo.yearmin(input=monthly_nc,
+             output=yearmin_nc) or assert_file(yearmin_nc))
+
+    yearmax_nc = os.path.join(tmpdir, "yearmax.nc")
+    run_test("yearmax", lambda: cdo.yearmax(input=monthly_nc,
+             output=yearmax_nc) or assert_file(yearmax_nc))
+
+    # Vertical operations
+    print("\n=== 24. Vertical Ops ===")
+    vertmean_nc = os.path.join(tmpdir, "vertmean.nc")
+    run_test("vertmean", lambda: cdo.vertmean(input=stdatm_nc,
+             output=vertmean_nc) or assert_file(vertmean_nc))
+
+    vertsum_nc = os.path.join(tmpdir, "vertsum.nc")
+    run_test("vertsum", lambda: cdo.vertsum(input=stdatm_nc,
+             output=vertsum_nc) or assert_file(vertsum_nc))
+
+    vertmin_nc = os.path.join(tmpdir, "vertmin.nc")
+    run_test("vertmin", lambda: cdo.vertmin(input=stdatm_nc,
+             output=vertmin_nc) or assert_file(vertmin_nc))
+
+    vertmax_nc = os.path.join(tmpdir, "vertmax.nc")
+    run_test("vertmax", lambda: cdo.vertmax(input=stdatm_nc,
+             output=vertmax_nc) or assert_file(vertmax_nc))
+
+    # Ensemble extended
+    print("\n=== 25. Ensemble Extended ===")
+    ensmin_nc = os.path.join(tmpdir, "ensmin.nc")
+    run_test("ensmin", lambda: cdo.ensmin(
+        input=f"{topo_nc} {topo_nc}", output=ensmin_nc) or assert_file(ensmin_nc))
+
+    ensmax_nc = os.path.join(tmpdir, "ensmax.nc")
+    run_test("ensmax", lambda: cdo.ensmax(
+        input=f"{topo_nc} {topo_nc}", output=ensmax_nc) or assert_file(ensmax_nc))
+
+    ensstd_nc = os.path.join(tmpdir, "ensstd.nc")
+    run_test("ensstd", lambda: cdo.ensstd(
+        input=f"{topo_nc} {topo_nc}", output=ensstd_nc) or assert_file(ensstd_nc))
+
+    # Masking extended
+    print("\n=== 26. Masking / Conditional ===")
+    ifthen_nc = os.path.join(tmpdir, "ifthen.nc")
+    run_test("ifthen", lambda: cdo.ifthen(
+        input=f"{topo_nc} {topo_nc}", output=ifthen_nc) or assert_file(ifthen_nc))
+
+    maskbox_nc = os.path.join(tmpdir, "maskbox.nc")
+    run_test("masklonlatbox", lambda: cdo.masklonlatbox(
+        "0,90,0,45", input=topo_nc, output=maskbox_nc) or assert_file(maskbox_nc))
+
+    setctomiss_nc = os.path.join(tmpdir, "setctomiss.nc")
+    run_test("setctomiss", lambda: cdo.setctomiss(
+        "0", input=topo_nc, output=setctomiss_nc) or assert_file(setctomiss_nc))
+
+    # Trend analysis
+    print("\n=== 27. Trend / Detrend ===")
+    trend_a = os.path.join(tmpdir, "trend_a.nc")
+    trend_b = os.path.join(tmpdir, "trend_b.nc")
+    run_test("trend", lambda: cdo.trend(input=monthly_nc,
+             output=f"{trend_a} {trend_b}") or (assert_file(trend_a), assert_file(trend_b)))
+
+    detrend_nc = os.path.join(tmpdir, "detrend.nc")
+    run_test("detrend", lambda: cdo.detrend(input=monthly_nc,
+             output=detrend_nc) or assert_file(detrend_nc))
+
+    # File operations
+    print("\n=== 28. File Ops ===")
+    cat_nc = os.path.join(tmpdir, "cat.nc")
+    run_test("cat", lambda: cdo.cat(
+        input=f"{topo_nc} {topo_nc}", output=cat_nc) or assert_file(cat_nc))
+
+    dup_nc = os.path.join(tmpdir, "dup.nc")
+    run_test("duplicate", lambda: cdo.duplicate("2", input=topo_nc,
+             output=dup_nc) or assert_file(dup_nc))
+
+    invlev_nc = os.path.join(tmpdir, "invertlev.nc")
+    run_test("invertlev", lambda: cdo.invertlev(input=stdatm_nc,
+             output=invlev_nc) or assert_file(invlev_nc))
+
+    invlat_nc = os.path.join(tmpdir, "invertlat.nc")
+    run_test("invertlat", lambda: cdo.invertlat(input=topo_nc,
+             output=invlat_nc) or assert_file(invlat_nc))
+
+    # Date/Time display & shift
+    print("\n=== 29. Date/Time ===")
+    run_test("showtime", lambda: str(cdo.showtime(input=monthly_nc)))
+
+    shift_nc = os.path.join(tmpdir, "shifttime.nc")
+    run_test("shifttime", lambda: cdo.shifttime("1hour", input=monthly_nc,
+             output=shift_nc) or assert_file(shift_nc))
+
+    settunits_nc = os.path.join(tmpdir, "settunits.nc")
+    run_test("settunits", lambda: cdo.settunits("hours", input=monthly_nc,
+             output=settunits_nc) or assert_file(settunits_nc))
+
+    # More arithmetic operators
+    print("\n=== 30. More Arithmetic ===")
+    sqr_nc = os.path.join(tmpdir, "sqr.nc")
+    run_test("sqr", lambda: cdo.sqr(input=topo_nc,
+             output=sqr_nc) or assert_file(sqr_nc))
+
+    min2_nc = os.path.join(tmpdir, "min2.nc")
+    run_test("min (2 files)", lambda: cdo.min(
+        input=f"{topo_nc} {mulc_nc}", output=min2_nc) or assert_file(min2_nc))
+
+    max2_nc = os.path.join(tmpdir, "max2.nc")
+    run_test("max (2 files)", lambda: cdo.max(
+        input=f"{topo_nc} {mulc_nc}", output=max2_nc) or assert_file(max2_nc))
+
+    subc_nc = os.path.join(tmpdir, "subc.nc")
+    run_test("subc", lambda: cdo.subc("50", input=topo_nc,
+             output=subc_nc) or assert_file(subc_nc))
+
+    divc_nc = os.path.join(tmpdir, "divc.nc")
+    run_test("divc", lambda: cdo.divc("2", input=topo_nc,
+             output=divc_nc) or assert_file(divc_nc))
+
+    # CDO 2.5.x regression tests
+    print("\n=== 31. CDO 2.5.x Features ===")
+    setstdname_nc = os.path.join(tmpdir, "setstdname.nc")
+
+    def _setstdname_test():
+        raw = str(cdo.showname(input=topo_nc))
+        vname = raw.strip().split()[0] if raw.strip() else "topo"
+        vname = ''.join(c for c in vname if c.isprintable() and c != ' ')
+        cdo(f"cdo -f nc -setstdname,{vname},air_temperature {topo_nc} {setstdname_nc}", timeout=30)
+        assert_file(setstdname_nc)
+    run_test("setstdname (2.5.3+)", _setstdname_test)
+
+    nc4c_nc = os.path.join(tmpdir, "nc4c.nc")
+    run_test("nc4c compress", lambda: cdo.copy(input=topo_nc,
+             output=nc4c_nc, options="-f nc4c") or assert_file(nc4c_nc))
+
+    sortname_nc = os.path.join(tmpdir, "sortname.nc")
+    if os.path.exists(merge_nc):
+        run_test("sortname", lambda: cdo.sortname(input=merge_nc,
+                 output=sortname_nc) or assert_file(sortname_nc))
+
+    run_test("ngrids", lambda: assert_true(
+        int(str(cdo.ngrids(input=topo_nc)).strip()) >= 1))
+
     # Error handling
-    print("\n=== 21. Errors ===")
+    print("\n=== 32. Errors ===")
     run_test("invalid file", lambda: assert_raises(
         CdoError, lambda: cdo.info(input="/nonexistent.nc")))
     run_test("invalid params", lambda: assert_raises(CdoError, lambda: cdo.sellonlatbox(

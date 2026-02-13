@@ -1,0 +1,59 @@
+#! @PYTHON@
+
+from cdoTest import *
+from collections import defaultdict
+import os
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/extra'
+
+HAS_THREADS=cdo_check_req("has-threads")
+HAS_NETCDF=cdo_check_req("has-nc")
+HAS_GRIB2=cdo_check_req("has-grb2")
+HAS_PROJ=cdo_check_req("has-proj")
+
+SKIP=0
+if (not os.path.isdir(XTESTDIR)):
+   print("test not enabled")
+   SKIP=SKIP+1
+if (not HAS_THREADS):
+   print("POSIX threads not enabled")
+   SKIP=SKIP+1
+if (not HAS_NETCDF):
+   print("NetCDF not enabled")
+   SKIP=SKIP+1
+if (not HAS_GRIB2):
+   print("GRIB2 not enabled")
+   SKIP=SKIP+1
+if (not HAS_PROJ):
+   print("PROJ not enabled")
+   SKIP=SKIP+1
+
+test_module=TestModule()
+
+if (SKIP):
+   test_module.add_skip("test not enabled")
+else:
+    IFILE="2025091705_2t.gr2"
+    RFILE="2025091705_2t.nc"
+    OFILE="2025091705_2t_ref"
+    t=TAPTest(f'remap lambert conformal conic WRF GRIB2 data (AU)')
+#    t.add(f'{CDO}  -f nc remapbil,dcw:au_0.1 {XTESTDIR}/{IFILE} {OFILE}')
+    t.add(f'{CDO}  -f nc remapbil,global_.5 {XTESTDIR}/{IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.001 {OFILE} {XTESTDIR}/{RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+if (SKIP):
+   test_module.add_skip("test not enabled")
+else:
+    IFILE="UV10.grb2"
+    RFILE="UV10.nc"
+    OFILE="UV10_ref"
+    t=TAPTest(f'remap lambert conformal conic WRF GRIB2 data (Global)')
+    t.add(f'{CDO}  -f nc remapbil,global_.5 {XTESTDIR}/{IFILE} {OFILE}')
+    t.add(f'{CDO} diff,abslim=0.001 {OFILE} {XTESTDIR}/{RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+test_module.run()

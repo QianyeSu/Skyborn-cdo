@@ -7,7 +7,7 @@
 */
 
 #include "processManager.h"
-#include "cdo_process.h"
+#include "process.h"
 #include "cdo_timer.h"
 #include "cdo_output.h"
 #include "cdo_options.h"
@@ -32,13 +32,9 @@ get_max_memstring()
   auto memMax = getPeakRSS();
   if (memMax)
   {
-    constexpr std::array<const char *, 6> memUnitsList = { "B", "KB", "MB", "GB", "TB", "PB" };
+    constexpr std::array<const char *, 7> memUnitsList = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
     size_t memUnitsIdx = 0;
-    while (memMax > 9999 && memUnitsIdx < (memUnitsList.size() - 1))
-    {
-      memMax /= 1024;
-      memUnitsIdx++;
-    }
+    for (; memMax > 9999 && memUnitsIdx < (memUnitsList.size() - 1); ++memUnitsIdx) { memMax /= 1024; }
     memString << " " << memMax << memUnitsList[memUnitsIdx];
   }
 
@@ -54,17 +50,20 @@ print_benchmarks(double runTime, double readTime, double writeTime)
   {
     auto in = std::lround(100 * readTime / runTime);
     auto out = std::lround(100 * writeTime / runTime);
-    fprintf(stdout, " [%.2fs%s IO:%ld/%ld%% %dthread%s]", runTime, memString.c_str(), in, out, numberOfUsedThreads,
-            ADD_PLURAL(numberOfUsedThreads));
+    std::fprintf(stdout, " [%.2fs%s IO:%ld/%ld%% %dthread%s]", runTime, memString.c_str(), in, out, numberOfUsedThreads,
+                 ADD_PLURAL(numberOfUsedThreads));
   }
-  else { fprintf(stdout, " [%.2fs%s]", runTime, memString.c_str()); }
+  else
+  {
+    std::fprintf(stdout, " [%.2fs%s]", runTime, memString.c_str());
+  }
 }
 
 static void
 print_processed_values(Process *p_process, double runTime, double readTime, double writeTime)
 {
   set_text_color(stdout, GREEN);
-  fprintf(stdout, "%s: ", p_process->prompt);
+  std::fprintf(stdout, "%s: ", p_process->prompt);
   reset_text_color(stdout);
 
   auto nvals = p_process->inq_nvals();
@@ -72,17 +71,17 @@ print_processed_values(Process *p_process, double runTime, double readTime, doub
   auto nvars = p_process->m_nvars;
   if (nvals > 0)
   {
-    fprintf(stdout, "Processed %zu value%s from %d variable%s", nvals, ADD_PLURAL(nvals), nvars, ADD_PLURAL(nvars));
+    std::fprintf(stdout, "Processed %zu value%s from %d variable%s", nvals, ADD_PLURAL(nvals), nvars, ADD_PLURAL(nvars));
   }
-  else if (nvars > 0) { fprintf(stdout, "Processed %d variable%s", nvars, ADD_PLURAL(nvars)); }
+  else if (nvars > 0) { std::fprintf(stdout, "Processed %d variable%s", nvars, ADD_PLURAL(nvars)); }
 
   auto ntimesteps = p_process->ntimesteps;
-  if ((nvals || nvars) && ntimesteps > 0) fprintf(stdout, " over %d timestep%s", ntimesteps, ADD_PLURAL(ntimesteps));
+  if ((nvals || nvars) && ntimesteps > 0) std::fprintf(stdout, " over %d timestep%s", ntimesteps, ADD_PLURAL(ntimesteps));
 
   if (p_process->m_ID == 0) { print_benchmarks(runTime, readTime, writeTime); }
 
-  // if (m_nvars > 0 || nvals > 0 || ntimesteps > 0 || m_ID == 0) fprintf(stdout, ".");
-  fprintf(stdout, "\n");
+  // if (m_nvars > 0 || nvals > 0 || ntimesteps > 0 || m_ID == 0) std::fprintf(stdout, ".");
+  std::fprintf(stdout, "\n");
 }
 
 void
@@ -168,9 +167,9 @@ ProcessManager::run_processes()
       {
         // MpMO::Print(Green("%s: ") + "Process started", idProcessPair.second->prompt);
         set_text_color(stdout, GREEN);
-        fprintf(stdout, "%s: ", idProcessPair.second->prompt);
+        std::fprintf(stdout, "%s: ", idProcessPair.second->prompt);
         reset_text_color(stdout);
-        fprintf(stdout, "Process started\n");
+        std::fprintf(stdout, "Process started\n");
       }
       m_threadIDs.push_back(idProcessPair.second->start_thread());
     }
@@ -182,7 +181,7 @@ ProcessManager::run_processes()
   cdo::timer runTime;
   execute(processZero);
 
-  if (Options::PrintFilename) fprintf(stdout, "\n");
+  if (Options::PrintFilename) std::fprintf(stdout, "\n");
 
   if (!Options::silentMode && (cdo::stdoutIsTerminal || Options::cdoVerbose))
     print_processed_values(processZero, runTime.elapsed(), cdo::readTimer.elapsed(), cdo::writeTimer.elapsed());

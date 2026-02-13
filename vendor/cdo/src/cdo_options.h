@@ -63,7 +63,7 @@ extern bool Use_FFTW;
 extern bool VersionInfo;
 extern int CMOR_Mode;
 
-extern bool cdoDiag;
+extern bool CDO_diagnostic;
 
 extern MemType CDO_Memtype;
 
@@ -90,7 +90,7 @@ extern std::string cdoQueryParameter;
 extern std::vector<std::string> cdoVarnames;
 size_t cdo_num_varnames();
 
-extern bool REMAP_genweights;
+extern bool RemapGenerateWeights;
 
 }  // namespace Options
 
@@ -107,6 +107,6 @@ void set_compression(int fileID, int filetype);
 
 void cdo_set_search_radius(double searchRadius);
 double cdo_get_search_radius(void);
-void cdo_print_attributes(FILE *fp, int cdiID, int varID, int nblanks);
+void cdo_print_attributes(std::FILE *fp, int cdiID, int varID, int nblanks);
 
 #endif

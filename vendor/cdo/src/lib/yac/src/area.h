@@ -5,16 +5,11 @@
 #ifndef AREA_H
 #define AREA_H
 
-#include "basic_grid.h"
+#include "yac_types.h"
 #include "clipping.h"
-
-/** \example test_area.c
- * A test for different area calculations.
- */
 
 /** \file area.h
   * \brief Structs and interfaces for area calculations
-  *
   **/
 
 /** an area of 20m x 20m on the Earth Surface is equivalent to an area on the

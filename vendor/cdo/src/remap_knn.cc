@@ -59,7 +59,7 @@ remap_knn_weights(KnnParams const &knnParams, RemapSearch &rsearch, RemapVars &r
     if (!tgtGrid->mask[tgtCellIndex]) continue;
 
     auto &knnData = knnDataList[ompthID];
-    auto pointLL = remapgrid_get_lonlat(tgtGrid, tgtCellIndex);
+    auto pointLL = tgtGrid->get_lonlat(tgtCellIndex);
 
     // Find nearest grid points on source grid and distances to each point
     remap_search_points(rsearch, pointLL, knnData);
@@ -138,7 +138,7 @@ remap_knn(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissval, s
     if (tgtGrid->mask.size() && !tgtGrid->mask[tgtCellIndex]) continue;
 
     auto &knnData = knnDataList[ompthID];
-    auto pointLL = remapgrid_get_lonlat(tgtGrid, tgtCellIndex);
+    auto pointLL = tgtGrid->get_lonlat(tgtCellIndex);
 
     // Find nearest grid points on source grid and distances to each point
     remap_search_points(rsearch, pointLL, knnData);
@@ -168,7 +168,7 @@ intgrid_knn(Varray<T1> const &srcArray, Varray<T2> &tgtArray, int gridID1, int g
   if (Options::cdoVerbose) cdo_print("Called %s()", __func__);
 
   RemapType remap;
-  remap_set_int(REMAP_GENWEIGHTS, 0);
+  remap_set_option(RemapOption::GenerateWeights, 0);
   remap_init_grids(mapType, knnParams.extrapolate, gridID1, remap.srcGrid, gridID2, remap.tgtGrid);
   remap_search_init(mapType, remap.search, remap.srcGrid, remap.tgtGrid);
 

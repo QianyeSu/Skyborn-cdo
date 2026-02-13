@@ -1,10 +1,8 @@
 #include <cdi.h>
 
-#include <cstdlib>
-#include <cstring>
 #include <cstdio>
-#include <cctype>
-#include <sys/stat.h>
+#include <cstdint>
+#include <filesystem>
 
 #include "util_files.h"
 #include "cdo_options.h"
@@ -15,25 +13,24 @@
 bool
 FileUtils::file_exists(std::string const &fileName)
 {
+  namespace fs = std::filesystem;
   /*
-  auto isZarr = (fileName.starts_with("file://") && fileName.find("zarr", 6) != std::string::npos);
-  if (isZarr)
-    {
-      cdo_abort("Enlargement of %s not possible!", fileName);
-      int start = 7;
-      auto pos = fileName.find("#mode", start);
-      if (pos == std::string::npos) return false;
-      auto zarrName = fileName.substr(start, pos - start);
-      struct stat buf;
-      auto status = stat(zarrName.c_str(), &buf);
-      return (status == 0) && (S_ISDIR(buf.st_mode) && buf.st_size > 0);
-    }
-  else
-  */
+   auto isZarr = (fileName.starts_with("file://") && fileName.find("zarr", 6) != std::string::npos);
+   if (isZarr)
+     {
+       cdo_abort("Enlargement of %s not possible!", fileName);
+       int start = 7;
+       auto pos = fileName.find("#mode", start);
+       if (pos == std::string::npos) return false;
+       auto zarrName = fileName.substr(start, pos - start);
+       struct stat buf;
+       auto status = stat(zarrName.c_str(), &buf);
+       return (status == 0) && (S_ISDIR(buf.st_mode) && buf.st_size > 0);
+     }
+   else
+   */
   {
-    struct stat buf;
-    auto status = stat(fileName.c_str(), &buf);
-    return (status == 0) && (S_ISREG(buf.st_mode) && buf.st_size > 0);
+    return (fs::exists(fileName) && fs::is_regular_file(fileName) && fs::file_size(fileName) > 0);
   }
 }
 
@@ -44,7 +41,7 @@ FileUtils::user_file_overwrite(std::string const &fileName)
 
   if (!Options::silentMode && cdo::stdinIsTerminal && cdo::stderrIsTerminal)
   {
-    fprintf(stderr, "File %s already exists, overwrite? (yes/no): ", fileName.c_str());
+    std::fprintf(stderr, "File %s already exists, overwrite? (yes/no): ", fileName.c_str());
     std::string line;
     std::getline(std::cin, line);
     while (std::isspace((int) line[0])) line.erase(0, 1);
@@ -61,18 +58,12 @@ FileUtils::user_file_overwrite(std::string const &fileName)
   return status;
 }
 
-off_t
-FileUtils::size(const char *filename)
+std::uintmax_t
+FileUtils::size(std::string const &fileName)
 {
-  off_t filesize = 0;
-
-  if (filename[0] != '(') /* && filename[1] != 'p') */
-  {
-    struct stat buf;
-    if (stat(filename, &buf) == 0) filesize = buf.st_size;
-  }
-
-  return filesize;
+  namespace fs = std::filesystem;
+  if (fileName[0] != '(' /* && filename[1] != 'p' */ && fs::exists(fileName)) { return fs::file_size(fileName); }
+  return 0;
 }
 
 static std::string
@@ -146,7 +137,10 @@ FileUtils::gen_suffix(int filetype, int vlistID, std::string const &referenceNam
   if (cdo::FileSuffix != "NULL")
   {
     if (cdo::FileSuffix.size()) { suffix = cdo::FileSuffix; }
-    else { suffix = gen_filesuffix(filetype, referenceName, vlistID); }
+    else
+    {
+      suffix = gen_filesuffix(filetype, referenceName, vlistID);
+    }
   }
   return suffix;
 }

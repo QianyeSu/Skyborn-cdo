@@ -59,7 +59,7 @@ public:
   {
     if (_nlon <= 0 || _nlat <= 0 || _ntr <= 0)
       {
-        fprintf(stderr, "SP_Transformation.init(): parameter not initialized\n");
+        std::fprintf(stderr, "SP_Transformation.init(): parameter not initialized\n");
         return;
       }
 
@@ -114,7 +114,7 @@ public:
   {
     if (_nlon <= 0 || _nlat <= 0 || _ntr <= 0)
       {
-        fprintf(stderr, "SP_Transformation.init(): parameter not initialized\n");
+        std::fprintf(stderr, "SP_Transformation.init(): parameter not initialized\n");
         return;
       }
 

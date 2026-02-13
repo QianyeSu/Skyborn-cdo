@@ -16,7 +16,7 @@
 #include "gaussian_latitudes.h"
 
 static void
-skip_nondigit_lines(FILE *gfp)
+skip_nondigit_lines(std::FILE *gfp)
 {
   int c;
 
@@ -37,7 +37,7 @@ skip_nondigit_lines(FILE *gfp)
 }
 
 static int
-input_ival(FILE *gfp, int &ival)
+input_ival(std::FILE *gfp, int &ival)
 {
   skip_nondigit_lines(gfp);
 
@@ -49,7 +49,7 @@ input_ival(FILE *gfp, int &ival)
 }
 
 size_t
-input_darray(FILE *gfp, size_t n_values, Varray<double> &array)
+input_darray(std::FILE *gfp, size_t n_values, Varray<double> &array)
 {
   if (n_values <= 0) return 0;
 
@@ -69,7 +69,7 @@ input_darray(FILE *gfp, size_t n_values, Varray<double> &array)
 }
 
 int
-grid_read_pingo(FILE *gfp)
+grid_read_pingo(std::FILE *gfp)
 {
   int gridID = -1;
 

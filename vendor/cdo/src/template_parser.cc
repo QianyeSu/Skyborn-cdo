@@ -31,7 +31,7 @@ init_XML_template_parser(char *Filename)
   }
   else
   {
-    fprintf(stderr, "XML file %s being parsed \n", Filename);
+    std::fprintf(stderr, "XML file %s being parsed \n", Filename);
     root_node = xmlDocGetRootElement(param_doc);
   }
 
@@ -64,13 +64,13 @@ updatemagics_and_results_nodes(void)
     if (cur_node->type == XML_ELEMENT_NODE)
     {
 #if DBG_MSG
-      fprintf(stdout, "Node Name: %s \n", cur_node->name);
+      std::fprintf(stdout, "Node Name: %s \n", cur_node->name);
 #endif
       if (cdo_cmpstr((const char *) cur_node->name, "magics"))
       {
         magics_node = (void *) cur_node;
 #if DBG_MSG
-        fprintf(stdout, "Node Name: %s \n", cur_node->name);
+        std::fprintf(stdout, "Node Name: %s \n", cur_node->name);
 #endif
       }
 
@@ -78,7 +78,7 @@ updatemagics_and_results_nodes(void)
       {
         results_node = (void *) cur_node;
 #if DBG_MSG
-        fprintf(stdout, "Node Name: %s \n", cur_node->name);
+        std::fprintf(stdout, "Node Name: %s \n", cur_node->name);
 #endif
       }
     }
@@ -100,7 +100,7 @@ quit_XML_template_parser(void)
   xmlCleanupParser();
   if (param_doc == nullptr) printf("Cleaned XML parser\n");
 #if DBG_MSG
-  fprintf(stdout, "Cleaned XML parser\n");
+  std::fprintf(stdout, "Cleaned XML parser\n");
 #endif
 #else
 

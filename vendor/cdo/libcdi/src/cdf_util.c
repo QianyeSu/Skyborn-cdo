@@ -92,7 +92,9 @@ is_timeaxis_units(const char *timeunits)
   size_t len = strlen(timeunits);
   char *tu = (char *) malloc((len + 1) * sizeof(char));
 
-  for (size_t i = 0; i < len; i++) tu[i] = (char) tolower((int) timeunits[i]);
+  memcpy(tu, timeunits, len);
+  tu[len] = 0;
+  str_to_lower(tu);
 
   int timeunit = get_time_units(len, tu);
   if (timeunit != -1)
@@ -101,8 +103,7 @@ is_timeaxis_units(const char *timeunits)
     while (!isspace(tu[pos]) && tu[pos] != 0) pos++;
     if (tu[pos])
     {
-      while (isspace(tu[pos])) pos++;
-
+      while (isspace(tu[pos])) { pos++; }
       status = strStartsWith(tu + pos, "as") || strStartsWith(tu + pos, "since");
     }
   }

@@ -85,7 +85,7 @@ void write_nc_grid(const char *gridfile, int gridID, int *imask);
 
 int cdo_define_grid(std::string const &gridfile);
 
-int grid_read(FILE *gfp, const char *dname);  // TODO: Find better place for this
+int grid_read(std::FILE *gfp, const char *dname);  // TODO: Find better place for this
 
 int cdo_cdf_openread(const char *filename);
 void cdo_cdf_close(int nc_file_id);

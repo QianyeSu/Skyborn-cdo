@@ -19,7 +19,7 @@
 constexpr int MaxLen = 120;
 
 static void
-printDblsPrefixAutoBrk(FILE *fp, int dig, std::string const &prefix, size_t n, std::vector<double> const &values)
+printDblsPrefixAutoBrk(std::FILE *fp, int dig, std::string const &prefix, size_t n, std::vector<double> const &values)
 {
   int nbyte0 = prefix.size();
   fputs(prefix.c_str(), fp);
@@ -28,17 +28,17 @@ printDblsPrefixAutoBrk(FILE *fp, int dig, std::string const &prefix, size_t n, s
   {
     if (nbyte > MaxLen)
     {
-      fprintf(fp, "\n%*s", nbyte0, "");
+      std::fprintf(fp, "\n%*s", nbyte0, "");
       nbyte = nbyte0;
     }
-    nbyte += fprintf(fp, "%.*g ", dig, values[i]);
+    nbyte += std::fprintf(fp, "%.*g ", dig, values[i]);
   }
   fputs("\n", fp);
 }
 
 template <typename T>
 static void
-printIntsPrefixAutoBrk(FILE *fp, std::string const &prefix, size_t n, std::vector<T> const &values)
+printIntsPrefixAutoBrk(std::FILE *fp, std::string const &prefix, size_t n, std::vector<T> const &values)
 {
   int nbyte0 = prefix.size();
   fputs(prefix.c_str(), fp);
@@ -47,28 +47,28 @@ printIntsPrefixAutoBrk(FILE *fp, std::string const &prefix, size_t n, std::vecto
   {
     if (nbyte > MaxLen)
     {
-      fprintf(fp, "\n%*s", nbyte0, "");
+      std::fprintf(fp, "\n%*s", nbyte0, "");
       nbyte = nbyte0;
     }
-    nbyte += fprintf(fp, "%lld ", static_cast<long long>(values[i]));
+    nbyte += std::fprintf(fp, "%lld ", static_cast<long long>(values[i]));
   }
   fputs("\n", fp);
 }
 
 static void
-print_bounds(FILE *fp, int dig, std::string const &prefix, size_t n, size_t nvertex, std::vector<double> const &bounds)
+print_bounds(std::FILE *fp, int dig, std::string const &prefix, size_t n, size_t nvertex, std::vector<double> const &bounds)
 {
   fputs(prefix.c_str(), fp);
   for (size_t i = 0; i < n; ++i)
   {
-    if (i > 0) fprintf(fp, "\n%*s", (int) prefix.size(), "");
-    for (size_t iv = 0; iv < nvertex; iv++) fprintf(fp, "%.*g ", dig, bounds[i * nvertex + iv]);
+    if (i > 0) std::fprintf(fp, "\n%*s", (int) prefix.size(), "");
+    for (size_t iv = 0; iv < nvertex; iv++) std::fprintf(fp, "%.*g ", dig, bounds[i * nvertex + iv]);
   }
   fputs("\n", fp);
 }
 
 static void
-print_mask(FILE *fp, std::string const &prefix, size_t n, std::vector<int> const &mask)
+print_mask(std::FILE *fp, std::string const &prefix, size_t n, std::vector<int> const &mask)
 {
   int nbyte0 = (int) prefix.size();
   fputs(prefix.c_str(), fp);
@@ -77,54 +77,54 @@ print_mask(FILE *fp, std::string const &prefix, size_t n, std::vector<int> const
   {
     if (nbyte > MaxLen)
     {
-      fprintf(fp, "\n%*s", nbyte0, "");
+      std::fprintf(fp, "\n%*s", nbyte0, "");
       nbyte = nbyte0;
     }
-    nbyte += (size_t) fprintf(fp, "%d ", mask[i]);
+    nbyte += (size_t) std::fprintf(fp, "%d ", mask[i]);
   }
   fputs("\n", fp);
 }
 
 static void
-print_attribute_txt(FILE *fp, int cdiID, int varID, int attlen, char const (&attname)[CDI_MAX_NAME + 1])
+print_attribute_txt(std::FILE *fp, int cdiID, int varID, int attlen, char const (&attname)[CDI_MAX_NAME + 1])
 {
   std::vector<char> atttxt(attlen + 1);
   cdiInqAttTxt(cdiID, varID, attname, attlen, atttxt.data());
   atttxt[attlen] = 0;
   if (std::strchr(atttxt.data(), '"'))
-    fprintf(fp, "%s = '%s'\n", attname, atttxt.data());
+    std::fprintf(fp, "%s = '%s'\n", attname, atttxt.data());
   else
-    fprintf(fp, "%s = \"%s\"\n", attname, atttxt.data());
+    std::fprintf(fp, "%s = \"%s\"\n", attname, atttxt.data());
 }
 
 static void
-print_attribute_int(FILE *fp, int cdiID, int varID, int attlen, char const (&attname)[CDI_MAX_NAME + 1])
+print_attribute_int(std::FILE *fp, int cdiID, int varID, int attlen, char const (&attname)[CDI_MAX_NAME + 1])
 {
   std::vector<int> attint(attlen);
   cdiInqAttInt(cdiID, varID, attname, attlen, attint.data());
-  fprintf(fp, "%s =", attname);
-  for (int i = 0; i < attlen; ++i) fprintf(fp, " %d", attint[i]);
-  fprintf(fp, "\n");
+  std::fprintf(fp, "%s =", attname);
+  for (int i = 0; i < attlen; ++i) std::fprintf(fp, " %d", attint[i]);
+  std::fprintf(fp, "\n");
 }
 
 static void
-print_attribute_flt(FILE *fp, int cdiID, int varID, int atttype, int attlen, char const (&attname)[CDI_MAX_NAME + 1])
+print_attribute_flt(std::FILE *fp, int cdiID, int varID, int atttype, int attlen, char const (&attname)[CDI_MAX_NAME + 1])
 {
   char fltstr[128];
   std::vector<double> attflt(attlen);
   cdiInqAttFlt(cdiID, varID, attname, attlen, attflt.data());
-  fprintf(fp, "%s =", attname);
+  std::fprintf(fp, "%s =", attname);
   if (atttype == CDI_DATATYPE_FLT32)
     for (int i = 0; i < attlen; ++i)
-      fprintf(fp, " %sf", double_to_att_str(Options::CDO_flt_digits, fltstr, sizeof(fltstr), attflt[i]));
+      std::fprintf(fp, " %sf", double_to_att_str(Options::CDO_flt_digits, fltstr, sizeof(fltstr), attflt[i]));
   else
     for (int i = 0; i < attlen; ++i)
-      fprintf(fp, " %s", double_to_att_str(Options::CDO_dbl_digits, fltstr, sizeof(fltstr), attflt[i]));
-  fprintf(fp, "\n");
+      std::fprintf(fp, " %s", double_to_att_str(Options::CDO_dbl_digits, fltstr, sizeof(fltstr), attflt[i]));
+  std::fprintf(fp, "\n");
 }
 
 static void
-grid_print_attributes(FILE *fp, int gridID)
+grid_print_attributes(std::FILE *fp, int gridID)
 {
   int cdiID = gridID;
   int varID = CDI_GLOBAL;
@@ -155,40 +155,40 @@ grid_print_attributes(FILE *fp, int gridID)
 }
 
 static void
-print_xaxis(int gridID, FILE *fp, std::string const &xdimname)
+print_xaxis(int gridID, std::FILE *fp, std::string const &xdimname)
 {
   auto xname = cdo::inq_key_string(gridID, CDI_XAXIS, CDI_KEY_NAME);
   auto xlongname = cdo::inq_key_string(gridID, CDI_XAXIS, CDI_KEY_LONGNAME);
   auto xunits = cdo::inq_key_string(gridID, CDI_XAXIS, CDI_KEY_UNITS);
-  if (xname.size()) fprintf(fp, "xname     = %s\n", xname.c_str());
-  if (xdimname.size() && xdimname != xname) fprintf(fp, "xdimname  = %s\n", xdimname.c_str());
-  if (xlongname.size()) fprintf(fp, "xlongname = \"%s\"\n", xlongname.c_str());
-  if (xunits.size()) fprintf(fp, "xunits    = \"%s\"\n", xunits.c_str());
+  if (xname.size()) std::fprintf(fp, "xname     = %s\n", xname.c_str());
+  if (xdimname.size() && xdimname != xname) std::fprintf(fp, "xdimname  = %s\n", xdimname.c_str());
+  if (xlongname.size()) std::fprintf(fp, "xlongname = \"%s\"\n", xlongname.c_str());
+  if (xunits.size()) std::fprintf(fp, "xunits    = \"%s\"\n", xunits.c_str());
 }
 
 static void
-print_yaxis(int gridID, FILE *fp, std::string const &ydimname)
+print_yaxis(int gridID, std::FILE *fp, std::string const &ydimname)
 {
   auto yname = cdo::inq_key_string(gridID, CDI_YAXIS, CDI_KEY_NAME);
   auto ylongname = cdo::inq_key_string(gridID, CDI_YAXIS, CDI_KEY_LONGNAME);
   auto yunits = cdo::inq_key_string(gridID, CDI_YAXIS, CDI_KEY_UNITS);
-  if (yname.size()) fprintf(fp, "yname     = %s\n", yname.c_str());
-  if (ydimname.size() && ydimname != yname) fprintf(fp, "ydimname  = %s\n", ydimname.c_str());
-  if (ylongname.size()) fprintf(fp, "ylongname = \"%s\"\n", ylongname.c_str());
-  if (yunits.size()) fprintf(fp, "yunits    = \"%s\"\n", yunits.c_str());
+  if (yname.size()) std::fprintf(fp, "yname     = %s\n", yname.c_str());
+  if (ydimname.size() && ydimname != yname) std::fprintf(fp, "ydimname  = %s\n", ydimname.c_str());
+  if (ylongname.size()) std::fprintf(fp, "ylongname = \"%s\"\n", ylongname.c_str());
+  if (yunits.size()) std::fprintf(fp, "yunits    = \"%s\"\n", yunits.c_str());
 }
 
 static void
-printf_unstructured_keys(int gridID, FILE *&fp)
+printf_unstructured_keys(int gridID, std::FILE *&fp)
 {
   int number = 0;
   cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDUSED, &number);
   if (number > 0)
   {
-    fprintf(fp, "number    = %d\n", number);
+    std::fprintf(fp, "number    = %d\n", number);
     int position = 0;
     cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDINREFERENCE, &position);
-    if (position >= 0) fprintf(fp, "position  = %d\n", position);
+    if (position >= 0) std::fprintf(fp, "position  = %d\n", position);
   }
 
   int length = 0;
@@ -196,12 +196,12 @@ printf_unstructured_keys(int gridID, FILE *&fp)
   {
     char referenceLink[8192];
     cdiInqKeyString(gridID, CDI_GLOBAL, CDI_KEY_REFERENCEURI, referenceLink, &length);
-    fprintf(fp, "uri       = %s\n", referenceLink);
+    std::fprintf(fp, "uri       = %s\n", referenceLink);
   }
 }
 
 static void
-print_xvals(int gridID, int opt, FILE *fp, SizeType nxvals, int type, int dig)
+print_xvals(int gridID, int opt, std::FILE *fp, SizeType nxvals, int type, int dig)
 {
   double xfirst = 0.0, xinc = 0.0;
 
@@ -213,8 +213,8 @@ print_xvals(int gridID, int opt, FILE *fp, SizeType nxvals, int type, int dig)
 
   if (is_not_equal(xinc, 0.0) && opt)
   {
-    fprintf(fp, "xfirst    = %.*g\n", dig, xfirst);
-    fprintf(fp, "xinc      = %.*g\n", dig, xinc);
+    std::fprintf(fp, "xfirst    = %.*g\n", dig, xfirst);
+    std::fprintf(fp, "xinc      = %.*g\n", dig, xinc);
   }
   else
   {
@@ -225,7 +225,7 @@ print_xvals(int gridID, int opt, FILE *fp, SizeType nxvals, int type, int dig)
 }
 
 static void
-print_yvals(int gridID, int opt, FILE *fp, SizeType nyvals, int type, int dig)
+print_yvals(int gridID, int opt, std::FILE *fp, SizeType nyvals, int type, int dig)
 {
   double yfirst = 0.0, yinc = 0.0;
 
@@ -237,8 +237,8 @@ print_yvals(int gridID, int opt, FILE *fp, SizeType nyvals, int type, int dig)
 
   if (is_not_equal(yinc, 0.0) && opt)
   {
-    fprintf(fp, "yfirst    = %.*g\n", dig, yfirst);
-    fprintf(fp, "yinc      = %.*g\n", dig, yinc);
+    std::fprintf(fp, "yfirst    = %.*g\n", dig, yfirst);
+    std::fprintf(fp, "yinc      = %.*g\n", dig, yinc);
   }
   else
   {
@@ -249,7 +249,7 @@ print_yvals(int gridID, int opt, FILE *fp, SizeType nyvals, int type, int dig)
 }
 
 static void
-print_xcvals(int gridID, FILE *fp, SizeType xsize, int xstrlen)
+print_xcvals(int gridID, std::FILE *fp, SizeType xsize, int xstrlen)
 {
   char **xcvals = new char *[xsize];
   for (size_t i = 0; i < xsize; ++i) xcvals[i] = new char[xstrlen + 1];
@@ -264,16 +264,16 @@ print_xcvals(int gridID, FILE *fp, SizeType xsize, int xstrlen)
         break;
     }
 
-  fprintf(fp, "xcvals    = \"%.*s\"", xstrlen, xcvals[0]);
-  for (size_t i = 1; i < xsize; ++i) fprintf(fp, ", \"%.*s\"", xstrlen, xcvals[i]);
-  fprintf(fp, "\n");
+  std::fprintf(fp, "xcvals    = \"%.*s\"", xstrlen, xcvals[0]);
+  for (size_t i = 1; i < xsize; ++i) std::fprintf(fp, ", \"%.*s\"", xstrlen, xcvals[i]);
+  std::fprintf(fp, "\n");
 
   for (size_t i = 0; i < xsize; ++i) delete[] xcvals[i];
   delete[] xcvals;
 }
 
 static void
-print_ycvals(int gridID, FILE *fp, SizeType ysize, int ystrlen)
+print_ycvals(int gridID, std::FILE *fp, SizeType ysize, int ystrlen)
 {
   char **ycvals = new char *[ysize];
   for (size_t i = 0; i < ysize; ++i) ycvals[i] = new char[ystrlen + 1];
@@ -288,26 +288,26 @@ print_ycvals(int gridID, FILE *fp, SizeType ysize, int ystrlen)
         break;
     }
 
-  fprintf(fp, "ycvals    = \"%.*s\"", ystrlen, ycvals[0]);
-  for (size_t i = 1; i < ysize; ++i) fprintf(fp, ", \"%.*s\"", ystrlen, ycvals[i]);
-  fprintf(fp, "\n");
+  std::fprintf(fp, "ycvals    = \"%.*s\"", ystrlen, ycvals[0]);
+  for (size_t i = 1; i < ysize; ++i) std::fprintf(fp, ", \"%.*s\"", ystrlen, ycvals[i]);
+  std::fprintf(fp, "\n");
 
   for (size_t i = 0; i < ysize; ++i) delete[] ycvals[i];
   delete[] ycvals;
 }
 
 static void
-print_projection(int gridID, FILE *fp)
+print_projection(int gridID, std::FILE *fp)
 {
   auto gridMapping = cdo::inq_key_string(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME);
   auto gridMappingName = cdo::inq_key_string(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_NAME);
-  if (gridMapping.size()) fprintf(fp, "grid_mapping = %s\n", gridMapping.c_str());
-  if (gridMappingName.size()) fprintf(fp, "grid_mapping_name = %s\n", gridMappingName.c_str());
+  if (gridMapping.size()) std::fprintf(fp, "grid_mapping = %s\n", gridMapping.c_str());
+  if (gridMappingName.size()) std::fprintf(fp, "grid_mapping_name = %s\n", gridMappingName.c_str());
   grid_print_attributes(fp, gridID);
 }
 
 static void
-print_healpix(int gridID, FILE *fp, SizeType gridsize)
+print_healpix(int gridID, std::FILE *fp, SizeType gridsize)
 {
   grid_print_attributes(fp, gridID);
   if (gridsize == gridInqIndices(gridID, nullptr))
@@ -319,7 +319,7 @@ print_healpix(int gridID, FILE *fp, SizeType gridsize)
 }
 
 static void
-grid_print_kernel(int gridID, int opt, FILE *fp)
+grid_print_kernel(int gridID, int opt, std::FILE *fp)
 {
   auto nxvals = gridInqXvals(gridID, nullptr);
   auto nyvals = gridInqYvals(gridID, nullptr);
@@ -338,32 +338,32 @@ grid_print_kernel(int gridID, int opt, FILE *fp)
 
   int dig = (datatype == CDI_DATATYPE_FLT64) ? Options::CDO_dbl_digits : Options::CDO_flt_digits;
 
-  fprintf(fp, "gridtype  = %s\n", gridNamePtr(type));
-  fprintf(fp, "gridsize  = %zu\n", gridsize);
-  if (datatype == CDI_DATATYPE_FLT32) fprintf(fp, "datatype  = float\n");
+  std::fprintf(fp, "gridtype  = %s\n", gridNamePtr(type));
+  std::fprintf(fp, "gridsize  = %zu\n", gridsize);
+  if (datatype == CDI_DATATYPE_FLT32) std::fprintf(fp, "datatype  = float\n");
 
   if (type != GRID_GME)
   {
     if (type != GRID_UNSTRUCTURED && type != GRID_SPECTRAL && type != GRID_FOURIER)
     {
-      if (xsize > 0) fprintf(fp, "xsize     = %zu\n", xsize);
-      if (ysize > 0) fprintf(fp, "ysize     = %zu\n", ysize);
+      if (xsize > 0) std::fprintf(fp, "xsize     = %zu\n", xsize);
+      if (ysize > 0) std::fprintf(fp, "ysize     = %zu\n", ysize);
     }
 
     auto xdimname = cdo::inq_key_string(gridID, CDI_XAXIS, CDI_KEY_DIMNAME);
     if (nxvals > 0 || xstrlen) { print_xaxis(gridID, fp, xdimname); }
-    else if (xsize > 0 && xdimname.size()) { fprintf(fp, "xdimname  = %s\n", xdimname.c_str()); }
+    else if (xsize > 0 && xdimname.size()) { std::fprintf(fp, "xdimname  = %s\n", xdimname.c_str()); }
 
     auto ydimname = cdo::inq_key_string(gridID, CDI_YAXIS, CDI_KEY_DIMNAME);
     if (nyvals > 0 || ystrlen) { print_yaxis(gridID, fp, ydimname); }
-    else if (ysize > 0 && ydimname.size()) { fprintf(fp, "ydimname  = %s\n", ydimname.c_str()); }
+    else if (ysize > 0 && ydimname.size()) { std::fprintf(fp, "ydimname  = %s\n", ydimname.c_str()); }
 
     if (type == GRID_UNSTRUCTURED || type == GRID_CURVILINEAR)
     {
       auto vdimName = cdo::inq_key_string(gridID, CDI_GLOBAL, CDI_KEY_VDIMNAME);
-      if (vdimName.size()) fprintf(fp, "vdimname  = %s\n", vdimName.c_str());
+      if (vdimName.size()) std::fprintf(fp, "vdimname  = %s\n", vdimName.c_str());
     }
-    if (type == GRID_UNSTRUCTURED && nvertex > 0) fprintf(fp, "nvertex   = %d\n", nvertex);
+    if (type == GRID_UNSTRUCTURED && nvertex > 0) std::fprintf(fp, "nvertex   = %d\n", nvertex);
   }
 
   switch (type)
@@ -378,7 +378,7 @@ grid_print_kernel(int gridID, int opt, FILE *fp)
     case GRID_TRAJECTORY:
     case GRID_CHARXY:
     {
-      if (type == GRID_GAUSSIAN || type == GRID_GAUSSIAN_REDUCED) fprintf(fp, "numLPE    = %d\n", gridInqNP(gridID));
+      if (type == GRID_GAUSSIAN || type == GRID_GAUSSIAN_REDUCED) std::fprintf(fp, "numLPE    = %d\n", gridInqNP(gridID));
 
       size_t xdim, ydim;
       if (type == GRID_CURVILINEAR || type == GRID_UNSTRUCTURED)
@@ -439,7 +439,7 @@ grid_print_kernel(int gridID, int opt, FILE *fp)
       {
         int scanningMode = 0;
         cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_SCANNINGMODE, &scanningMode);
-        fprintf(fp, "scanningMode = %d\n", scanningMode);
+        std::fprintf(fp, "scanningMode = %d\n", scanningMode);
       }
 #endif
 
@@ -454,25 +454,25 @@ grid_print_kernel(int gridID, int opt, FILE *fp)
     }
     case GRID_SPECTRAL:
     {
-      fprintf(fp, "truncation = %d\n", gridInqTrunc(gridID));
-      fprintf(fp, "complexpacking = %d\n", gridInqComplexPacking(gridID));
+      std::fprintf(fp, "truncation = %d\n", gridInqTrunc(gridID));
+      std::fprintf(fp, "complexpacking = %d\n", gridInqComplexPacking(gridID));
       break;
     }
     case GRID_FOURIER:
     {
-      fprintf(fp, "truncation = %d\n", gridInqTrunc(gridID));
+      std::fprintf(fp, "truncation = %d\n", gridInqTrunc(gridID));
       break;
     }
     case GRID_GME:
     {
       int nd, ni, ni2, ni3;
       gridInqParamGME(gridID, &nd, &ni, &ni2, &ni3);
-      fprintf(fp, "ni        = %d\n", ni);
+      std::fprintf(fp, "ni        = %d\n", ni);
       break;
     }
     default:
     {
-      fprintf(stderr, "Unsupported grid type: %s\n", gridNamePtr(type));
+      std::fprintf(stderr, "Unsupported grid type: %s\n", gridNamePtr(type));
       break;
     }
   }
@@ -483,7 +483,7 @@ grid_print_kernel(int gridID, int opt, FILE *fp)
   if (!cdiUUIDIsNull(uuid))
   {
     char uuidStr[uuidNumHexChars + 1] = { 0 };
-    if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) fprintf(fp, "uuid      = %s\n", uuidStr);
+    if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) std::fprintf(fp, "uuid      = %s\n", uuidStr);
   }
 
   if (gridInqMask(gridID, nullptr))

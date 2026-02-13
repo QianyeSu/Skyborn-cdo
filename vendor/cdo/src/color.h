@@ -25,8 +25,8 @@ struct CPT
   BFN_COLOR bfn[3];
 };
 
-int cpt_read(FILE *fp, CPT *cpt);
-int cpt_write(FILE *fp, const CPT &cpt);
-int cpt_write_c(FILE *fp, const CPT &cpt, const char *name);
+int cpt_read(std::FILE *fp, CPT *cpt);
+int cpt_write(std::FILE *fp, const CPT &cpt);
+int cpt_write_c(std::FILE *fp, const CPT &cpt, const char *name);
 
 #endif /* COLOR_H */

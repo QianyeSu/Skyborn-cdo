@@ -3,7 +3,7 @@
 #include "cdo_options.h"
 #include "util_string.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 const char *seasonNamesDec[4] = { "DJF", "MAM", "JJA", "SON" };
 const char *seasonNamesJan[4] = { "JFM", "AMJ", "JAS", "OND" };
@@ -15,26 +15,26 @@ get_season_start(void)
   static auto doEnvRead = true;
 
   if (doEnvRead)
+  {
+    doEnvRead = false;
+
+    auto envString = getenv_string("CDO_SEASON_START");
+    if (envString.size())
     {
-      doEnvRead = false;
+      // clang-format off
+      if      (envString == "DEC") seasonStart = SeasonStart::DEC;
+      else if (envString == "JAN") seasonStart = SeasonStart::JAN;
+      // clang-format on
 
-      auto envString = getenv_string("CDO_SEASON_START");
-      if (envString.size())
-        {
-          // clang-format off
-          if      (envString == "DEC") seasonStart = SeasonStart::DEC;
-          else if (envString == "JAN") seasonStart = SeasonStart::JAN;
-          // clang-format on
-
-          if (Options::cdoVerbose)
-            {
-              // clang-format off
-              if      (seasonStart == SeasonStart::DEC) cdo_print("Set SEASON_START to December");
-              else if (seasonStart == SeasonStart::JAN) cdo_print("Set SEASON_START to January");
-              // clang-format on
-            }
-        }
+      if (Options::cdoVerbose)
+      {
+        // clang-format off
+        if      (seasonStart == SeasonStart::DEC) cdo_print("Set SEASON_START to December");
+        else if (seasonStart == SeasonStart::JAN) cdo_print("Set SEASON_START to January");
+        // clang-format on
+      }
     }
+  }
 
   return seasonStart;
 }

@@ -10,6 +10,7 @@
 #include <string>
 #include <functional>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <algorithm>
 
@@ -22,17 +23,18 @@ struct cdo_option_argument
   std::string description = std::string();
   bool is_optional = false;
   std::string errmsg = std::string();
+  bool allow_keyword = false;
   std::string default_value = "";
   std::string value = std::string();
   std::function<void(std::string argument)> on_empty_argument = [](std::string s = "") { cdo_abort("missing argument for %s", s); };
 };
 
-struct cdo_option_2
+struct CliOption
 {
   std::function<void(std::string argument)> effect = [](std::string)
   {
     printf("ERROR effect has not been set. Called empty effect");
-    exit(0);
+    std::exit(0);
   };
   bool hasArgument = false;
   bool abortOnExecute = false;
@@ -44,28 +46,28 @@ struct cdo_option_2
   std::string linkedEnvironmentVariable = {};
   std::string category = DEFAULT_CATEGORY;
 
-  cdo_option_2 *
+  CliOption *
   set_category(std::string const &p_category)
   {
     category = p_category;
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   on_empty_argument(const std::function<void(std::string p_argument)> p_on_empty_argument)
   {
     argument.on_empty_argument = p_on_empty_argument;
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   on_empty_argument(const std::function<void()> p_on_empty_argument)
   {
     argument.on_empty_argument = [p_on_empty_argument](std::string) { p_on_empty_argument(); };
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   add_effect(const std::function<void(std::string argument)> p_effect)
   {
     hasArgument = true;
@@ -73,42 +75,49 @@ struct cdo_option_2
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   add_effect(const std::function<void(void)> p_effect)
   {
     effect = [p_effect](std::string) { p_effect(); };
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   set_internal(bool p_is_internal)
   {
     isInternal = p_is_internal;
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   add_default(std::string const &p_default_value)
   {
     argument.default_value = p_default_value;
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
+  accepts_keyword(bool enable)
+  {
+    argument.allow_keyword = enable;
+    return this;
+  }
+
+  CliOption *
   describe_argument(std::string const &desc)
   {
     hasArgument = true;
     argument.description = desc;
     return this;
   }
-  cdo_option_2 *
+  CliOption *
   set_argument_optional(bool p_isOptional)
   {
     argument.is_optional = p_isOptional;
     return this;
   }
 
-  cdo_option_2 *
+  CliOption *
   add_help(std::string desc...)
   {
     description.push_back(desc);
@@ -116,7 +125,7 @@ struct cdo_option_2
   }
 
   template <typename... T>
-  cdo_option_2 *
+  CliOption *
   add_help(std::string const &arg, T... args)
   {
     add_help(arg);
@@ -137,15 +146,15 @@ struct cdo_option_2
     effect(get_arg());
   }
 
-  cdo_option_2 *
+  CliOption *
   aborts_program(bool aborts)
   {
     abortOnExecute = aborts;
     return this;
   }
-  const cdo_option_2 *shortform(char p_shortform);
+  const CliOption *shortform(char p_shortform);
 
-  cdo_option_2 *
+  CliOption *
   add_env_var(std::string const &p_envVarName)
   {
     linkedEnvironmentVariable = p_envVarName;
@@ -171,17 +180,20 @@ struct cdo_option_2
 class CLIOptions
 {
 private:
-  static std::map<std::string, std::unique_ptr<cdo_option_2>> optionMap;
+  static std::map<std::string, std::unique_ptr<CliOption>> optionMap;
+  static std::map<std::string, std::unique_ptr<CliOption>> envvarMap;
+  static std::function<bool(std::string)> is_keyword;
 
-  static std::map<std::string, std::unique_ptr<cdo_option_2>> envvarMap;
+  static int handle_argument(cdo_option_argument &argument, const std::vector<std::string> &p_argv, int i);
 
 public:
-  static const std::map<std::string, std::unique_ptr<cdo_option_2>> &
+  static void set_keyword_detection(std::function<bool(const std::string &)> f);
+  static const std::map<std::string, std::unique_ptr<CliOption>> &
   get_options()
   {
     return optionMap;
   }
-  static const std::map<std::string, std::unique_ptr<cdo_option_2>> &
+  static const std::map<std::string, std::unique_ptr<CliOption>> &
   get_envvars()
   {
     return envvarMap;
@@ -195,18 +207,26 @@ public:
 
   static int parse(std::vector<std::string> p_argv);
   static void get_env_vars();
-  static std::unique_ptr<cdo_option_2> &option(std::string const &p_name);
-  static std::unique_ptr<cdo_option_2> &envvar(std::string const &p_name);
-  static cdo_option_2 *option_from_envvar(std::string const &p_envvarName);
+  static std::unique_ptr<CliOption> &option(std::string const &p_name);
+  static std::unique_ptr<CliOption> &envvar(std::string const &p_name);
+  static CliOption *option_from_envvar(std::string const &p_envvarName);
   static void
-  shortform(std::unique_ptr<cdo_option_2> &&long_form, std::string shortform)
+  shortform(std::unique_ptr<CliOption> &&long_form, std::string shortform)
   {
+    if (optionMap.find(shortform) != optionMap.end()) { cdo_abort("option shortform already exists: %s", shortform); }
     optionMap[shortform] = std::move(long_form);
   }
 
+  static cdo_option_argument &
+  get_argument(const std::map<std::string, std::unique_ptr<CliOption>>::iterator &it)
+  {
+    return it->second->argument;
+  }
   static void print_available_options();
   static std::string print_options_help(std::string const &p_category = DEFAULT_CATEGORY);
   static std::string print_envvar_help();
-  static void print_registry(const std::map<std::string, std::unique_ptr<cdo_option_2>> &p_registry);
+  static void print_registry(const std::map<std::string, std::unique_ptr<CliOption>> &p_registry);
+  static std::string print_option(const std::string &p_optionName);
+  static std::string print_option(const std::unique_ptr<CliOption> &iter);
 };
 #endif /* _CDO_GETOPT_H */

@@ -86,7 +86,7 @@ results_template_parser(void *node, const char *varname)
 #if 0
 			      printf("Done corresponding Magics Parameter found!\n");
 			      printf("Setting corresponding Magics Parameter %s and type %s!\n",magics_param_name, param_type );
-	  		      fprintf(stderr, "param_value: %s\n", param_value);
+	  		      std::fprintf(stderr, "param_value: %s\n", param_value);
 			      _set_magics_parameter_value( magics_param_name, param_type, param_value );
 #endif
               }
@@ -103,7 +103,7 @@ results_template_parser(void *node, const char *varname)
         }
         else
         {
-          fprintf(stderr, "Var Name not matching resetting Magics Params!\n");
+          std::fprintf(stderr, "Var Name not matching resetting Magics Params!\n");
           // Call the Reset functions of all the features to Reset the magics params to default
         }
       }

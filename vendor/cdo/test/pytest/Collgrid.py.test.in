@@ -29,4 +29,17 @@ for GRIDTYPE in GRIDTYPES:
         else:
             test_module.add_skip("NetCDF not enabled")
 
+DIST="6,3"
+IFILE=f'{DATAPATH}/distgriddata.nc'
+OFILE="collgrid_res"
+if (HAS_NETCDF):
+    t = TAPTest(f'distgrid/collgrid {DIST}')
+    t.add(f'{CDO} distgrid,{DIST} {IFILE} zzz')
+    t.add(f'{CDO} -O {OPERATOR} zzz* {OFILE}')
+    t.add(f'{CDO} diff {IFILE} {OFILE}')
+    t.clean(OFILE, "zzz*")
+    test_module.add(t)
+else:
+    test_module.add_skip("NetCDF not enabled")
+
 test_module.run()

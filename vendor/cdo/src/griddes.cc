@@ -8,10 +8,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <climits>
 
 #include <cdi.h>
 
+#include "c_wrapper.h"
 #include "cdi_uuid.h"
 #include "cdo_output.h"
 #include "cdo_varlist.h"
@@ -106,7 +106,159 @@ grid_define_grid_healpix(GridDesciption const &grid)
   cdiDefAttInt(gridID, CDI_GLOBAL, "refinement_level", CDI_DATATYPE_INT32, 1, &grid.refinementLevel);
   cdiDefAttTxt(gridID, CDI_GLOBAL, "indexing_scheme", (int) grid.healpixOrder.size(), grid.healpixOrder.c_str());
 
+  if (grid.refinementLevel < 14) cdiDefKeyInt(gridID, CDI_GLOBAL, CDI_KEY_DATATYPE, CDI_DATATYPE_INT32);
   if (grid.indices.size() > 0) { gridDefIndices(gridID, grid.indices.data()); }
+
+  return gridID;
+}
+
+static int
+grid_define_reg2d(GridDesciption &grid)
+{
+  if (grid.size != 1)
+  {
+    if (grid.xsize == 0 && grid.type != GRID_PROJECTION && grid.type != GRID_GAUSSIAN_REDUCED) cdo_abort("xsize undefined!");
+    if (grid.ysize == 0 && grid.type != GRID_PROJECTION) cdo_abort("ysize undefined!");
+  }
+
+  if (grid.size == 0) grid.size = grid.xsize * grid.ysize;
+
+  if (grid.type != GRID_PROJECTION && grid.type != GRID_GAUSSIAN_REDUCED && grid.xsize && grid.size != grid.xsize * grid.ysize)
+    cdo_abort("Inconsistent grid declaration: xsize*ysize!=gridsize (xsize=%zu ysize=%zu gridsize=%zu)", grid.xsize, grid.ysize,
+              grid.size);
+
+  // if ( grid.size < 0 || grid.size > INT_MAX ) cdo_abort("grid size (%ld) out of bounds (0 - %d)!", grid.size, INT_MAX);
+
+  int gridID = gridCreate(grid.type, grid.size);
+
+  if (grid.xsize > 0) gridDefXsize(gridID, grid.xsize);
+  if (grid.ysize > 0) gridDefYsize(gridID, grid.ysize);
+  if (grid.numLPE > 0) gridDefNP(gridID, grid.numLPE);
+
+  if (grid.nvertex) gridDefNvertex(gridID, grid.nvertex);
+
+  auto def_xfirst = is_not_equal(grid.xfirst, undefGridValue);
+  auto def_yfirst = is_not_equal(grid.yfirst, undefGridValue);
+  auto def_xlast = is_not_equal(grid.xlast, undefGridValue);
+  auto def_ylast = is_not_equal(grid.ylast, undefGridValue);
+  auto def_xinc = is_not_equal(grid.xinc, undefGridValue);
+  auto def_yinc = is_not_equal(grid.yinc, undefGridValue);
+  if ((def_xfirst || def_xlast || def_xinc) && grid.xvals.size() == 0)
+  {
+    auto xfirst = def_xfirst ? grid.xfirst : 0.0;
+    auto xlast = def_xlast ? grid.xlast : 0.0;
+    auto xinc = def_xinc ? grid.xinc : 0.0;
+    grid.xvals.resize(grid.xsize);
+    grid_gen_xvals(grid.xsize, xfirst, xlast, xinc, grid.xvals.data());
+    if (grid.genBounds && grid.xbounds.size() == 0 /*&& grid.xsize > 1*/) genXboundsRegular(grid);
+  }
+
+  if ((def_yfirst || def_ylast || def_yinc) && grid.yvals.size() == 0)
+  {
+    auto yfirst = def_yfirst ? grid.yfirst : 0.0;
+    auto ylast = def_ylast ? grid.ylast : yfirst;
+    auto yinc = def_yinc ? grid.yinc : 0.0;
+    grid.yvals.resize(grid.ysize);
+    if (grid.type == GRID_GAUSSIAN && grid.genBounds)
+    {
+      grid.ybounds.resize(grid.ysize * 2);
+      Varray<double> lat_bounds(grid.ysize + 1);
+      gaussian_latitudes_in_degrees(grid.yvals, lat_bounds);
+      for (size_t i = 0; i < grid.ysize; ++i) { grid.ybounds[2 * i] = lat_bounds[i + 1]; }
+      for (size_t i = 0; i < grid.ysize; ++i) { grid.ybounds[2 * i + 1] = lat_bounds[i]; }
+    }
+    else
+    {
+      grid_gen_yvals(grid.type, grid.ysize, yfirst, ylast, yinc, grid.yvals.data());
+      if (grid.genBounds && grid.ybounds.size() == 0 && grid.ysize > 1) genYboundsRegular(grid);
+    }
+  }
+
+  if (grid.xcvals)
+  {
+    // gridDefXCvals(gridID, grid.xcvals);
+    for (size_t i = 0; i < grid.xsize; ++i) delete[] grid.xcvals[i];
+    delete[] grid.xcvals;
+    cdo_warning("CDI function gridDefXCvals() not implemented!");
+  }
+  if (grid.ycvals)
+  {
+    // gridDefYCvals(gridID, grid.ycvals);
+    for (size_t i = 0; i < grid.ysize; ++i) delete[] grid.ycvals[i];
+    delete[] grid.ycvals;
+    cdo_warning("CDI function gridDefYCvals() not implemented!");
+  }
+  if (grid.xvals.size()) gridDefXvals(gridID, grid.xvals.data());
+  if (grid.yvals.size()) gridDefYvals(gridID, grid.yvals.data());
+  if (grid.xbounds.size()) gridDefXbounds(gridID, grid.xbounds.data());
+  if (grid.ybounds.size()) gridDefYbounds(gridID, grid.ybounds.data());
+  if (grid.mask.size()) gridDefMask(gridID, grid.mask.data());
+  if (grid.reducedPoints.size()) gridDefReducedPoints(gridID, grid.ysize, grid.reducedPoints.data());
+
+  return gridID;
+}
+
+static int
+grid_define_full(GridDesciption &grid)
+{
+  if (grid.size == 0) grid.size = (grid.type == GRID_CURVILINEAR) ? grid.xsize * grid.ysize : grid.xsize;
+
+  int gridID = gridCreate(grid.type, grid.size);
+
+  if (grid.type == GRID_CURVILINEAR)
+  {
+    if (grid.xsize == 0) cdo_abort("xsize undefined!");
+    if (grid.ysize == 0) cdo_abort("ysize undefined!");
+    gridDefXsize(gridID, grid.xsize);
+    gridDefYsize(gridID, grid.ysize);
+  }
+  else
+  {
+    if (grid.nvertex > 0) gridDefNvertex(gridID, grid.nvertex);
+    if (grid.number > 0)
+    {
+      cdiDefKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDUSED, grid.number);
+      if (grid.position >= 0) cdiDefKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDINREFERENCE, grid.position);
+    }
+    if (grid.path.size()) cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_REFERENCEURI, grid.path.c_str());
+  }
+
+  if (grid.xvals.size()) gridDefXvals(gridID, grid.xvals.data());
+  if (grid.yvals.size()) gridDefYvals(gridID, grid.yvals.data());
+  if (grid.area.size()) gridDefArea(gridID, grid.area.data());
+  if (grid.xbounds.size()) gridDefXbounds(gridID, grid.xbounds.data());
+  if (grid.ybounds.size()) gridDefYbounds(gridID, grid.ybounds.data());
+  if (grid.mask.size()) gridDefMask(gridID, grid.mask.data());
+
+  return gridID;
+}
+
+static int
+grid_define_spectral(GridDesciption &grid)
+{
+  if (grid.ntr == 0) cdo_abort("truncation undefined!");
+  if (grid.size == 0) grid.size = (grid.ntr + 1) * (grid.ntr + 2);
+
+  int gridID = gridCreate(grid.type, grid.size);
+
+  gridDefTrunc(gridID, grid.ntr);
+  gridDefComplexPacking(gridID, grid.lcomplex);
+
+  return gridID;
+}
+
+static int
+grid_define_gme(GridDesciption &grid)
+{
+  if (grid.nd == 0) cdo_abort("nd undefined!");
+  if (grid.ni == 0) cdo_abort("ni undefined!");
+  if (grid.size == 0) cdo_abort("size undefined!");
+
+  int gridID = gridCreate(grid.type, grid.size);
+
+  gridDefParamGME(gridID, grid.nd, grid.ni, grid.ni2, grid.ni3);
+
+  if (grid.mask.size()) gridDefMask(gridID, grid.mask.data());
 
   return gridID;
 }
@@ -127,146 +279,23 @@ grid_define(GridDesciption &grid)
     case GRID_PROJECTION:
     case GRID_CHARXY:
     {
-      if (grid.size != 1)
-      {
-        if (grid.xsize == 0 && grid.type != GRID_PROJECTION && grid.type != GRID_GAUSSIAN_REDUCED) cdo_abort("xsize undefined!");
-        if (grid.ysize == 0 && grid.type != GRID_PROJECTION) cdo_abort("ysize undefined!");
-      }
-
-      if (grid.size == 0) grid.size = grid.xsize * grid.ysize;
-
-      if (grid.type != GRID_PROJECTION && grid.type != GRID_GAUSSIAN_REDUCED && grid.xsize && grid.size != grid.xsize * grid.ysize)
-        cdo_abort("Inconsistent grid declaration: xsize*ysize!=gridsize (xsize=%zu ysize=%zu gridsize=%zu)", grid.xsize, grid.ysize,
-                  grid.size);
-
-      // if ( grid.size < 0 || grid.size > INT_MAX ) cdo_abort("grid size (%ld) out of bounds (0 - %d)!", grid.size, INT_MAX);
-
-      gridID = gridCreate(grid.type, grid.size);
-
-      if (grid.xsize > 0) gridDefXsize(gridID, grid.xsize);
-      if (grid.ysize > 0) gridDefYsize(gridID, grid.ysize);
-      if (grid.numLPE > 0) gridDefNP(gridID, grid.numLPE);
-
-      if (grid.nvertex) gridDefNvertex(gridID, grid.nvertex);
-
-      auto def_xfirst = is_not_equal(grid.xfirst, undefGridValue);
-      auto def_yfirst = is_not_equal(grid.yfirst, undefGridValue);
-      auto def_xlast = is_not_equal(grid.xlast, undefGridValue);
-      auto def_ylast = is_not_equal(grid.ylast, undefGridValue);
-      auto def_xinc = is_not_equal(grid.xinc, undefGridValue);
-      auto def_yinc = is_not_equal(grid.yinc, undefGridValue);
-      if ((def_xfirst || def_xlast || def_xinc) && grid.xvals.size() == 0)
-      {
-        auto xfirst = def_xfirst ? grid.xfirst : 0.0;
-        auto xlast = def_xlast ? grid.xlast : 0.0;
-        auto xinc = def_xinc ? grid.xinc : 0.0;
-        grid.xvals.resize(grid.xsize);
-        grid_gen_xvals(grid.xsize, xfirst, xlast, xinc, grid.xvals.data());
-        if (grid.genBounds && grid.xbounds.size() == 0 /*&& grid.xsize > 1*/) genXboundsRegular(grid);
-      }
-
-      if ((def_yfirst || def_ylast || def_yinc) && grid.yvals.size() == 0)
-      {
-        auto yfirst = def_yfirst ? grid.yfirst : 0.0;
-        auto ylast = def_ylast ? grid.ylast : yfirst;
-        auto yinc = def_yinc ? grid.yinc : 0.0;
-        grid.yvals.resize(grid.ysize);
-        if (grid.type == GRID_GAUSSIAN && grid.genBounds)
-        {
-          grid.ybounds.resize(grid.ysize * 2);
-          Varray<double> lat_bounds(grid.ysize + 1);
-          gaussian_latitudes_in_degrees(grid.yvals, lat_bounds);
-          for (size_t i = 0; i < grid.ysize; ++i) { grid.ybounds[2 * i] = lat_bounds[i + 1]; }
-          for (size_t i = 0; i < grid.ysize; ++i) { grid.ybounds[2 * i + 1] = lat_bounds[i]; }
-        }
-        else
-        {
-          grid_gen_yvals(grid.type, grid.ysize, yfirst, ylast, yinc, grid.yvals.data());
-          if (grid.genBounds && grid.ybounds.size() == 0 && grid.ysize > 1) genYboundsRegular(grid);
-        }
-      }
-
-      if (grid.xcvals)
-      {
-        // gridDefXCvals(gridID, grid.xcvals);
-        for (size_t i = 0; i < grid.xsize; ++i) delete[] grid.xcvals[i];
-        delete[] grid.xcvals;
-        cdo_warning("CDI function gridDefXCvals() not implemented!");
-      }
-      if (grid.ycvals)
-      {
-        // gridDefYCvals(gridID, grid.ycvals);
-        for (size_t i = 0; i < grid.ysize; ++i) delete[] grid.ycvals[i];
-        delete[] grid.ycvals;
-        cdo_warning("CDI function gridDefYCvals() not implemented!");
-      }
-      if (grid.xvals.size()) gridDefXvals(gridID, grid.xvals.data());
-      if (grid.yvals.size()) gridDefYvals(gridID, grid.yvals.data());
-      if (grid.xbounds.size()) gridDefXbounds(gridID, grid.xbounds.data());
-      if (grid.ybounds.size()) gridDefYbounds(gridID, grid.ybounds.data());
-      if (grid.mask.size()) gridDefMask(gridID, grid.mask.data());
-      if (grid.reducedPoints.size()) gridDefReducedPoints(gridID, grid.ysize, grid.reducedPoints.data());
-
+      gridID = grid_define_reg2d(grid);
       break;
     }
     case GRID_CURVILINEAR:
     case GRID_UNSTRUCTURED:
     {
-      if (grid.size == 0) grid.size = (grid.type == GRID_CURVILINEAR) ? grid.xsize * grid.ysize : grid.xsize;
-
-      gridID = gridCreate(grid.type, grid.size);
-
-      if (grid.type == GRID_CURVILINEAR)
-      {
-        if (grid.xsize == 0) cdo_abort("xsize undefined!");
-        if (grid.ysize == 0) cdo_abort("ysize undefined!");
-        gridDefXsize(gridID, grid.xsize);
-        gridDefYsize(gridID, grid.ysize);
-      }
-      else
-      {
-        if (grid.nvertex > 0) gridDefNvertex(gridID, grid.nvertex);
-        if (grid.number > 0)
-        {
-          cdiDefKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDUSED, grid.number);
-          if (grid.position >= 0) cdiDefKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDINREFERENCE, grid.position);
-        }
-        if (grid.path.size()) cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_REFERENCEURI, grid.path.c_str());
-      }
-
-      if (grid.xvals.size()) gridDefXvals(gridID, grid.xvals.data());
-      if (grid.yvals.size()) gridDefYvals(gridID, grid.yvals.data());
-      if (grid.area.size()) gridDefArea(gridID, grid.area.data());
-      if (grid.xbounds.size()) gridDefXbounds(gridID, grid.xbounds.data());
-      if (grid.ybounds.size()) gridDefYbounds(gridID, grid.ybounds.data());
-      if (grid.mask.size()) gridDefMask(gridID, grid.mask.data());
-
+      gridID = grid_define_full(grid);
       break;
     }
     case GRID_SPECTRAL:
     {
-      if (grid.ntr == 0) cdo_abort("truncation undefined!");
-      if (grid.size == 0) grid.size = (grid.ntr + 1) * (grid.ntr + 2);
-
-      gridID = gridCreate(grid.type, grid.size);
-
-      gridDefTrunc(gridID, grid.ntr);
-      gridDefComplexPacking(gridID, grid.lcomplex);
-
+      gridID = grid_define_spectral(grid);
       break;
     }
     case GRID_GME:
     {
-      if (grid.nd == 0) cdo_abort("nd undefined!");
-      if (grid.ni == 0) cdo_abort("ni undefined!");
-      if (grid.size == 0) cdo_abort("size undefined!");
-
-      gridID = gridCreate(grid.type, grid.size);
-
-      gridDefParamGME(gridID, grid.nd, grid.ni, grid.ni2, grid.ni3);
-
-      if (grid.mask.size()) gridDefMask(gridID, grid.mask.data());
-
+      gridID = grid_define_gme(grid);
       break;
     }
     default:
@@ -510,17 +539,15 @@ cdo_define_grid(std::string const &gridFile)
     if (gridID == CDI_UNDEFID)
     {
       Debug(cdoDebug, "grid from ASCII file");
-      auto gfp = std::fopen(filename, "r");
-      gridID = grid_read(gfp, filename);
-      std::fclose(gfp);
+      auto fobj = c_fopen(filename, "r");
+      if (fobj.get() != nullptr) { gridID = grid_read(fobj.get(), filename); }
     }
 
     if (gridID == CDI_UNDEFID)
     {
       Debug(cdoDebug, "grid from PINGO file");
-      auto gfp = std::fopen(filename, "r");
-      gridID = grid_read_pingo(gfp);
-      std::fclose(gfp);
+      auto fobj = c_fopen(filename, "r");
+      if (fobj.get() != nullptr) { gridID = grid_read_pingo(fobj.get()); }
     }
 
     if (gridID == CDI_UNDEFID) cdo_abort("Invalid grid description file %s!", filename);
@@ -536,5 +563,5 @@ void
 cdo_set_grids(std::string const &gridarg)
 {
   auto gridNames = split_string(gridarg, ",");
-  for (auto const &gridName : gridNames) cdo_define_grid(gridName);
+  for (auto const &name : gridNames) cdo_define_grid(name);
 }

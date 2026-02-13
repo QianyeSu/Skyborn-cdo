@@ -70,17 +70,15 @@ percentile_nist(T *array, size_t n, double quantile)
 {
   double rank = (n + 1) * quantile;
   size_t k = (size_t) rank;
-  double d = rank - k;
 
   double percentil = 0.0;
-  if (k == 0)
-    percentil = get_nth_element(array, n, 0);
-  else if (k >= n)
-    percentil = get_nth_element(array, n, n - 1);
+  if (k == 0) { percentil = get_nth_element(array, n, 0); }
+  else if (k >= n) { percentil = get_nth_element(array, n, n - 1); }
   else
   {
     auto vk = get_nth_element(array, n, k - 1);
     auto vk2 = get_nth_element(array, n, k);
+    double d = rank - k;
     percentil = vk + d * (vk2 - vk);
   }
 
@@ -180,7 +178,6 @@ percentile_Rtype8(T *array, size_t len, double quantile)
 {
   double rank = 1.0 / 3.0 + (len + 1.0 / 3.0) * quantile;
   size_t k = (size_t) rank;
-  double d = rank - k;
 
   double percentil = 0.0;
   if (k == 0) { percentil = get_nth_element(array, len, 0); }
@@ -189,6 +186,7 @@ percentile_Rtype8(T *array, size_t len, double quantile)
   {
     auto vk = get_nth_element(array, len, k - 1);
     auto vk2 = get_nth_element(array, len, k);
+    double d = rank - k;
     percentil = vk + d * (vk2 - vk);
   }
 

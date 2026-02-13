@@ -20,21 +20,11 @@
 #include <fcntl.h>
 #include <string.h>
 
-// On Windows, implement pread using _lseeki64 + read
+// On Windows, define ssize_t and pread manually
 #ifdef _WIN32
+#define ssize_t __int64
+#define pread read
 #include <io.h>
-typedef __int64 ssize_t;
-static inline ssize_t pread(int fd, void *buf, size_t count, off_t offset)
-{
-  __int64 saved = _telli64(fd);
-  if (saved == -1)
-    return -1;
-  if (_lseeki64(fd, offset, SEEK_SET) == -1)
-    return -1;
-  int n = _read(fd, buf, (unsigned int)count);
-  _lseeki64(fd, saved, SEEK_SET);
-  return n;
-}
 #else
 #include <unistd.h>
 #endif
@@ -52,20 +42,16 @@ static CdiInputFile *
 cdiInputFile_condestruct(CdiInputFile *me, const char *path)
 {
 #define super() (&me->super)
-  if (!path)
-    goto destruct;
+  if (!path) goto destruct;
   cdiRefObject_construct(super());
   me->path = strdup(path);
-  if (!me->path)
-    goto destructSuper;
-  do
-  {
+  if (!me->path) goto destructSuper;
+  do {
     me->fileDescriptor = open(me->path, O_RDONLY);
   } while (me->fileDescriptor == -1 && (errno == EINTR || errno == EAGAIN));
-  if (me->fileDescriptor == -1)
-    goto freePath;
+  if (me->fileDescriptor == -1) goto freePath;
   // construction successfull, now we can set our own destructor
-  super()->destructor = (void (*)(CdiReferencedObject *))cdiInputFile_destruct;
+  super()->destructor = (void (*)(CdiReferencedObject *)) cdiInputFile_destruct;
   goto success;
 
   // ^        constructor code       ^
@@ -105,17 +91,13 @@ cdiInputFile_make(const char *path)
     // Check the list of open files for the given path.
     for (size_t i = openFileCount; i-- && !result;)
     {
-      if (!strcmp(path, openFileList[i]->path))
-        result = openFileList[i];
+      if (!strcmp(path, openFileList[i]->path)) result = openFileList[i];
     }
     // If no open file was found, we open one, otherwise we just retain the existing one one more time.
-    if (result)
-    {
-      cdiRefObject_retain(&result->super);
-    }
+    if (result) { cdiRefObject_retain(&result->super); }
     else
     {
-      result = (CdiInputFile *)Malloc(sizeof(*result));
+      result = (CdiInputFile *) Malloc(sizeof(*result));
       if (!cdiInputFile_condestruct(result, path))
       {
         // An error occured during construction, avoid a memory leak.
@@ -128,9 +110,8 @@ cdiInputFile_make(const char *path)
         if (openFileCount == openFileListSize)
         {
           openFileListSize *= 2;
-          if (openFileListSize < 16)
-            openFileListSize = 16;
-          openFileList = (CdiInputFile **)Realloc(openFileList, openFileListSize);
+          if (openFileListSize < 16) openFileListSize = 16;
+          openFileList = (CdiInputFile **) Realloc(openFileList, openFileListSize);
         }
         xassert(openFileCount < openFileListSize);
         openFileList[openFileCount++] = result;
@@ -144,24 +125,22 @@ cdiInputFile_make(const char *path)
   return result;
 }
 
-int cdiInputFile_read(const CdiInputFile *me, off_t readPosition, size_t readSize, size_t *outActualReadSize, void *buffer)
+int
+cdiInputFile_read(const CdiInputFile *me, off_t readPosition, size_t readSize, size_t *outActualReadSize, void *buffer)
 {
-  char *byteBuffer = (char *)buffer;
+  char *byteBuffer = (char *) buffer;
   size_t trash;
-  if (!outActualReadSize)
-    outActualReadSize = &trash;
+  if (!outActualReadSize) outActualReadSize = &trash;
   *outActualReadSize = 0;
   while (readSize)
   {
     ssize_t bytesRead = pread(me->fileDescriptor, byteBuffer, readSize, readPosition);
-    if (bytesRead == -1)
-      return (errno == EINVAL) ? CDI_EINVAL : CDI_ESYSTEM;
-    if (bytesRead == 0)
-      return CDI_EEOF;
+    if (bytesRead == -1) return (errno == EINVAL) ? CDI_EINVAL : CDI_ESYSTEM;
+    if (bytesRead == 0) return CDI_EEOF;
     byteBuffer += bytesRead;
     readPosition += bytesRead;
-    readSize -= (size_t)bytesRead;
-    *outActualReadSize += (size_t)bytesRead;
+    readSize -= (size_t) bytesRead;
+    *outActualReadSize += (size_t) bytesRead;
   }
   return CDI_NOERR;
 }
@@ -172,7 +151,8 @@ cdiInputFile_getPath(const CdiInputFile *me)
   return me->path;
 }
 
-void cdiInputFile_destruct(CdiInputFile *me)
+void
+cdiInputFile_destruct(CdiInputFile *me)
 {
 #if HAVE_LIBPTHREAD
   int error = pthread_mutex_lock(&openFileListLock);
@@ -180,7 +160,7 @@ void cdiInputFile_destruct(CdiInputFile *me)
 #endif
   {
     // Find the position of me in the list of open files.
-    ssize_t position = (ssize_t)openFileCount;
+    ssize_t position = (ssize_t) openFileCount;
     while (position > 0 && openFileList[--position] != me)
       ;
     // Remove me from the list

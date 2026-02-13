@@ -13,6 +13,7 @@
 #include <cstring>
 #include <functional>
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 #include "mpmo_color.h"
 
@@ -70,7 +71,7 @@ PrintCerr(std::string const &format, Args const &...args)
   cx = snprintf(nullptr, 0, format.c_str(), Argument(args)...);
   std::string msg = std::string(cx + 1, '\0');
   snprintf(&msg[0], cx + 1, format.c_str(), Argument(args)...);
-  fprintf(stderr, "%s\n", msg.c_str());
+  std::fprintf(stderr, "%s\n", msg.c_str());
   return std::string(msg);
 }
 
@@ -89,9 +90,9 @@ Debug_(const char *p_file, const char *p_func, int p_line, const char *context, 
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #pragma GCC diagnostic ignored "-Wformat-security"
   if (p_debugScope)
-    {
-      fprintf(stderr, (debug_scope_string(p_file, p_func, p_line, context) + format + "\n").c_str(), Argument(args)...);
-    }
+  {
+    std::fprintf(stderr, (debug_scope_string(p_file, p_func, p_line, context) + format + "\n").c_str(), Argument(args)...);
+  }
 #pragma GCC diagnostic pop
 }
 
@@ -107,7 +108,7 @@ void
 Error_(const char *caller, std::string const &format, Args const &...args) noexcept
 {
   PrintCerr(Red("Error:") + "(%s)" + format, caller, Argument(args)...);
-  if (exitOnError) exit(EXIT_FAILURE);
+  if (exitOnError) std::exit(EXIT_FAILURE);
 }
 
 void Verbose_(std::function<void()> p_function) noexcept;
@@ -125,14 +126,17 @@ Warning_(const char *caller, std::string const &format, Args const &...args) noe
 {
   (void) caller;  // quell warning if WITH_CALLER_NAME is not defined
   if (warningsEnabled)
+  {
+    if (pedantic)
     {
-      if (pedantic)
-        {
-          PrintCerr(Red("Warning: ") + format, Argument(args)...);
-          if (exitOnError) exit(EXIT_FAILURE);
-        }
-      else { PrintCerr(Yellow("Warning: ") + format, Argument(args)...); }
+      PrintCerr(Red("Warning: ") + format, Argument(args)...);
+      if (exitOnError) std::exit(EXIT_FAILURE);
     }
+    else
+    {
+      PrintCerr(Yellow("Warning: ") + format, Argument(args)...);
+    }
+  }
 }
 
 template <typename... Args>
@@ -142,11 +146,11 @@ SysError_(const char *func, std::string const &format, Args const &...args) noex
   int saved_errno = errno;
   PrintCerr(Red("SysError: %s ") + format, func, Argument(args)...);
   if (saved_errno)
-    {
-      errno = saved_errno;
-      perror("System error message");
-    }
-  exit(EXIT_FAILURE);
+  {
+    errno = saved_errno;
+    std::perror("System error message");
+  }
+  std::exit(EXIT_FAILURE);
 }
 
 }  // namespace MpMO

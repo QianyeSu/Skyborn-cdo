@@ -92,9 +92,8 @@ append(std::shared_ptr<T> &parent, std::shared_ptr<T> &child)
 
 // Factory Funcs!
 
-// Factory Funcs!
 static std::shared_ptr<Node>
-create_operator_node(ARGV_ITERATOR &p_curentArgument, bool is_first = false)
+create_operator_node(ARGV_ITERATOR &p_curentArgument)
 {
   debug_parser("Creating new operator node: %s", *p_curentArgument);
 
@@ -110,10 +109,11 @@ create_operator_node(ARGV_ITERATOR &p_curentArgument, bool is_first = false)
   auto newNode = std::make_shared<Node>(p_curentArgument, operatorName, operatorArguments, mod.constraints);
   return newNode;
 }
+
 static std::shared_ptr<Node>
 create_first_operator_node(ARGV_ITERATOR &p_curentArgument)
 {
-  return create_operator_node(p_curentArgument, true);
+  return create_operator_node(p_curentArgument);
 }
 
 static std::shared_ptr<Node>
@@ -479,7 +479,6 @@ run(std::vector<std::string> &p_argv)
       }
       else
       {
-        bool isOutFile = true;
         debug_parser("creating new out file: %s", *cur_arg);
         auto outFileNode = std::make_shared<Node>(cur_arg, Node::NodeType::OUTFILE);
         node_structure.push_back(outFileNode);
@@ -492,6 +491,7 @@ run(std::vector<std::string> &p_argv)
 
   return node_structure;
 }
+
 std::vector<std::shared_ptr<Node>>
 _parse(std::vector<std::string> p_argv)
 {

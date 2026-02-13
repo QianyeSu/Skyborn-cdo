@@ -38,45 +38,45 @@ mpmo_get_color_mode()
 int CDO_Color = 1;
 
 void
-set_text_color(FILE *fp, TextMode attr, TextColor fg)
+set_text_color(std::FILE *fp, TextMode attr, TextColor fg)
 {
   if (!color_enabled()) return;
   if (!color_enabled()) return;
 
-  // fprintf(fp, "%c[%d", 0x1B, attr);
+  // std::fprintf(fp, "%c[%d", 0x1B, attr);
   // if (fg >= 0)
   //  {
-  //    fprintf(fp, ";%d", fg + 30);
-  //    if (bg >= 0) fprintf(fp, ";%d", bg + 40);
+  //    std::fprintf(fp, ";%d", fg + 30);
+  //    if (bg >= 0) std::fprintf(fp, ";%d", bg + 40);
   //  }
   //
   std::string color_str = text_color(fg, attr, NO_COLOR);
-  fprintf(fp, "%s", color_str.c_str());
+  std::fprintf(fp, "%s", color_str.c_str());
 }
 
 void
-set_text_color(FILE *fp, TextMode attr)
+set_text_color(std::FILE *fp, TextMode attr)
 {
   set_text_color(fp, attr, NO_COLOR);
 }
 
 void
-set_text_color(FILE *fp, TextColor fg)
+set_text_color(std::FILE *fp, TextColor fg)
 {
   set_text_color(fp, MODELESS, fg);
 }
 
 void
-reset_text_color(FILE *fp)
+reset_text_color(std::FILE *fp)
 {
   if (fp == stdout && !color_enabled()) return;
   if (fp == stderr && !color_enabled()) return;
 
-  fprintf(fp, "%c[%dm", 0x1B, MODELESS);
+  std::fprintf(fp, "%c[%dm", 0x1B, MODELESS);
 }
 
 void
-colorize(FILE *fp, TextColor fg, TextMode mode, std::function<void()> func)
+colorize(std::FILE *fp, TextColor fg, TextMode mode, std::function<void()> func)
 {
   set_text_color(fp, mode, fg);
   func();
@@ -84,7 +84,7 @@ colorize(FILE *fp, TextColor fg, TextMode mode, std::function<void()> func)
 }
 
 void
-colorize(FILE *fp, TextColor fg, std::function<void()> func)
+colorize(std::FILE *fp, TextColor fg, std::function<void()> func)
 {
   colorize(fp, fg, MODELESS, func);
 }

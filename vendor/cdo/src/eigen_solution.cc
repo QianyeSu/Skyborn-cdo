@@ -6,6 +6,7 @@
 /* ********************************** */
 
 #include <atomic>
+#include <cstdlib>
 
 #include "cdo_options.h"
 #include "cdo_output.h"
@@ -174,8 +175,8 @@ eigen_solution_of_triangular_matrix(Varray<double> &d, Varray<double> &e, long n
       iter++;
       if (iter == MAX_ITER)
       {
-        fprintf(stderr, "%s: ERROR! Too many iterations while determining the eigensolution!\n", prompt);
-        exit(1);
+        std::fprintf(stderr, "%s: ERROR! Too many iterations while determining the eigensolution!\n", prompt);
+        std::exit(1);
       }
       double g = (d[l + 1] - d[l]) / (2.0 * e[l]);
       double r = pythagoras(g, 1.0);
@@ -463,7 +464,7 @@ jacobi_1side(Varray2D<double> &M, Varray<double> &A, size_t n)
     }
   }
 
-  // fprintf(stderr, "%d annihilations per sweep\n", count);
+  // std::fprintf(stderr, "%d annihilations per sweep\n", count);
 
   n_finished = 0;
 
@@ -512,11 +513,11 @@ jacobi_1side(Varray2D<double> &M, Varray<double> &A, size_t n)
 
   if (Options::cdoVerbose) cdo_print("Finished one-sided jacobi scheme for eigenvalue computation after %i iterations", n_iter);
 
-  // fprintf(stderr,"finished after %i sweeps (n_finished %i)\n",n_iter,n_finished);
+  // std::fprintf(stderr,"finished after %i sweeps (n_finished %i)\n",n_iter,n_finished);
 
   if (n_iter == max_jacobi_iter && n_finished < count)
   {
-    fprintf(stderr,
+    std::fprintf(stderr,
             "jacobi_1side (Warning): Eigenvalue computation with one-sided jacobi scheme did not converge properly.\n"
             "                        %zu of %zu pairs of columns did not achieve requested orthogonality of %g\n",
             count - n_finished, count, fnorm_precision);

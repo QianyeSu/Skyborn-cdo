@@ -1,0 +1,19 @@
+#! @PYTHON@
+
+from cdoTest import *
+
+OPERATOR="timcumsum"
+
+IFILE=f'{DATAPATH}/detrend_data'
+
+RFILE=f'{DATAPATH}/timcumsum_ref'
+OFILE="timcumsum_res"
+
+test_module = TestModule()
+t = TAPTest(OPERATOR)
+t.add(f'{CDO} {OPERATOR} {IFILE} {OFILE}')
+t.add(f'{CDO} diff {OFILE} {RFILE}')
+t.clean(OFILE)
+test_module.add(t)
+
+test_module.run()

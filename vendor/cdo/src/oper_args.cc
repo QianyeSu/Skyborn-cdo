@@ -31,7 +31,7 @@ ArgumentHandler::parse(std::vector<std::string> const &argv)
   size_t equalPos = argv[0].find('=');
   if (equalPos == std::string::npos)
   {
-    fprintf(stderr, "missing '=' in key/value string: >%s<\n", argv[0].c_str());
+    std::fprintf(stderr, "missing '=' in key/value string: >%s<\n", argv[0].c_str());
     return -1;
   }
 

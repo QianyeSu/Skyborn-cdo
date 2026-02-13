@@ -14,19 +14,19 @@
 #include "pthread_debug.h"
 #endif
 
-#include <stdio.h>
+#include <cstdio>
 
 void
 print_pthread_info()
 {
 #ifdef HAVE_LIBPTHREAD
-  fprintf(stderr, "\n");
+  std::fprintf(stderr, "\n");
 
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   print_pthread_attr("Default pthread attr", &attr);
   pthread_attr_destroy(&attr);
 
-  fprintf(stderr, "\n");
+  std::fprintf(stderr, "\n");
 #endif
 }

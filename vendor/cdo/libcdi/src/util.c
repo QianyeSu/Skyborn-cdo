@@ -18,10 +18,10 @@ static const char uuidFmt[] = "%02hhx%02hhx%02hhx%02hhx-"
                               "%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-"
                               "%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx";
 
-int cdiUUID2Str(const unsigned char *uuid, char *uuidstr)
+int
+cdiUUID2Str(const unsigned char *uuid, char *uuidstr)
 {
-  if (uuid == NULL || uuidstr == NULL)
-    return 0;
+  if (uuid == NULL || uuidstr == NULL) return 0;
 
   int iret = snprintf(uuidstr, uuidNumHexChars + 1, uuidFmt, uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
                       uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
@@ -35,15 +35,14 @@ int cdiUUID2Str(const unsigned char *uuid, char *uuidstr)
   return iret;
 }
 
-int cdiStr2UUID(const char *uuidstr, unsigned char *uuid)
+int
+cdiStr2UUID(const char *uuidstr, unsigned char *uuid)
 {
-  if (uuid == NULL || uuidstr == NULL || strlen(uuidstr) != uuidNumHexChars)
-    return -1;
+  if (uuid == NULL || uuidstr == NULL || strlen(uuidstr) != uuidNumHexChars) return -1;
 
   int iret = sscanf(uuidstr, uuidFmt, &uuid[0], &uuid[1], &uuid[2], &uuid[3], &uuid[4], &uuid[5], &uuid[6], &uuid[7], &uuid[8],
                     &uuid[9], &uuid[10], &uuid[11], &uuid[12], &uuid[13], &uuid[14], &uuid[15]);
-  if (iret != CDI_UUID_SIZE)
-    return -1;
+  if (iret != CDI_UUID_SIZE) return -1;
 
   return iret;
 }
@@ -54,21 +53,18 @@ cdiEscapeSpaces(const char *string)
 {
   // How much memory do we need?
   size_t escapeCount = 0, length = 0;
-  for (; string[length]; ++length)
-    escapeCount += string[length] == ' ' || string[length] == '\\';
+  for (; string[length]; ++length) escapeCount += string[length] == ' ' || string[length] == '\\';
 
-  char *result = (char *)Malloc(length + escapeCount + 1);
-  if (!result)
-    return NULL;
+  char *result = (char *) Malloc(length + escapeCount + 1);
+  if (!result) return NULL;
 
   // Do the escaping.
   for (size_t in = 0, out = 0; in < length; ++out, ++in)
   {
-    if (string[in] == ' ' || string[in] == '\\')
-      result[out++] = '\\';
+    if (string[in] == ' ' || string[in] == '\\') result[out++] = '\\';
     result[out] = string[in];
   }
-  result[length + escapeCount] = 0; // termination!
+  result[length + escapeCount] = 0;  // termination!
   return result;
 }
 
@@ -85,56 +81,33 @@ cdiUnescapeSpaces(const char *string, const char **outStringEnd)
     if (*current == '\\')
     {
       current++, escapeCount++;
-      if (!current)
-        return NULL;
+      if (!current) return NULL;
     }
     length++;
   }
 
-  char *result = (char *)Malloc(length + 1);
-  if (!result)
-    return NULL;
+  char *result = (char *) Malloc(length + 1);
+  if (!result) return NULL;
 
   // Do the unescaping.
   for (size_t in = 0, out = 0; out < length;)
   {
-    if (string[in] == '\\')
-      in++;
+    if (string[in] == '\\') in++;
     result[out++] = string[in++];
   }
-  result[length] = 0; // termination!
-  if (outStringEnd)
-    *outStringEnd = &string[length + escapeCount];
+  result[length] = 0;  // termination!
+  if (outStringEnd) *outStringEnd = &string[length + escapeCount];
   return result;
 }
 
-#ifdef _WIN32
-#include <rpc.h>
-#include <string.h>
-void cdiCreateUUID(unsigned char uuid[CDI_UUID_SIZE])
-{
-  UUID winuuid;
-  if (UuidCreate(&winuuid) == RPC_S_OK)
-  {
-    memcpy(uuid, &winuuid, CDI_UUID_SIZE);
-  }
-  else
-  {
-    /* fallback: pseudo-random */
-    srand((unsigned int)time(NULL));
-    for (int i = 0; i < CDI_UUID_SIZE; i++)
-      uuid[i] = (unsigned char)(rand() & 0xFF);
-    uuid[8] = (unsigned char)((uuid[8] & 0x3f) | (1 << 7));
-    uuid[7] = (unsigned char)((uuid[7] & 0x0f) | (4 << 4));
-  }
-}
-#else /* !_WIN32 */
+#ifndef _WIN32
 #if defined(HAVE_DECL_UUID_GENERATE) && defined(HAVE_UUID_UUID_H)
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <uuid/uuid.h>
-void cdiCreateUUID(unsigned char uuid[CDI_UUID_SIZE])
+void
+cdiCreateUUID(unsigned char uuid[CDI_UUID_SIZE])
 {
   static int uuid_seeded = 0;
   static char uuid_rand_state[31 * sizeof(long)];
@@ -150,7 +123,7 @@ void cdiCreateUUID(unsigned char uuid[CDI_UUID_SIZE])
       perror("uuid random seed generation failed!");
       exit(1);
     }
-    unsigned seed = (unsigned)(tv.tv_sec ^ tv.tv_usec);
+    unsigned seed = (unsigned) (tv.tv_sec ^ tv.tv_usec);
     caller_rand_state = initstate(seed, uuid_rand_state, sizeof(uuid_rand_state));
     uuid_seeded = 1;
   }
@@ -160,9 +133,11 @@ void cdiCreateUUID(unsigned char uuid[CDI_UUID_SIZE])
 #elif defined(HAVE_DECL_UUID_CREATE) && defined(HAVE_UUID_H)
 #ifdef HAVE_DECL_UUID_MAKE_V5
 #include <uuid.h>
-void cdiCreateUUID(unsigned char *uuid)
+void
+cdiCreateUUID(unsigned char *uuid)
 {
-  static const char error_stage[][16] = {"uuid_create", "uuid_create", "uuid_load", "uuid_make", "uuid_export", "uuid_destroy1", "uuid_destroy2"};
+  static const char error_stage[][16]
+      = { "uuid_create", "uuid_create", "uuid_load", "uuid_make", "uuid_export", "uuid_destroy1", "uuid_destroy2" };
   uuid_t *objuuid = NULL, *nsuuid = NULL;
   int stage = 0;
   uuid_rc_t status;
@@ -184,14 +159,11 @@ void cdiCreateUUID(unsigned char *uuid)
       }
     }
   }
-  if (status != UUID_RC_OK)
-    Error("failed to generate UUID at stage %s\n", error_stage[stage]);
+  if (status != UUID_RC_OK) Error("failed to generate UUID at stage %s\n", error_stage[stage]);
   stage = 5;
-  if ((status = uuid_destroy(nsuuid)) != UUID_RC_OK)
-    Error("failed to generate UUID at stage %s\n", error_stage[stage]);
+  if ((status = uuid_destroy(nsuuid)) != UUID_RC_OK) Error("failed to generate UUID at stage %s\n", error_stage[stage]);
   ++stage;
-  if ((status = uuid_destroy(objuuid)) != UUID_RC_OK)
-    Error("failed to generate UUID at stage %s\n", error_stage[stage]);
+  if ((status = uuid_destroy(objuuid)) != UUID_RC_OK) Error("failed to generate UUID at stage %s\n", error_stage[stage]);
 }
 #else
 #include <inttypes.h>
@@ -199,10 +171,11 @@ typedef uint8_t u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 #include <uuid.h>
-void cdiCreateUUID(unsigned char *uuid)
+void
+cdiCreateUUID(unsigned char *uuid)
 {
   uint32_t status;
-  uuid_create((uuid_t *)(void *)uuid, &status);
+  uuid_create((uuid_t *) (void *) uuid, &status);
   if (status != uuid_s_ok)
   {
     perror("uuid generation failed!");
@@ -214,7 +187,8 @@ void cdiCreateUUID(unsigned char *uuid)
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-void cdiCreateUUID(unsigned char *uuid)
+void
+cdiCreateUUID(unsigned char *uuid)
 {
   static int uuid_seeded = 0;
 #ifndef _SX
@@ -239,8 +213,7 @@ void cdiCreateUUID(unsigned char *uuid)
     caller_rand_state = initstate(seed, uuid_rand_state, sizeof(uuid_rand_state));
     uuid_seeded = 1;
   }
-  for (size_t i = 0; i < CDI_UUID_SIZE; ++i)
-    uuid[i] = (unsigned char)random();
+  for (size_t i = 0; i < CDI_UUID_SIZE; ++i) uuid[i] = (unsigned char) random();
 #else
   unsigned short caller_rand_state[3];
   {
@@ -260,20 +233,19 @@ void cdiCreateUUID(unsigned char *uuid)
       unsigned seed = 0;
 #endif
       our_rand_state[0] = 0x330E;
-      our_rand_state[1] = (unsigned short)(seed & 0xFFFFU);
-      our_rand_state[2] = (unsigned short)((seed >> 16) & 0xFFFFU);
+      our_rand_state[1] = (unsigned short) (seed & 0xFFFFU);
+      our_rand_state[2] = (unsigned short) ((seed >> 16) & 0xFFFFU);
     }
     unsigned short *p = seed48(our_rand_state);
     uuid_seeded = 1;
     memcpy(caller_rand_state, p, sizeof(caller_rand_state));
   }
-  for (size_t i = 0; i < CDI_UUID_SIZE; ++i)
-    uuid[i] = (unsigned char)lrand48();
+  for (size_t i = 0; i < CDI_UUID_SIZE; ++i) uuid[i] = (unsigned char) lrand48();
 #endif
   /* encode variant into msb of octet 8 */
-  uuid[8] = (unsigned char)((uuid[8] & 0x3f) | (1 << 7));
+  uuid[8] = (unsigned char) ((uuid[8] & 0x3f) | (1 << 7));
   /* encode version 4 ((pseudo-)random uuid) into msb of octet 7 */
-  uuid[7] = (unsigned char)((uuid[7] & 0x0f) | (4 << 4));
+  uuid[7] = (unsigned char) ((uuid[7] & 0x0f) | (4 << 4));
 #ifndef _SX
   setstate(caller_rand_state);
 #else

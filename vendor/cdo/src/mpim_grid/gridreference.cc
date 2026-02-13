@@ -31,9 +31,9 @@
 // callback function for curl for writing the network retrieved grid file
 #ifdef HAVE_LIBCURL
 static size_t
-write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+write_data(void *ptr, size_t size, size_t nmemb, std::FILE *stream)
 {
-  return fwrite(ptr, size, nmemb, stream);
+  return std::fwrite(ptr, size, nmemb, stream);
 }
 #endif
 
@@ -54,14 +54,14 @@ download_gridfile(const char *uri, const char *basename)
   auto ret = curl_global_init(curlflags);
   if (ret != 0)
   {
-    fprintf(stderr, "ERROR: %s!\n", curl_easy_strerror(ret));
+    std::fprintf(stderr, "ERROR: %s!\n", curl_easy_strerror(ret));
     return -1;
   }
 
   auto curl = curl_easy_init();
   if (curl == nullptr)
   {
-    fprintf(stderr, "ERROR: could not get curl handler.\n");
+    std::fprintf(stderr, "ERROR: could not get curl handler.\n");
     return -1;
   }
   else
@@ -69,7 +69,7 @@ download_gridfile(const char *uri, const char *basename)
     auto fp = std::fopen(basename, "w");
     if (fp == nullptr)
     {
-      fprintf(stderr, "ERROR: could not open local output file %s. %s.\n", basename, strerror(errno));
+      std::fprintf(stderr, "ERROR: could not open local output file %s. %s.\n", basename, strerror(errno));
       return -1;
     }
 
@@ -105,15 +105,15 @@ download_gridfile(const char *uri, const char *basename)
       else
       {
         int status = remove(basename);
-        if (status == -1) perror(basename);
+        if (status == -1) std::perror(basename);
         cdo_warning("The requested URL was not found (%s)!", uri);
       }
     }
     else
     {
       int status = remove(basename);
-      if (status == -1) perror(basename);
-      fprintf(stderr, "ERROR: %s. Download %s failed.\n\n", curl_easy_strerror(ret), basename);
+      if (status == -1) std::perror(basename);
+      std::fprintf(stderr, "ERROR: %s. Download %s failed.\n\n", curl_easy_strerror(ret), basename);
     }
 
     curl_easy_cleanup(curl);
@@ -153,7 +153,10 @@ search_file(const char *directory, const char *filename)
       if (buf.st_size != 0 && !(buf.st_mode & S_IFDIR)) return 0;
     }
   }
-  else { perror(directory); }
+  else
+  {
+    std::perror(directory);
+  }
 #endif
 
   return 1;
@@ -259,7 +262,10 @@ referenceToGrid(int gridID1)
       filename = griduri;
       griduri[0] = 0;
     }
-    else { filename++; }
+    else
+    {
+      filename++;
+    }
 
     int status = 0;
     char griddir[8192] = { 0 };
@@ -275,7 +281,7 @@ referenceToGrid(int gridID1)
 
       if (wpath != griduri)
       {
-        auto gridpath = strchr(wpath, '/');
+        auto const *gridpath = strchr(wpath, '/');
         if (gridpath)
         {
           strcpy(griddir, IconGrids.c_str());

@@ -10,6 +10,7 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <string_view>
 
 #include "listbuffer.h"
 #include "namelist.h"
@@ -33,7 +34,7 @@ KVList : public std::list<KeyValues>
 public:
   std::string name;
 
-  void print(FILE *fp = stderr) const;
+  void print(std::FILE *fp = stderr) const;
   int parse_arguments(std::vector<std::string> const &argv);
   const KeyValues *search(std::string const &key) const;
   void remove(std::string const &inkey);
@@ -52,14 +53,14 @@ PMList : public std::list<KVList>
 public:
   const KVList *searchKVListVentry(std::string const &key, std::string const &value, std::vector<std::string> const &entry);
   const KVList *getKVListVentry(std::vector<std::string> const &entry);
-  void print(FILE *fp = stderr);
-  void read_namelist(FILE *fp, const char *name);
-  void read_cmor_table(FILE *fp, const char *name);
+  void print(std::FILE *fp = stderr);
+  void read_namelist(std::FILE *fp, std::string_view name);
+  void read_cmor_table(std::FILE *fp, std::string_view name);
 };
 
 void mapvar(int vlistID, int varID, const KeyValues &kv, CmorVar &cmorVar, bool &hasValidMin, bool &hasValidMax, int ptab,
             bool isnPtmodeName);
 int parse_namelist(PMList &pmlist, NamelistParser &parser, char *buf, bool cdocmor);
-int parse_list_buffer(NamelistParser &p, ListBuffer &listBuffer);
+int parse_list_buffer(NamelistParser &p, ListBuffer const &listBuffer);
 
 #endif

@@ -17,7 +17,7 @@
 
 #include "cdo_options.h"
 #include "cdo_default_values.h"
-#include "cdo_process.h"
+#include "process.h"
 #include "cdo_output.h"
 
 thread_local Process *localProcess;
@@ -103,9 +103,9 @@ static void
 print_enter(const char *prompt, const char *enter)
 {
   set_text_color(stderr, BRIGHT, MAGENTA);
-  fprintf(stderr, "%-16s : ", prompt);
+  std::fprintf(stderr, "%-16s : ", prompt);
   reset_text_color(stderr);
-  fprintf(stderr, "Enter %s > ", enter);
+  std::fprintf(stderr, "Enter %s > ", enter);
 }
 
 static std::string

@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <cmath>
 
+namespace
+{
 struct dimension
 {
   int lower;
@@ -41,6 +43,7 @@ struct polygon
   struct geo center;
   struct geo boundary[6];
 };
+}  // namespace
 
 constexpr double pid5 = 0.2 * M_PI;
 // constexpr double pid180 = 180.0/M_PI;
@@ -92,11 +95,15 @@ gme_factorni(int kni, int *kni2, int *kni3)
       *kni3 = *kni3 + 1;
       mx = mx / 3;
     }
-    else { /* error return */ }
+    else
+    { /* error return */
+    }
   }
 
   // kni3 must not be greater than
-  if (*kni3 > 1) { /* error return */ }
+  if (*kni3 > 1)
+  { /* error return */
+  }
 }
 
 /*****************************************************************************/
@@ -1173,13 +1180,13 @@ gme_grid(int withBounds, size_t gridsize, double *rlon, double *rlat, double *bl
   // check gridsize
   if ((size_t) (ni + 1) * (ni + 1) * nd != gridsize)
   {
-    fprintf(stderr, "gme_grid: Calculation of the global GME grid failed (ni=%d)!\n", ni);
+    std::fprintf(stderr, "gme_grid: Calculation of the global GME grid failed (ni=%d)!\n", ni);
     if ((size_t) (ni + 1) * (ni + 1) * nd > gridsize)
     {
-      fprintf(stderr, "gme_grid: Resulting grid size is greater than the predetermined grid size of %zu.\n", gridsize);
-      fprintf(stderr, "gme_grid: Maybe this is only a part of a global GME grid without further information.\n");
+      std::fprintf(stderr, "gme_grid: Resulting grid size is greater than the predetermined grid size of %zu.\n", gridsize);
+      std::fprintf(stderr, "gme_grid: Maybe this is only a part of a global GME grid without further information.\n");
     }
-    exit(-1);
+    std::exit(-1);
   }
 
   std::vector<double> xn(gridsize * 3, 0.0);
@@ -1203,8 +1210,8 @@ gme_grid(int withBounds, size_t gridsize, double *rlon, double *rlat, double *bl
   }
   if (inull > gridsize / 4)
   {
-    fprintf(stderr, "gme_grid: Coordinates calculation of the global GME grid failed (ni=%d)!\n", ni);
-    exit(-1);
+    std::fprintf(stderr, "gme_grid: Coordinates calculation of the global GME grid failed (ni=%d)!\n", ni);
+    std::exit(-1);
   }
 
   xd(rlon, im1s, im1e, im2s, im2e, nd, rlonx.data(), im1s - 1, im1e + 1, im2s - 1, im2e + 1, nd);
@@ -1274,20 +1281,20 @@ main(int argc, char *argv[])
     int id2 = id1 * (ni + 1);
     int ioffset = -(id1 + id2);
 
-    FILE *out;
-    if ((out = std::fopen("mask.dat", "w")) == nullptr)
+    auto out = std::fopen("mask.dat", "w");
+    if (out == nullptr)
     {
-      perror("couldn't open mask.dat");
-      exit(-1);
+      std::perror("couldn't open mask.dat");
+      std::exit(-1);
     }
 
     for (jd = 1; jd <= nd; jd++)
     {
-      fprintf(out, "%d-------------------------------------------------\n", jd);
+      std::fprintf(out, "%d-------------------------------------------------\n", jd);
       for (j2 = 1; j2 <= ni + 1; ++j2)
       {
-        for (j1 = 0; j1 <= ni; ++j1) { fprintf(out, "%8d", mask[j1 + id1 * j2 + id2 * jd + ioffset]); }
-        fprintf(out, "\n");
+        for (j1 = 0; j1 <= ni; ++j1) { std::fprintf(out, "%8d", mask[j1 + id1 * j2 + id2 * jd + ioffset]); }
+        std::fprintf(out, "\n");
       }
     }
 
@@ -1305,11 +1312,11 @@ main(int argc, char *argv[])
     int id2 = id1 * (ni + 1);
     int ioffset = -(id1 + id2);
 
-    FILE *out;
-    if ((out = std::fopen("dual.dat", "w")) == nullptr)
+    auto out = std::fopen("dual.dat", "w");
+    if (out == nullptr)
     {
-      perror("couldn't open dual.dat");
-      exit(-1);
+      std::perror("couldn't open dual.dat");
+      std::exit(-1);
     }
 
     for (int jd = 1; jd <= nd; jd++)
@@ -1320,10 +1327,10 @@ main(int argc, char *argv[])
         {
           if (mask[j1 + id1 * j2 + id2 * jd + ioffset])
           {
-            fprintf(out, ">\n");
+            std::fprintf(out, ">\n");
             for (jm = 1; jm <= poly[j1 + id1 * j2 + id2 * jd + ioffset].type; jm++)
             {
-              fprintf(out, "%8.2f%8.2f\n", pid180 * poly[j1 + id1 * j2 + id2 * jd + ioffset].boundary[jm - 1].lon,
+              std::fprintf(out, "%8.2f%8.2f\n", pid180 * poly[j1 + id1 * j2 + id2 * jd + ioffset].boundary[jm - 1].lon,
                       pid180 * poly[j1 + id1 * j2 + id2 * jd + ioffset].boundary[jm - 1].lat);
             }
           }

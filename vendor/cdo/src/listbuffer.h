@@ -19,7 +19,7 @@ public:
   std::string name;
 
   int
-  read(FILE *fp, const char *_name)
+  read(std::FILE *fp, const char *_name)
   {
     int filedes = fileno(fp);
     struct stat buf;

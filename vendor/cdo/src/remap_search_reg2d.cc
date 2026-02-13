@@ -12,15 +12,15 @@ nbr_indices_and_distance(int &searchResult, size_t index, double &distMin, doubl
 {
   if (distance < distMin)
   {
-    for (int n = 0; n < 4; ++n)
+    for (int k = 0; k < 4; ++k)
     {
-      if (distance < nbrDistance[n])
+      if (distance < nbrDistance[k])
       {
-        for (int i = 3; i > n; --i) nbrIndices[i] = nbrIndices[i - 1];
-        for (int i = 3; i > n; --i) nbrDistance[i] = nbrDistance[i - 1];
+        for (int i = 3; i > k; --i) nbrIndices[i] = nbrIndices[i - 1];
+        for (int i = 3; i > k; --i) nbrDistance[i] = nbrDistance[i - 1];
         searchResult = -1;
-        nbrIndices[n] = index;
-        nbrDistance[n] = distance;
+        nbrIndices[k] = index;
+        nbrDistance[k] = distance;
         distMin = nbrDistance[3];
         break;
       }
@@ -43,7 +43,8 @@ grid_search_square_reg2d_NN(size_t nx, size_t ny, size_t *nbrIndices, double *nb
   double distMin = DBL_MAX;
   for (int n = 0; n < 4; ++n) nbrDistance[n] = DBL_MAX;
 
-  size_t jjf = 0, jjl = ny - 1;
+  size_t jjf = 0;
+  size_t jjl = ny - 1;
   if (plon >= lons[0] && plon <= lons[nx - 1])
   {
     if (lats[0] < lats[ny - 1])
@@ -91,10 +92,10 @@ grid_search_square_reg2d_NN(size_t nx, size_t ny, size_t *nbrIndices, double *nb
     }
   }
 
-  for (int n = 0; n < 4; ++n) nbrDistance[n] = 1.0 / (nbrDistance[n] + TINY);
+  for (int i = 0; i < 4; ++i) nbrDistance[i] = 1.0 / (nbrDistance[i] + TINY);
   double distance = 0.0;
-  for (int n = 0; n < 4; ++n) distance += nbrDistance[n];
-  for (int n = 0; n < 4; ++n) nbrDistance[n] /= distance;
+  for (int i = 0; i < 4; ++i) distance += nbrDistance[i];
+  for (int i = 0; i < 4; ++i) nbrDistance[i] /= distance;
 
   return searchResult;
 }
@@ -115,8 +116,8 @@ grid_search_square_reg2d(RemapGrid *srcGrid, SquareCorners &squareCorners, doubl
       lons[4]     : longitudes of the four corner points
   */
   int searchResult = 0;
-  auto &latsReg2d = srcGrid->centerLatsReg2d;
-  auto &lonsReg2d = srcGrid->centerLonsReg2d;
+  auto const &latsReg2d = srcGrid->centerLatsReg2d;
+  auto const &lonsReg2d = srcGrid->centerLonsReg2d;
 
   for (int n = 0; n < 4; ++n) squareCorners.indices[n] = 0;
 
@@ -137,17 +138,17 @@ grid_search_square_reg2d(RemapGrid *srcGrid, SquareCorners &squareCorners, doubl
   {
     size_t iix = (srcGrid->isCyclic && ii == (nxm - 1)) ? 0 : ii;
     srcIndices[0] = (jj - 1) * nx + (ii - 1);
-    srcIndices[1] = (jj - 1) * nx + (iix);
-    srcIndices[2] = (jj) *nx + (iix);
-    srcIndices[3] = (jj) *nx + (ii - 1);
+    srcIndices[1] = (jj - 1) * nx + iix;
+    srcIndices[2] = jj * nx + iix;
+    srcIndices[3] = jj * nx + (ii - 1);
 
     srcLons[0] = lonsReg2d[ii - 1];
     srcLons[1] = lonsReg2d[iix];
     // For consistency, we must make sure all lons are in same 2pi interval
-    if (srcLons[0] > PI2) srcLons[0] -= PI2;
-    if (srcLons[0] < 0) srcLons[0] += PI2;
-    if (srcLons[1] > PI2) srcLons[1] -= PI2;
-    if (srcLons[1] < 0) srcLons[1] += PI2;
+    if (srcLons[0] > PI2) { srcLons[0] -= PI2; }
+    if (srcLons[0] < 0) { srcLons[0] += PI2; }
+    if (srcLons[1] > PI2) { srcLons[1] -= PI2; }
+    if (srcLons[1] < 0) { srcLons[1] += PI2; }
     srcLons[2] = srcLons[1];
     srcLons[3] = srcLons[0];
 

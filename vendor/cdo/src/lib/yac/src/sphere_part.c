@@ -16,7 +16,6 @@
 
 #include "sphere_part.h"
 #include "geometry.h"
-#include "basic_grid.h"
 #include "interval_tree.h"
 #include "utils_core.h"
 #include "ensure_array_size.h"
@@ -449,7 +448,7 @@ static int compare_point_idx_xyz(void const * a, void const * b) {
 static struct point_sphere_part_node * partition_point_data (
   struct point_id_xyz * points, size_t num_points, size_t threshold,
   double prev_gc_norm_vector[], size_t curr_tree_depth,
-  size_t * max_tree_depth) {
+  size_t * max_tree_depth, int * list_flag) {
 
   if (curr_tree_depth > *max_tree_depth) *max_tree_depth = curr_tree_depth;
 
@@ -465,48 +464,42 @@ static struct point_sphere_part_node * partition_point_data (
   // dot <= 0.0    -> U list
   // dot >  0.0    -> T list
 
-  struct point_id_xyz * left = points, * right = points + num_points - 1;
-
-  // sort such that all points for the U list come first, followed by the
-  // elements of the T list
-  while (1) {
-    // find element that does not belong into U-list
-    while (left <= right) {
-      double * curr_coordinates_xyz = &(left->coordinates_xyz[0]);
-      double dot = curr_coordinates_xyz[0] * gc_norm_vector[0] +
-                   curr_coordinates_xyz[1] * gc_norm_vector[1] +
-                   curr_coordinates_xyz[2] * gc_norm_vector[2];
-
-      // if (angle < M_PI_2)
-      if (dot > 0.0) break;
-      ++left;
-    };
-
-    // find element that does not belong into T-list
-    while (left < right) {
-      double * curr_coordinates_xyz = &(right->coordinates_xyz[0]);
+  YAC_OMP_PARALLEL
+  {
+    YAC_OMP_FOR
+    for (size_t i = 0; i < num_points; ++i) {
+      double * curr_coordinates_xyz = &(points[i].coordinates_xyz[0]);
       double dot = curr_coordinates_xyz[0] * gc_norm_vector[0] +
                    curr_coordinates_xyz[1] * gc_norm_vector[1] +
                    curr_coordinates_xyz[2] * gc_norm_vector[2];
 
       // if (angle >= M_PI_2)
-      if (dot <= 0.0) break;
-      --right;
-    }
-
-    if (left < right) {
-      struct point_id_xyz tmp_point = *left;
-      *left = *right;
-      *right = tmp_point;
-      ++left;
-      --right;
-    } else {
-      break;
+      list_flag[i] = (dot <= 0.0);
     }
   }
+  size_t U_size = 0, T_size = 0;
+  for (size_t i = 0; i < num_points; ++i) {
+    if (list_flag[i]) ++U_size;
+    else ++T_size;
+  }
 
-  size_t U_size = left - points;
-  size_t T_size = num_points - U_size;
+  // The number of T-points among the first U-size number of points in the
+  // array is equal to the number of U-points in the remaining array. These
+  // have to be exchanged in order to get a sorted vertex array
+
+  // search for all T-points in the U-part of the array and swap them with a
+  // U-point in the T-part
+  for (size_t i = 0, j = U_size; i < U_size; ++i) {
+    // if the current point belongs to the T-list
+    if (!list_flag[i]) {
+      // search for a matching U-point
+      for (;!list_flag[j];++j);
+      struct point_id_xyz temp_point = points[i];
+      points[i] = points[j];
+      points[j] = temp_point;
+      ++j;
+    }
+  }
 
   node->U_size = U_size;
   node->T_size = T_size;
@@ -521,8 +514,10 @@ static struct point_sphere_part_node * partition_point_data (
 
   } else {
 
-    node->U = partition_point_data(points, U_size, threshold, gc_norm_vector,
-                                   curr_tree_depth + 1, max_tree_depth);
+    node->U =
+      partition_point_data(
+        points, U_size, threshold, gc_norm_vector,
+        curr_tree_depth + 1, max_tree_depth, list_flag);
   }
 
   if ((T_size <= threshold) || (T_size == num_points)) {
@@ -534,8 +529,9 @@ static struct point_sphere_part_node * partition_point_data (
   } else {
 
     node->T =
-      partition_point_data(points + U_size, T_size, threshold, gc_norm_vector,
-                           curr_tree_depth + 1, max_tree_depth);
+      partition_point_data(
+        points + U_size, T_size, threshold, gc_norm_vector,
+        curr_tree_depth + 1, max_tree_depth, list_flag);
   }
 
   return node;
@@ -670,11 +666,15 @@ struct point_sphere_part_search * yac_point_sphere_part_search_new (
 
   size_t max_tree_depth = 0;
 
+  int * list_flag = xmalloc(num_points * sizeof(*list_flag));
+
   // emperical measurements have given a threshold for the leaf size of 2
   struct point_sphere_part_node * tmp_node =
     partition_point_data(
       points, num_points, I_list_tree_min_size, (double[3]){0.0,0.0,1.0},
-      1, &max_tree_depth);
+      1, &max_tree_depth, list_flag);
+
+  free(list_flag);
 
   search->base_node = *tmp_node;
   search->max_tree_depth = max_tree_depth;
@@ -697,11 +697,15 @@ struct point_sphere_part_search * yac_point_sphere_part_search_mask_new (
 
   size_t max_tree_depth = 0;
 
+  int * list_flag = xmalloc(num_points * sizeof(*list_flag));
+
   // emperical measurements have given a threshold for the leaf size of 2
   struct point_sphere_part_node * tmp_node =
     partition_point_data(
       search->points, num_points, I_list_tree_min_size,
-      (double[3]){0.0,0.0,1.0}, 1, &max_tree_depth);
+      (double[3]){0.0,0.0,1.0}, 1, &max_tree_depth, list_flag);
+
+  free(list_flag);
 
   search->base_node = *tmp_node;
   search->max_tree_depth = max_tree_depth;

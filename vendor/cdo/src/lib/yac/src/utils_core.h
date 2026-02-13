@@ -7,13 +7,6 @@
 
 #include "utils_common.h"
 
-/** \example test_abort_c.c
- * This contains an example of how to use yac_abort_message.
- */
-
-/** \example test_quicksort.c
- * This contains an example of how to use quicksort_index.
- */
 void yac_quicksort_index ( int * a, size_t n, int * idx);
 void yac_quicksort_index_yac_int_size_t ( yac_int * a, size_t n, size_t * idx);
 void yac_quicksort_index_yac_int_yac_int ( yac_int * a, size_t n, yac_int * idx);
@@ -38,11 +31,6 @@ void yac_quicksort_index_int_size_t_size_t (
 void yac_quicksort_index_int_size_t_yac_int (
   int * a, size_t n, size_t * b, yac_int * c );
 
-/** \example test_mergesort.c
- *
- * Natural Merge sort *
- *
- */
 void yac_mergesort(void* base, size_t num, size_t size,
                    int (*compar)(const void*,const void*));
 

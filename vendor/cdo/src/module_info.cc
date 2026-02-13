@@ -31,21 +31,21 @@ ModListOptions::parse_request(std::string const &requestString)
   if (requestString.size() > 0)
   {
     all = false;
-    for (size_t i = 0, n = splitString.size(); i < n; ++i)
+    for (const auto &s : splitString)
     {
-      auto it = Factory::find_module(splitString[i]);
+      auto it = Factory::get().find(s);
       if (it != Factory::get().end())
       {
         auto &module = Factory::get_module(it);
         operInfoRequested = true;
-        std::cerr << splitString[i] << ": " << module.toString() << std::endl;
+        std::cerr << s << ": " << module.toString() << "\n";
       }
       else
       {
-        if (opt.find(splitString[i]) != opt.end()) { opt[splitString[i]] = 1; }
+        if (opt.find(s) != opt.end()) { opt[s] = 1; }
         else
         {
-          std::cerr << "option " << splitString[i] << " not found" << std::endl;
+          std::cerr << "option " << s << " not found" << "\n";
           return false;
         }
       }
@@ -138,7 +138,7 @@ create_help_sections(const CdoHelp &p_help)
     else { syn = "    " + op.first + " " + sections["SYNOPSIS"][0]; }
     oper_syn_map[op.first] = std::make_pair(syn, op.second);
   }
-  for (auto &syn : oper_synopsis) { oper_syn_map[syn.first].first = syn.second; }
+  for (auto const &syn : oper_synopsis) { oper_syn_map[syn.first].first = syn.second; }
 
   return std::make_pair(sections, oper_syn_map);
 }
@@ -167,17 +167,35 @@ get_operator_description(std::string const &p_current_op_name, const CdoHelp &p_
   }
   else
   {
-    it = std::find_if(++it, end(p_help),
-                      [&](auto const &l) { return l.find("    " + p_current_op_name + " ") != std::string::npos; });
-    if (it != p_help.end())
+    /* don't delete, needed for new operator_help.cc!
+    auto it2 = std::find_if(it + 1, end(p_help), [&](auto const &l) { return l.compare("    " + p_current_op_name) == 0; });
+    if (it2 != p_help.end())
     {
-      std::string line = std::string(*it);
-      auto pos = line.find("    " + p_current_op_name + " ");
-      if (pos != std::string::npos)
+      for (int i = 0; i < (int) p_help.size() - 1; ++i)
       {
-        auto op_name_start = line.find_first_not_of(" \t");
+        if (p_help[i].compare("    " + p_current_op_name) == 0)
+        {
+          std::string line = std::string(p_help[i + 1]);
+          description = line.substr(line.find_first_not_of(" \t"));
+          break;
+        }
+      }
+    }
+    else
+    */
+    {
+      it = std::find_if(++it, end(p_help),
+                        [&](auto const &l) { return l.find("    " + p_current_op_name + " ") != std::string::npos; });
+      if (it != p_help.end())
+      {
+        std::string line = std::string(*it);
+        auto pos = line.find("    " + p_current_op_name + " ");
+        if (pos != std::string::npos)
+        {
+          auto op_name_start = line.find_first_not_of(" \t");
 
-        description = line.substr(line.find_first_not_of(" \t", op_name_start + p_current_op_name.size()), line.size());
+          description = line.substr(line.find_first_not_of(" \t", op_name_start + p_current_op_name.size()), line.size());
+        }
       }
     }
   }
@@ -268,7 +286,7 @@ get_no_output_operator_list()
   auto &factory = Factory::get();
   for (auto &factory_entry : factory)
   {
-    auto &module = Factory::get_module(factory_entry.first);
+    auto const &module = Factory::get_module(factory_entry.first);
     if (module.mode == 1 && module.constraints.streamOutCnt == 0) { names.push_back(factory_entry.first); }
   }
   std::sort(names.begin(), names.end());
@@ -331,20 +349,18 @@ operator_print_list(bool print_no_output)
   // print generated output list
   for (std::string const &str : output_list) { std::cout << str << std::endl; }
 }
-
-void
-cdo_print_help(std::string const &p_operator_name)
+namespace Modules
 {
-  auto it
-      = Factory::find(p_operator_name, [&p_operator_name]() { cdo_abort("%s", Factory::err_msg_oper_not_found(p_operator_name)); });
+void
+print_help(Factory::OperatorMap::iterator &it)
+{
   const CdoHelp &help = Factory::get_help(it);
   if (help.empty())
-    fprintf(stderr, "No help available for this operator!\n");
+    std::fprintf(stderr, "No help available for this operator!\n");
   else
   {
-    for (size_t i = 0; i < help.size(); ++i)
+    for (auto &line : help)
     {
-      auto line = help[i];
       constexpr std::array<std::string_view, 9> headers
           = { "NAME", "SYNOPSIS", "DESCRIPTION", "OPERATORS", "NAMELIST", "PARAMETER", "ENVIRONMENT", "NOTE", "EXAMPLES" };
 
@@ -355,3 +371,12 @@ cdo_print_help(std::string const &p_operator_name)
     }
   }
 }
+
+void
+print_help(std::string const &p_operator_name)
+{
+  auto it
+      = Factory::find(p_operator_name, [&p_operator_name]() { cdo_abort("%s", Factory::err_msg_oper_not_found(p_operator_name)); });
+  print_help(it);
+}
+}  // namespace Modules

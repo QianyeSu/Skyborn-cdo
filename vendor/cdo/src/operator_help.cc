@@ -66,7 +66,7 @@ const CdoHelp SinfoHelp = {
     "            The same as operator sinfo but using the name instead of the identifier to label the parameter.",
 };
 
-const CdoHelp XSinfoHelp = {
+const CdoHelp XsinfoHelp = {
     "NAME",
     "    xsinfo, xsinfop - Extra short information",
     "",
@@ -1150,7 +1150,7 @@ const CdoHelp CondcHelp = {
     "    c  FLOAT  Constant",
 };
 
-const CdoHelp MapReduceHelp = {
+const CdoHelp MapreduceHelp = {
     "NAME",
     "    reducegrid - Reduce fields to user-defined mask",
     "",
@@ -1989,6 +1989,13 @@ const CdoHelp ExprHelp = {
     "    pow(x,y)    "    "    Power function",
     "    hypot(x,y)  "    "    Euclidean distance function, sqrt(x*x + y*y)",
     "    atan2(x,y)  "    "    Arc tangent function of y/x, using signs to determine quadrants",
+    "    trimrel(x,kb)"    "    Trim relative precision to kb keep-bits. Max relative error to a value",
+    "    | result - x | / x   < 2**(-1-kb) for any finite x.",
+    "    trimrel is a non-decreasing function of x.",
+    "    Loosely follows A5 of https://gmd.copernicus.org/articles/14/377/2021/",
+    "    trimabs(x,err)"    "    Trim absolute precision introducing given max. absolute error",
+    "    | result - x |  < err, trimabs is a non-decreasing function of x.",
+    "    Loosely follows A6 of https://gmd.copernicus.org/articles/14/377/2021/",
     "    ",
     "    Coordinates:",
     "    ",
@@ -4347,7 +4354,7 @@ const CdoHelp TrendarithHelp = {
     "    equal  BOOL  Set to false for unequal distributed timesteps (default: true)",
 };
 
-const CdoHelp EOFsHelp = {
+const CdoHelp EofHelp = {
     "NAME",
     "    eof, eoftime, eofspatial, eof3d - Empirical Orthogonal Functions",
     "",
@@ -4421,12 +4428,12 @@ const CdoHelp EofcoeffHelp = {
     "    There will be a separate file containing a time series of principal coefficients",
     "    with time information from infile2 for each EOF in infile1. Output files will be",
     "    numbered as <obase><neof><suffix> where neof+1 is the number of the EOF (timestep)",
-    "    in infile1 and suffix is the filename extension derived from the file format. ",
+    "    in infile1 and suffix is the filename extension derived from the file format.",
     "",
     "ENVIRONMENT",
     "    CDO_FILE_SUFFIX",
-    "        Set the default file suffix. This suffix will be added to the output file ",
-    "        names instead of the filename extension derived from the file format. ",
+    "        Set the default file suffix. This suffix will be added to the output file",
+    "        names instead of the filename extension derived from the file format.",
     "        Set this variable to NULL to disable the adding of a file suffix.",
 };
 
@@ -5150,25 +5157,6 @@ const CdoHelp ImportcmsafHelp = {
     "    functionality. ",
 };
 
-const CdoHelp ImportamsrHelp = {
-    "NAME",
-    "    import_amsr - Import AMSR binary files",
-    "",
-    "SYNOPSIS",
-    "    import_amsr  infile outfile",
-    "",
-    "DESCRIPTION",
-    "    This operator imports gridded binary AMSR (Advanced Microwave Scanning Radiometer) data.",
-    "    The binary data files are available from the AMSR ftp site (ftp://ftp.ssmi.com/amsre).",
-    "    Each file consists of twelve (daily) or five (averaged) 0.25 x 0.25 degree ",
-    "    grid (1440,720) byte maps. For daily files, six daytime maps in the following",
-    "    order, Time (UTC), Sea Surface Temperature (SST), 10 meter Surface Wind Speed (WSPD),",
-    "    Atmospheric Water Vapor (VAPOR), Cloud Liquid Water (CLOUD), and Rain Rate (RAIN), ",
-    "    are followed by six nighttime maps in the same order. Time-Averaged files contain ",
-    "    just the geophysical layers in the same order [SST, WSPD, VAPOR, CLOUD, RAIN].",
-    "    More information to the data is available on the AMSR homepage http://www.remss.com/amsr.",
-};
-
 const CdoHelp InputHelp = {
     "NAME",
     "    input, inputsrv, inputext - Formatted input",
@@ -5674,7 +5662,7 @@ const CdoHelp TimsortHelp = {
     "    o(t_1,x) <= o(t_2,x)      forall (t_1<t_2),x",
 };
 
-const CdoHelp WindTransHelp = {
+const CdoHelp WindtransHelp = {
     "NAME",
     "    uvDestag, rotuvNorth, projuvLatLon - Wind Transformation",
     "",
@@ -5704,7 +5692,7 @@ const CdoHelp WindTransHelp = {
     "    -/+0.5,-/+0.5  STRING  Destaggered grid offsets are optional (default -0.5,-0.5)",
 };
 
-const CdoHelp RotuvbHelp = {
+const CdoHelp RotuvHelp = {
     "NAME",
     "    rotuvb - Rotation",
     "",
@@ -6058,7 +6046,7 @@ const CdoHelp HurrHelp = {
     "    the last contributing timestep in infile.",
 };
 
-const CdoHelp CMORliteHelp = {
+const CdoHelp CmorliteHelp = {
     "NAME",
     "    cmorlite - CMOR lite",
     "",
@@ -6143,7 +6131,7 @@ const CdoHelp HealpixHelp = {
     "    power  FLOAT   If non-zero, divide the result by (nside[in]/nside[out])**power. power=-2 keeps the sum of the map invariant.",
 };
 
-const CdoHelp NCL_windHelp = {
+const CdoHelp Ncl_windHelp = {
     "NAME",
     "    uv2vr_cfd, uv2dv_cfd - Wind transformation",
     "",
@@ -6170,7 +6158,7 @@ const CdoHelp NCL_windHelp = {
     "    outMode   STRING   Output mode new/append (default: new)",
 };
 
-const CdoHelp CMORHelp = {
+const CdoHelp CmorHelp = {
     "NAME",
     "    cmor - Climate Model Output Rewriting to produce CMIP-compliant data",
     "",
@@ -6208,7 +6196,7 @@ const CdoHelp CMORHelp = {
     "                                         Default is to process all variables.",
     "    name                | n    STRING    Variable selector.",
     "                                         Name of a selected @file{infile} variable.",
-    "    code                | c    INTEGER   Variable selector. ",
+    "    code                | c    INTEGER   Variable selector.",
     "                                         Three digits (GRIB) Code of a selected @file{infile} variable.",
     "                               --------------------------------------------------------------------------------------------",
     "    info                | i    STRING    Preprozessing.",
@@ -6229,7 +6217,7 @@ const CdoHelp CMORHelp = {
     "                                         Default: CWD.",
     "    output_mode         | om   CHARACTER Output control.",
     "                                         Either 'r' for replace (default) or 'a' for append mode.",
-    "    last_chunk          | lc   STRING    Output control. Filename of chunk to which shall be appended.  ",
+    "    last_chunk          | lc   STRING    Output control. Filename of chunk to which shall be appended.",
     "    max_size            | ms   INTEGER   Output control. Limit of output file sie in GigaByte.",
     "    deflate_level       | dl   INTEGER   Output control. Compression level. -1: No compression. 0: Only shuffle.",
     "    version_date        | vd   INTEGER   Output control. Subdirectory name in CMIP6 DRS.",
@@ -6250,7 +6238,7 @@ const CdoHelp CMORHelp = {
     "                                         the z-axis of the target variable.",
     "    character_axis      | ca   STRING    Name of the coordinate variable associated with",
     "                                         a character axis of the target variable.",
-    "                                         Valid axes names are: basin, vegtype or oline. ",
+    "                                         Valid axes names are: basin, vegtype or oline.",
     "    t_axis              | ta   STRING    Sets time values and time bounds to the nearest value",
     "                                         required by the project given by the value of t_axis.",
     "                                         Valid value is: cmip",
@@ -6410,7 +6398,7 @@ const CdoHelp MaggraphHelp = {
     "    parameter  STRING   Comma-separated list of plot parameters",
 };
 
-const CdoHelp EcaCddHelp = {
+const CdoHelp Eca_cddHelp = {
     "NAME",
     "    eca_cdd, etccdi_cdd - Consecutive dry days index per time period",
     "",
@@ -6418,8 +6406,8 @@ const CdoHelp EcaCddHelp = {
     "    <operator>[,R[,N[,params]]]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of the daily precipitation amount RR, then the largest number ",
-    "    of consecutive days where RR is less than R is counted. R is an optional parameter with ",
+    "    Let infile be a time series of the daily precipitation amount RR, then the largest number",
+    "    of consecutive days where RR is less than R is counted. R is an optional parameter with",
     "    default R = 1 mm. A further output variable is the number of dry periods of more than N days.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
     "",
@@ -6440,7 +6428,7 @@ const CdoHelp EcaCddHelp = {
     "    freq  STRING   Output frequency (year, month)",
 };
 
-const CdoHelp EcaCfdHelp = {
+const CdoHelp Eca_cfdHelp = {
     "NAME",
     "    eca_cfd - Consecutive frost days index per time period",
     "",
@@ -6457,7 +6445,7 @@ const CdoHelp EcaCfdHelp = {
     "    N  INTEGER  Minimum number of days exceeded (default: N = 5)",
 };
 
-const CdoHelp EcaCsuHelp = {
+const CdoHelp Eca_csuHelp = {
     "NAME",
     "    eca_csu - Consecutive summer days index per time period",
     "",
@@ -6476,7 +6464,7 @@ const CdoHelp EcaCsuHelp = {
     "    N  INTEGER  Minimum number of days exceeded (default: N = 5)",
 };
 
-const CdoHelp EcaCwdHelp = {
+const CdoHelp Eca_cwdHelp = {
     "NAME",
     "    eca_cwd, etccdi_cwd - Consecutive wet days index per time period",
     "",
@@ -6484,8 +6472,8 @@ const CdoHelp EcaCwdHelp = {
     "    <operator>[,params]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of the daily precipitation amount RR, then the largest number ",
-    "    of consecutive days where RR is at least R is counted. R is an optional parameter with ",
+    "    Let infile be a time series of the daily precipitation amount RR, then the largest number",
+    "    of consecutive days where RR is at least R is counted. R is an optional parameter with",
     "    default R = 1 mm. A further output variable is the number of wet periods of more than N days.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
     "",
@@ -6506,7 +6494,7 @@ const CdoHelp EcaCwdHelp = {
     "    freq  STRING   Output frequency (year, month)",
 };
 
-const CdoHelp EcaCwdiHelp = {
+const CdoHelp Eca_cwdiHelp = {
     "NAME",
     "    eca_cwdi - Cold wave duration index wrt mean of reference period",
     "",
@@ -6514,12 +6502,12 @@ const CdoHelp EcaCwdiHelp = {
     "    eca_cwdi[,nday[,T]]  infile1 infile2 outfile",
     "",
     "DESCRIPTION",
-    "    Let infile1 be a time series of the daily minimum temperature TN, and let infile2 be the mean ",
+    "    Let infile1 be a time series of the daily minimum temperature TN, and let infile2 be the mean",
     "    TNnorm of daily minimum temperatures for any period used as reference. Then counted is the number of days",
     "    where, in intervals of at least nday consecutive days, TN < TNnorm - T.",
-    "    The numbers nday and T are optional parameters with default nday = 6 and T = 5°C. ",
+    "    The numbers nday and T are optional parameters with default nday = 6 and T = 5°C.",
     "    A further output variable is the number of cold waves longer than or equal to nday days.",
-    "    TNnorm is calculated as the mean of minimum temperatures of a five day window centred on each calendar day ",
+    "    TNnorm is calculated as the mean of minimum temperatures of a five day window centred on each calendar day",
     "    of a given climate reference period. Note that both TN and TNnorm have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
     "",
@@ -6528,7 +6516,7 @@ const CdoHelp EcaCwdiHelp = {
     "    T     FLOAT    Temperature offset (unit: °C; default: T = 5°C)",
 };
 
-const CdoHelp EcaCwfiHelp = {
+const CdoHelp Eca_cwfiHelp = {
     "NAME",
     "    eca_cwfi, etccdi_csdi - ",
     "    Cold-spell days index wrt 10th percentile of reference period",
@@ -6538,12 +6526,12 @@ const CdoHelp EcaCwfiHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series of the daily mean temperature TG, and infile2 be the 10th",
-    "    percentile TGn10 of daily mean temperatures for any period used as reference. ",
+    "    percentile TGn10 of daily mean temperatures for any period used as reference.",
     "    Then counted is the number of days where, in intervals of at least nday consecutive days,",
     "    TG < TGn10. The number nday is an optional parameter with default nday = 6.",
     "    A further output variable is the number of cold-spell periods longer than or equal to nday days.",
-    "    TGn10 is calculated as the 10th percentile of daily mean temperatures of a five day window ",
-    "    centred on each calendar day of a given climate reference period. Note that both TG and TGn10 ",
+    "    TGn10 is calculated as the 10th percentile of daily mean temperatures of a five day window",
+    "    centred on each calendar day of a given climate reference period. Note that both TG and TGn10",
     "    have to be given in the same units.",
     "",
     "OPERATORS",
@@ -6562,7 +6550,7 @@ const CdoHelp EcaCwfiHelp = {
     "    freq  STRING   Output frequency (year, month)",
 };
 
-const CdoHelp EcaEtrHelp = {
+const CdoHelp Eca_etrHelp = {
     "NAME",
     "    eca_etr - Intra-period extreme temperature range",
     "",
@@ -6578,7 +6566,7 @@ const CdoHelp EcaEtrHelp = {
     "    the last contributing timesteps in infile1 and infile2.",
 };
 
-const CdoHelp EcaFdHelp = {
+const CdoHelp Eca_fdHelp = {
     "NAME",
     "    eca_fd, etccdi_fd - Frost days index per time period",
     "",
@@ -6605,7 +6593,7 @@ const CdoHelp EcaFdHelp = {
     "    freq  STRING    Output frequency (year, month)",
 };
 
-const CdoHelp EcaGslHelp = {
+const CdoHelp Eca_gslHelp = {
     "NAME",
     "    eca_gsl - Thermal Growing season length index",
     "",
@@ -6617,15 +6605,15 @@ const CdoHelp EcaGslHelp = {
     "    Within a period of 12 months, the thermal growing season length is officially defined as the number of days between:",
     "    - first occurrence of at least nday consecutive days with TG > T",
     "    - first occurrence of at least nday consecutive days with TG < T within the last 6 months",
-    "    On northern hemisphere, this period corresponds with the regular year, whereas on southern hemisphere, it starts ",
-    "    at July 1st. Please note, that this definition may lead to weird results concerning values TG = T: ",
+    "    On northern hemisphere, this period corresponds with the regular year, whereas on southern hemisphere, it starts",
+    "    at July 1st. Please note, that this definition may lead to weird results concerning values TG = T:",
     "    In the first half of the period, these days do not contribute to the gsl, but they do within the second half.",
     "    Moreover this definition could lead to discontinuous values in equatorial regions.",
     "    ",
-    "    The numbers nday and T are optional parameter with default nday = 6 and T = 5°C. ",
-    "    The number fland is an optional parameter with default value fland = 0.5 and denotes the fraction of ",
-    "    a grid point that have to be covered by land in order to be included in the calculation. A further output variable ",
-    "    is the start day of year of the growing season. Note that TG have to be given in units of Kelvin, whereas T ",
+    "    The numbers nday and T are optional parameter with default nday = 6 and T = 5°C.",
+    "    The number fland is an optional parameter with default value fland = 0.5 and denotes the fraction of",
+    "    a grid point that have to be covered by land in order to be included in the calculation. A further output variable",
+    "    is the start day of year of the growing season. Note that TG have to be given in units of Kelvin, whereas T",
     "    have to be given in degrees Celsius.",
     "    ",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile.",
@@ -6636,7 +6624,7 @@ const CdoHelp EcaGslHelp = {
     "    fland  FLOAT    Land fraction threshold (default: fland = 0.5)",
 };
 
-const CdoHelp EcaHdHelp = {
+const CdoHelp Eca_hdHelp = {
     "NAME",
     "    eca_hd - Heating degree days per time period",
     "",
@@ -6644,10 +6632,10 @@ const CdoHelp EcaHdHelp = {
     "    eca_hd[,T1[,T2]]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of the daily mean temperature TG, then the heating degree days ",
-    "    are defined as the sum of T1 - TG, where only values TG < T2 are considered. ",
-    "    If T1 and T2 are omitted, a temperature of 17°C is used for both parameters. ",
-    "    If only T1 is given, T2 is set to T1. Note that TG have to be given in units ",
+    "    Let infile be a time series of the daily mean temperature TG, then the heating degree days",
+    "    are defined as the sum of T1 - TG, where only values TG < T2 are considered.",
+    "    If T1 and T2 are omitted, a temperature of 17°C is used for both parameters.",
+    "    If only T1 is given, T2 is set to T1. Note that TG have to be given in units",
     "    of kelvin, whereas T1 and T2 have to be given in degrees Celsius.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile.",
     "",
@@ -6656,7 +6644,7 @@ const CdoHelp EcaHdHelp = {
     "    T2  FLOAT   Temperature limit (unit: °C; default: T2 = T1)",
 };
 
-const CdoHelp EcaHwdiHelp = {
+const CdoHelp Eca_hwdiHelp = {
     "NAME",
     "    eca_hwdi - Heat wave duration index wrt mean of reference period",
     "",
@@ -6664,11 +6652,11 @@ const CdoHelp EcaHwdiHelp = {
     "    eca_hwdi[,nday[,T]]  infile1 infile2 outfile",
     "",
     "DESCRIPTION",
-    "    Let infile1 be a time series of the daily maximum temperature TX, and let infile2 be the mean ",
+    "    Let infile1 be a time series of the daily maximum temperature TX, and let infile2 be the mean",
     "    TXnorm of daily maximum temperatures for any period used as reference. Then counted is the number of days",
     "    where, in intervals of at least nday consecutive days, TX > TXnorm + T.",
-    "    The numbers nday and T are optional parameters with default nday = 6 and T = 5°C. ",
-    "    A further output variable is the number of heat waves longer than or equal to nday days. ",
+    "    The numbers nday and T are optional parameters with default nday = 6 and T = 5°C.",
+    "    A further output variable is the number of heat waves longer than or equal to nday days.",
     "    TXnorm is calculated as the mean of maximum temperatures of a five day window centred on each calendar day",
     "    of a given climate reference period. Note that both TX and TXnorm have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
@@ -6678,7 +6666,7 @@ const CdoHelp EcaHwdiHelp = {
     "    T     FLOAT    Temperature offset (unit: °C; default: T = 5°C)",
 };
 
-const CdoHelp EcaHwfiHelp = {
+const CdoHelp Eca_hwfiHelp = {
     "NAME",
     "    eca_hwfi, etccdi_wsdi - ",
     "    Warm spell days index wrt 90th percentile of reference period",
@@ -6687,14 +6675,14 @@ const CdoHelp EcaHwfiHelp = {
     "    <operator>[,params]  infile1 infile2 outfile",
     "",
     "DESCRIPTION",
-    "    Let infile1 be a time series of the daily mean temperature TG, and ",
+    "    Let infile1 be a time series of the daily mean temperature TG, and",
     "    infile2 be the 90th percentile TGn90 of daily mean temperatures",
     "    for any period used as reference. Then counted is the number of days",
     "    where, in intervals of at least nday consecutive days, TG > TGn90. The",
     "    number nday is an optional parameter with default nday = 6. A further",
     "    output variable is the number of warm-spell periods longer than or",
-    "    equal to nday days. ",
-    "    TGn90 is calculated as the 90th percentile of daily mean temperatures of a five ",
+    "    equal to nday days.",
+    "    TGn90 is calculated as the 90th percentile of daily mean temperatures of a five",
     "    day window centred on each calendar day of a given climate reference period.",
     "    Note that both TG and TGn90 have to be given in the same units.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
@@ -6715,7 +6703,7 @@ const CdoHelp EcaHwfiHelp = {
     "    freq  STRING   Output frequency (year, month)",
 };
 
-const CdoHelp EcaIdHelp = {
+const CdoHelp Eca_idHelp = {
     "NAME",
     "    eca_id, etccdi_id - Ice days index per time period",
     "",
@@ -6742,7 +6730,7 @@ const CdoHelp EcaIdHelp = {
     "    freq  STRING    Output frequency (year, month)",
 };
 
-const CdoHelp EcaR75pHelp = {
+const CdoHelp Eca_r75pHelp = {
     "NAME",
     "    eca_r75p - Moderate wet days wrt 75th percentile of reference period",
     "",
@@ -6751,14 +6739,14 @@ const CdoHelp EcaR75pHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 75th percentile RRn75 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the percentage of wet days with RR > RRn75 is calculated. ",
+    "    and infile2 be the 75th percentile RRn75 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the percentage of wet days with RR > RRn75 is calculated.",
     "    RRn75 is calculated as the 75th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,75.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR75ptotHelp = {
+const CdoHelp Eca_r75ptotHelp = {
     "NAME",
     "    eca_r75ptot - Precipitation percent due to R75p days",
     "",
@@ -6767,15 +6755,15 @@ const CdoHelp EcaR75ptotHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 75th percentile RRn75 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn75 to the total ",
-    "    precipitation sum is calculated. ",
+    "    and infile2 be the 75th percentile RRn75 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn75 to the total",
+    "    precipitation sum is calculated.",
     "    RRn75 is calculated as the 75th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,75.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR90pHelp = {
+const CdoHelp Eca_r90pHelp = {
     "NAME",
     "    eca_r90p - Wet days wrt 90th percentile of reference period",
     "",
@@ -6784,14 +6772,14 @@ const CdoHelp EcaR90pHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 90th percentile RRn90 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the percentage of wet days with RR > RRn90 is calculated. ",
+    "    and infile2 be the 90th percentile RRn90 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the percentage of wet days with RR > RRn90 is calculated.",
     "    RRn90 is calculated as the 90th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,90.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR90ptotHelp = {
+const CdoHelp Eca_r90ptotHelp = {
     "NAME",
     "    eca_r90ptot - Precipitation percent due to R90p days",
     "",
@@ -6800,15 +6788,15 @@ const CdoHelp EcaR90ptotHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 90th percentile RRn90 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn90 to the total ",
-    "    precipitation sum is calculated. ",
+    "    and infile2 be the 90th percentile RRn90 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn90 to the total",
+    "    precipitation sum is calculated.",
     "    RRn90 is calculated as the 90th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,90.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR95pHelp = {
+const CdoHelp Eca_r95pHelp = {
     "NAME",
     "    eca_r95p - Very wet days wrt 95th percentile of reference period",
     "",
@@ -6817,14 +6805,14 @@ const CdoHelp EcaR95pHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 95th percentile RRn95 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the percentage of wet days with RR > RRn95 is calculated. ",
+    "    and infile2 be the 95th percentile RRn95 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the percentage of wet days with RR > RRn95 is calculated.",
     "    RRn95 is calculated as the 95th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,95.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR95ptotHelp = {
+const CdoHelp Eca_r95ptotHelp = {
     "NAME",
     "    eca_r95ptot - Precipitation percent due to R95p days",
     "",
@@ -6833,15 +6821,15 @@ const CdoHelp EcaR95ptotHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 95th percentile RRn95 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn95 to the total ",
-    "    precipitation sum is calculated. ",
+    "    and infile2 be the 95th percentile RRn95 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn95 to the total",
+    "    precipitation sum is calculated.",
     "    RRn95 is calculated as the 95th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,95.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR99pHelp = {
+const CdoHelp Eca_r99pHelp = {
     "NAME",
     "    eca_r99p - Extremely wet days wrt 99th percentile of reference period",
     "",
@@ -6850,14 +6838,14 @@ const CdoHelp EcaR99pHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 99th percentile RRn99 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the percentage of wet days with RR > RRn99 is calculated. ",
+    "    and infile2 be the 99th percentile RRn99 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the percentage of wet days with RR > RRn99 is calculated.",
     "    RRn99 is calculated as the 99th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,99.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaR99ptotHelp = {
+const CdoHelp Eca_r99ptotHelp = {
     "NAME",
     "    eca_r99ptot - Precipitation percent due to R99p days",
     "",
@@ -6866,15 +6854,15 @@ const CdoHelp EcaR99ptotHelp = {
     "",
     "DESCRIPTION",
     "    Let infile1 be a time series RR of the daily precipitation amount at wet days (precipitation >= 1 mm)",
-    "    and infile2 be the 99th percentile RRn99 of the daily precipitation amount at wet days for any period ",
-    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn99 to the total ",
-    "    precipitation sum is calculated. ",
+    "    and infile2 be the 99th percentile RRn99 of the daily precipitation amount at wet days for any period",
+    "    used as reference. Then the ratio of the precipitation sum at wet days with RR > RRn99 to the total",
+    "    precipitation sum is calculated.",
     "    RRn99 is calculated as the 99th percentile of all wet days of a given climate reference period.",
     "    Usually infile2 is generated by the operator ydaypctl,99.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaPdHelp = {
+const CdoHelp Eca_pdHelp = {
     "NAME",
     "    eca_pd, eca_r10mm, eca_r20mm, etccdi_r1mm - ",
     "    Precipitation days index per time period",
@@ -6887,7 +6875,7 @@ const CdoHelp EcaPdHelp = {
     "",
     "DESCRIPTION",
     "    Let infile be a time series of the daily precipitation amount RR in [mm] (or alternatively in [kg m-2]),",
-    "    then the number of days where RR is at least x mm is counted. ",
+    "    then the number of days where RR is at least x mm is counted.",
     "    eca_r10mm and eca_r20mm are specific ECA operators with a daily precipitation amount of 10 and 20 mm respectively.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile",
     "    except for the etccdi operator. Parameter is a comma-separated list of \"key=values\" pairs.",
@@ -6913,7 +6901,7 @@ const CdoHelp EcaPdHelp = {
     "    Apart from metadata information the result of eca_pd,1 and eca_rr1 is the same.",
 };
 
-const CdoHelp EcaRr1Help = {
+const CdoHelp Eca_rr1Help = {
     "NAME",
     "    eca_rr1 - Wet days index per time period",
     "",
@@ -6922,14 +6910,14 @@ const CdoHelp EcaRr1Help = {
     "",
     "DESCRIPTION",
     "    Let infile be a time series of the daily precipitation amount RR in [mm] (or alternatively in [kg m-2]), then",
-    "    the number of days where RR is at least R is counted. R is an optional parameter with default R = 1 mm. ",
+    "    the number of days where RR is at least R is counted. R is an optional parameter with default R = 1 mm.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile.",
     "",
     "PARAMETER",
     "    R  FLOAT   Precipitation threshold (unit: mm; default: R = 1 mm)",
 };
 
-const CdoHelp EcaRx1dayHelp = {
+const CdoHelp Eca_rx1dayHelp = {
     "NAME",
     "    eca_rx1day, etccdi_rx1day - ",
     "    Highest one day precipitation amount per time period",
@@ -6941,7 +6929,7 @@ const CdoHelp EcaRx1dayHelp = {
     "    Let infile be a time series of the daily precipitation amount RR,",
     "    then the maximum of RR is written to outfile. If the optional",
     "    parameter mode is set to 'm' the maximum daily precipitation",
-    "    amounts are determined for each month. ",
+    "    amounts are determined for each month.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
     "",
     "OPERATORS",
@@ -6958,7 +6946,7 @@ const CdoHelp EcaRx1dayHelp = {
     "    freq  STRING  Output frequency (year, month)",
 };
 
-const CdoHelp EcaRx5dayHelp = {
+const CdoHelp Eca_rx5dayHelp = {
     "NAME",
     "    eca_rx5day, etccdi_rx5day - ",
     "    Highest five-day precipitation amount per time period",
@@ -6967,8 +6955,8 @@ const CdoHelp EcaRx5dayHelp = {
     "    <operator>[,x[,params]]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of 5-day precipitation totals RR, then the maximum of RR is written to outfile. ",
-    "    A further output variable is the number of 5 day period with precipitation totals greater than x mm, where x ",
+    "    Let infile be a time series of 5-day precipitation totals RR, then the maximum of RR is written to outfile.",
+    "    A further output variable is the number of 5 day period with precipitation totals greater than x mm, where x",
     "    is an optional parameter with default x = 50 mm.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
     "",
@@ -6988,7 +6976,7 @@ const CdoHelp EcaRx5dayHelp = {
     "    freq  STRING  Output frequency (year, month)",
 };
 
-const CdoHelp EcaSdiiHelp = {
+const CdoHelp Eca_sdiiHelp = {
     "NAME",
     "    eca_sdii - Simple daily intensity index per time period",
     "",
@@ -6996,7 +6984,7 @@ const CdoHelp EcaSdiiHelp = {
     "    eca_sdii[,R]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of the daily precipitation amount RR, then the mean precipitation amount at ",
+    "    Let infile be a time series of the daily precipitation amount RR, then the mean precipitation amount at",
     "    wet days (RR >= R) is written to outfile. R is an optional parameter with default R = 1 mm.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile.",
     "",
@@ -7004,7 +6992,7 @@ const CdoHelp EcaSdiiHelp = {
     "    R  FLOAT   Precipitation threshold (unit: mm; default: R = 1 mm)",
 };
 
-const CdoHelp EcaSuHelp = {
+const CdoHelp Eca_suHelp = {
     "NAME",
     "    eca_su, etccdi_su - Summer days index per time period",
     "",
@@ -7012,8 +7000,8 @@ const CdoHelp EcaSuHelp = {
     "    <operator>[,T[,params]]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of the daily maximum temperature TX, then the number of days where ",
-    "    TX > T is counted. The number T is an optional parameter with default T = 25°C. ",
+    "    Let infile be a time series of the daily maximum temperature TX, then the number of days where",
+    "    TX > T is counted. The number T is an optional parameter with default T = 25°C.",
     "    Note that TX have to be given in units of Kelvin, whereas T have to be given in degrees Celsius.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
     "",
@@ -7032,7 +7020,7 @@ const CdoHelp EcaSuHelp = {
     "    freq  STRING    Output frequency (year, month)",
 };
 
-const CdoHelp EcaTg10pHelp = {
+const CdoHelp Eca_tg10pHelp = {
     "NAME",
     "    eca_tg10p - Cold days percent wrt 10th percentile of reference period",
     "",
@@ -7042,16 +7030,16 @@ const CdoHelp EcaTg10pHelp = {
     "DESCRIPTION",
     "    Let infile1 be a time series of the daily mean temperature TG, and",
     "    infile2 be the 10th percentile TGn10 of daily mean temperatures",
-    "    for any period used as reference. Then the percentage of time where ",
+    "    for any period used as reference. Then the percentage of time where",
     "    TG < TGn10 is calculated.",
-    "    TGn10 is calculated as the 10th percentile of daily mean temperatures of a five ",
+    "    TGn10 is calculated as the 10th percentile of daily mean temperatures of a five",
     "    day window centred on each calendar day of a given climate reference period.",
     "    Note that both TG and TGn10 have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of",
     "    the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaTg90pHelp = {
+const CdoHelp Eca_tg90pHelp = {
     "NAME",
     "    eca_tg90p - Warm days percent wrt 90th percentile of reference period",
     "",
@@ -7061,16 +7049,16 @@ const CdoHelp EcaTg90pHelp = {
     "DESCRIPTION",
     "    Let infile1 be a time series of the daily mean temperature TG, and",
     "    infile2 be the 90th percentile TGn90 of daily mean temperatures",
-    "    for any period used as reference. Then the percentage of time where TG > TGn90 ",
-    "    is calculated. ",
-    "    TGn90 is calculated as the 90th percentile of daily mean temperatures of a five ",
+    "    for any period used as reference. Then the percentage of time where TG > TGn90",
+    "    is calculated.",
+    "    TGn90 is calculated as the 90th percentile of daily mean temperatures of a five",
     "    day window centred on each calendar day of a given climate reference period.",
     "    Note that both TG and TGn90 have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of",
     "    the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaTn10pHelp = {
+const CdoHelp Eca_tn10pHelp = {
     "NAME",
     "    eca_tn10p - Cold nights percent wrt 10th percentile of reference period",
     "",
@@ -7080,16 +7068,16 @@ const CdoHelp EcaTn10pHelp = {
     "DESCRIPTION",
     "    Let infile1 be a time serie of the daily minimum temperature TN, and",
     "    infile2 be the 10th percentile TNn10 of daily minimum temperatures",
-    "    for any period used as reference. Then the percentage of time where TN < TNn10 ",
+    "    for any period used as reference. Then the percentage of time where TN < TNn10",
     "    is calculated.",
-    "    TNn10 is calculated as the 10th percentile of daily minimum temperatures of a five ",
+    "    TNn10 is calculated as the 10th percentile of daily minimum temperatures of a five",
     "    day window centred on each calendar day of a given climate reference period.",
     "    Note that both TN and TNn10 have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of",
     "    the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaTn90pHelp = {
+const CdoHelp Eca_tn90pHelp = {
     "NAME",
     "    eca_tn90p - Warm nights percent wrt 90th percentile of reference period",
     "",
@@ -7097,15 +7085,15 @@ const CdoHelp EcaTn90pHelp = {
     "    eca_tn90p  infile1 infile2 outfile",
     "",
     "DESCRIPTION",
-    "    Let infile1 be a time series of the daily minimum temperature TN, and infile2 be the ",
-    "    90th percentile TNn90 of daily minimum temperatures for any period used as reference. ",
+    "    Let infile1 be a time series of the daily minimum temperature TN, and infile2 be the",
+    "    90th percentile TNn90 of daily minimum temperatures for any period used as reference.",
     "    Then the percentage of time where TN > TNn90 is calculated. TNn90 is calculated as the 90th percentile",
     "    of daily minimum temperatures of a five day window centred on each calendar day of a given climate",
     "    reference period. Note that both TN and TNn90 have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaTrHelp = {
+const CdoHelp Eca_trHelp = {
     "NAME",
     "    eca_tr, etccdi_tr - Tropical nights index per time period",
     "",
@@ -7113,8 +7101,8 @@ const CdoHelp EcaTrHelp = {
     "    <operator>[,T[,params]]  infile outfile",
     "",
     "DESCRIPTION",
-    "    Let infile be a time series of the daily minimum temperature TN, then the number of days where ",
-    "    TN > T is counted. The number T is an optional parameter with default T = 20°C. ",
+    "    Let infile be a time series of the daily minimum temperature TN, then the number of days where",
+    "    TN > T is counted. The number T is an optional parameter with default T = 20°C.",
     "    Note that TN have to be given in units of Kelvin, whereas T have to be given in degrees Celsius.",
     "    Parameter is a comma-separated list of \"key=values\" pairs.",
     "",
@@ -7133,7 +7121,7 @@ const CdoHelp EcaTrHelp = {
     "    freq  STRING  Output frequency (year, month)",
 };
 
-const CdoHelp EcaTx10pHelp = {
+const CdoHelp Eca_tx10pHelp = {
     "NAME",
     "    eca_tx10p - Very cold days percent wrt 10th percentile of reference period",
     "",
@@ -7145,14 +7133,14 @@ const CdoHelp EcaTx10pHelp = {
     "    infile2 be the 10th percentile TXn10 of daily maximum temperatures",
     "    for any period used as reference. Then the percentage of time where TX < TXn10.",
     "    is calculated.",
-    "    TXn10 is calculated as the 10th percentile of daily maximum temperatures of a five ",
+    "    TXn10 is calculated as the 10th percentile of daily maximum temperatures of a five",
     "    day window centred on each calendar day of a given climate reference period.",
     "    Note that both TX and TXn10 have to be givenin the same units.",
     "    The date information of a timestep in outfile is the date of",
     "    the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaTx90pHelp = {
+const CdoHelp Eca_tx90pHelp = {
     "NAME",
     "    eca_tx90p - Very warm days percent wrt 90th percentile of reference period",
     "",
@@ -7164,14 +7152,14 @@ const CdoHelp EcaTx90pHelp = {
     "    infile2 be the 90th percentile TXn90 of daily maximum temperatures",
     "    for any period used as reference. Then the percentage of time where TX > TXn90.",
     "    is calculated.",
-    "    TXn90 is calculated as the 90th percentile of daily maximum temperatures of a five ",
+    "    TXn90 is calculated as the 90th percentile of daily maximum temperatures of a five",
     "    day window centred on each calendar day of a given climate reference period.",
     "    Note that both TX and TXn90 have to be given in the same units.",
     "    The date information of a timestep in outfile is the date of",
     "    the last contributing timestep in infile1.",
 };
 
-const CdoHelp EcaEtccdiHelp = {
+const CdoHelp Eca_etccdiHelp = {
     "NAME",
     "    etccdi_tx90p, etccdi_tx10p, etccdi_tn90p, etccdi_tn10p, etccdi_r95p, ",
     "    etccdi_r99p - ",
@@ -7184,7 +7172,7 @@ const CdoHelp EcaEtccdiHelp = {
     "    This module enables to compute Climate Extremes Indices according to the method recommended",
     "    by the Expert Team on Climate Change Detection and Indices. It differs from the",
     "    corresponding eca_* indices by applying bootstrapping for a reference period",
-    "    (see Zhang et al. 2005) given by startboot and endboot and using the R-type 8 method ",
+    "    (see Zhang et al. 2005) given by startboot and endboot and using the R-type 8 method",
     "    for percentile calculation.",
     "    A requirement for correct percentile calculation is that",
     "    CDO_PCTL_NBINS>=window*(endboot-startboot+1)*(sizeof(double)/sizeof(int))+2",

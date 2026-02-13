@@ -49,47 +49,47 @@ cdo_exit(std::string msg = "")
 {
   (void) msg;
   g_processManager.kill_processes();
-  exit(EXIT_FAILURE);
+  std::exit(EXIT_FAILURE);
 }
 
 static bool applyDryRun = false;
 
 static void
-cdo_display_syntax_help(std::string const &help, FILE *p_target)
+cdo_display_syntax_help(std::string const &help, std::FILE *p_target)
 {
   set_text_color(p_target, BRIGHT, BLUE);
   std::string pad = CLIOptions::pad_size_terminal('=');
-  fprintf(p_target, "%s", pad.c_str());
+  std::fprintf(p_target, "%s", pad.c_str());
   reset_text_color(p_target);
-  fprintf(p_target, "%s", help.c_str());
+  std::fprintf(p_target, "%s", help.c_str());
   set_text_color(p_target, BRIGHT, BLUE);
   pad = CLIOptions::pad_size_terminal('=');
-  fprintf(p_target, "%s", pad.c_str());
+  std::fprintf(p_target, "%s", pad.c_str());
   reset_text_color(p_target);
 }
 
 static void
-print_category(std::string const &p_category, FILE *p_target)
+print_category(std::string const &p_category, std::FILE *p_target)
 {
   const auto options = CLIOptions::print_options_help(p_category);
   if (!options.empty())
   {
     const auto pad = CLIOptions::pad_size_terminal('=', p_category);
-    fprintf(p_target, "%s", pad.c_str());
+    std::fprintf(p_target, "%s", pad.c_str());
     set_text_color(p_target, BLUE);
-    fprintf(p_target, "%s", options.c_str());
+    std::fprintf(p_target, "%s", options.c_str());
     reset_text_color(p_target);
   }
 }
 
 static void
-cdo_usage(FILE *target)
+cdo_usage(std::FILE *target)
 {
   auto pad = CLIOptions::pad_size_terminal('-');
-  fprintf(target, "%s", pad.c_str());
-  fprintf(target, "  Usage : cdo  [Options]  Operator1  [-Operator2  [-OperatorN]]\n");
+  std::fprintf(target, "%s", pad.c_str());
+  std::fprintf(target, "  Usage : cdo  [Options]  Operator1  [-Operator2  [-OperatorN]]\n");
   pad = CLIOptions::pad_size_terminal('-');
-  fprintf(target, "%s\n", pad.c_str());
+  std::fprintf(target, "%s\n", pad.c_str());
 
   print_category("Info", target);
   print_category("Output", target);
@@ -105,28 +105,28 @@ cdo_usage(FILE *target)
   print_category("Help", target);
 
   pad = CLIOptions::pad_size_terminal('=', "Environment Variables");
-  fprintf(target, "%s\n", pad.c_str());
+  std::fprintf(target, "%s\n", pad.c_str());
   set_text_color(target, BLUE);
-  fprintf(target, "%s", CLIOptions::print_envvar_help().c_str());
+  std::fprintf(target, "%s", CLIOptions::print_envvar_help().c_str());
   reset_text_color(target);
-  fprintf(target, "\n");
+  std::fprintf(target, "\n");
   /*
   pad = CLIOptions::pad_size_terminal('=', "Syntax Features");
-  fprintf(target, "%s", pad.c_str());
-  fprintf(target, "%s\n", "    Apply");
-  fprintf(target, "%s\n", Parser::apply_help.c_str());
+  std::fprintf(target, "%s", pad.c_str());
+  std::fprintf(target, "%s\n", "    Apply");
+  std::fprintf(target, "%s\n", Parser::apply_help.c_str());
   pad = CLIOptions::pad_size_terminal('-');
-  fprintf(target, "%s", pad.c_str());
-  fprintf(target, "%s\n", "    Subgroups");
-  fprintf(target, "%s\n", Parser::subgroup_help.c_str());
+  std::fprintf(target, "%s", pad.c_str());
+  std::fprintf(target, "%s\n", "    Subgroups");
+  std::fprintf(target, "%s\n", Parser::subgroup_help.c_str());
   */
   pad = CLIOptions::pad_size_terminal('=');
-  fprintf(target, "%s\n", pad.c_str());
-  fprintf(target, "    CDO version %s, Copyright (C) 2002-2025 MPI für Meteorologie\n", VERSION);
-  fprintf(target, "    This is free software and comes with ABSOLUTELY NO WARRANTY\n");
-  fprintf(target, "    Report bugs to <https://mpimet.mpg.de/cdo>\n\n");
+  std::fprintf(target, "%s\n", pad.c_str());
+  std::fprintf(target, "    CDO version %s, Copyright (C) 2002-2025 MPI für Meteorologie\n", VERSION);
+  std::fprintf(target, "    This is free software and comes with ABSOLUTELY NO WARRANTY\n");
+  std::fprintf(target, "    Report bugs to <https://mpimet.mpg.de/cdo>\n\n");
   pad = CLIOptions::pad_size_terminal('=');
-  fprintf(target, "%s", pad.c_str());
+  std::fprintf(target, "%s", pad.c_str());
 }
 
 static void
@@ -159,7 +159,7 @@ get_env_vars()
           })
       ->describe_argument("true|false")
       ->add_default("false")
-      ->add_help("'true' asyncronous read of input files [default: true].");
+      ->add_help("'true' asyncronous read of input files [default: false].");
 
   CLIOptions::envvar("CDO_CORESIZE")
       ->add_effect([&](std::string const &envstr) { Options::coresize = parameter_to_long(envstr); })
@@ -260,9 +260,9 @@ print_operator_attributes(std::string const &argument)
 static void
 cdo_print_debug_info()
 {
-  fprintf(stderr, "stdinIsTerminal:   %d\n", cdo::stdinIsTerminal);
-  fprintf(stderr, "stdoutIsTerminal:  %d\n", cdo::stdoutIsTerminal);
-  fprintf(stderr, "stderrIsTerminal:  %d\n", cdo::stderrIsTerminal);
+  std::fprintf(stderr, "stdinIsTerminal:   %d\n", cdo::stdinIsTerminal);
+  std::fprintf(stderr, "stdoutIsTerminal:  %d\n", cdo::stdoutIsTerminal);
+  std::fprintf(stderr, "stderrIsTerminal:  %d\n", cdo::stderrIsTerminal);
   cdo::features::print_system_info();
   print_pthread_info();
 }
@@ -305,7 +305,7 @@ setup_cli_options()
       ->add_effect(
           [&](std::string const &argument)
           {
-            auto names = Factory::get_module_operator_names(argument);
+            auto names = Factory::get_module_help(argument);
             if (names.empty())
             {
               std::string errstr = "Module " + argument + " not found\n";
@@ -313,9 +313,7 @@ setup_cli_options()
             }
             else
             {
-              std::string info_string = "\n" + argument + ":\n";
-              for (auto const &name : names) { info_string += std::string(4, ' ') + name + "\n"; }
-              std::cerr << info_string + "\n";
+              for (auto &s : names) { std::cout << s << " \n"; }
             }
           })
       ->add_help("Prints list of operators.");
@@ -335,7 +333,20 @@ setup_cli_options()
 
   CLIOptions::option("help")
       ->describe_argument("operator")
-      ->add_effect([&](std::string const &operator_name) { cdo_print_help(operator_name); })
+      ->accepts_keyword(true)
+      ->add_effect(
+          [&](std::string const &operator_name)
+          {
+            std::string op = CLIOptions::print_option(operator_name);
+            auto &factory = Factory::get();
+            if (factory.find(operator_name) != factory.end()) { Modules::print_help(operator_name); }
+            else if (!op.empty()) { std::cout << op; }
+            else
+            {
+              std::cerr << operator_name << " is neither a operator nor an options"
+                        << "\n";
+            }
+          })
       ->on_empty_argument([]() { cdo_usage(stdout); })
       ->aborts_program(true)
       ->set_category("Help")
@@ -373,9 +384,9 @@ setup_cli_options()
 static void
 timer_report(std::vector<cdo::iTimer *> &timers)
 {
-  FILE *fp = stdout;
-  if (Options::cdoVerbose) fprintf(fp, "\nTimer report:  shift = %g\n", cdo::timerShift);
-  fprintf(fp, "    Name   Calls          Min      Average          Max        Total\n");
+  std::FILE *fp = stdout;
+  if (Options::cdoVerbose) std::fprintf(fp, "\nTimer report:  shift = %g\n", cdo::timerShift);
+  std::fprintf(fp, "    Name   Calls          Min      Average          Max        Total\n");
 
   for (auto &timer : timers)
   {
@@ -386,9 +397,17 @@ timer_report(std::vector<cdo::iTimer *> &timers)
       avg /= timer->calls;
 
       // if (timer.stat != rt_stat_undef)
-      fprintf(fp, "%8s %7d %12.4g %12.4g %12.4g %12.4g\n", timer->name.c_str(), timer->calls, timer->min, avg, timer->max, total);
+      std::fprintf(fp, "%8s %7d %12.4g %12.4g %12.4g %12.4g\n", timer->name.c_str(), timer->calls, timer->min, avg, timer->max,
+                   total);
     }
   }
+}
+
+void
+erase_backslash_before_blanks(std::string &s)
+{
+  std::string::size_type pos = 0;
+  while ((pos = s.find("\\ ", pos)) != std::string::npos) { s.erase(pos++, 1); }
 }
 
 int
@@ -412,6 +431,8 @@ main(int argc, char *argv[])
 
   get_env_vars();
   create_options_from_envvars();
+
+  CLIOptions::set_keyword_detection([](const std::string &s) { return Factory::exists(s); });
   CLIOptions::get_env_vars();
 
   setup_options();
@@ -419,14 +440,14 @@ main(int argc, char *argv[])
 
   auto CDO_optind = CLIOptions::parse(std::vector<std::string>(argv, argv + argc));
 
-  if (CDO_optind == CLIOptions::ABORT_REQUESTED) exit(EXIT_FAILURE);
-  if (CDO_optind == CLIOptions::EXIT_REQUESTED) exit(EXIT_SUCCESS);
+  if (CDO_optind == CLIOptions::ABORT_REQUESTED) std::exit(EXIT_FAILURE);
+  if (CDO_optind == CLIOptions::EXIT_REQUESTED) std::exit(EXIT_SUCCESS);
 
   if (CDO_optind >= argc)
   {
     cdo_usage(stderr);
-    fprintf(stderr, "\nNo operator given!\n\n");
-    exit(EXIT_FAILURE);
+    std::fprintf(stderr, "\nNo operator given!\n\n");
+    std::exit(EXIT_FAILURE);
   }
   else
   {
@@ -442,6 +463,8 @@ main(int argc, char *argv[])
 
     new_argv = expand_wild_cards(new_argv);
 
+    for (auto &s : new_argv) { erase_backslash_before_blanks(s); }
+
     if (CdoDefault::TableID != CDI_UNDEFID) cdo_def_table_id(CdoDefault::TableID);
 
 #ifdef HAVE_H5DONT_ATEXIT
@@ -456,7 +479,7 @@ main(int argc, char *argv[])
     if (applyDryRun == true)
     {
       std::cerr << processStructure[0]->to_string() << std::endl;
-      exit(applyDryRun ? 0 : -1);
+      std::exit(applyDryRun ? 0 : -1);
     }
 
     std::vector<cdo::iTimer *> allTimers;

@@ -123,19 +123,19 @@ print_xvals(int gridID, int dig)
 
     if (gridType == GRID_GAUSSIAN_REDUCED)
     {
-      if (xsize == 2) fprintf(stdout, "%33s : %.*g to %.*g [%s]\n", xname.c_str(), dig, xfirst, dig, xlast, xunits.c_str());
+      if (xsize == 2) std::fprintf(stdout, "%33s : %.*g to %.*g [%s]\n", xname.c_str(), dig, xfirst, dig, xlast, xunits.c_str());
     }
     else
     {
-      fprintf(stdout, "%33s : %.*g", xname.c_str(), dig, xfirst);
+      std::fprintf(stdout, "%33s : %.*g", xname.c_str(), dig, xfirst);
       if (xsize > 1)
       {
-        fprintf(stdout, " to %.*g", dig, xlast);
-        if (is_not_equal(xinc, 0.0)) fprintf(stdout, " by %.*g", dig, xinc);
+        std::fprintf(stdout, " to %.*g", dig, xlast);
+        if (is_not_equal(xinc, 0.0)) std::fprintf(stdout, " by %.*g", dig, xinc);
       }
-      if (xunits.size()) fprintf(stdout, " [%s]", xunits.c_str());
-      if (gridIsCircular(gridID)) fprintf(stdout, "  circular");
-      fprintf(stdout, "\n");
+      if (xunits.size()) std::fprintf(stdout, " [%s]", xunits.c_str());
+      if (gridIsCircular(gridID)) std::fprintf(stdout, "  circular");
+      std::fprintf(stdout, "\n");
     }
   }
 }
@@ -151,16 +151,16 @@ print_yvals(int gridID, int dig)
     auto yfirst = gridInqYval(gridID, 0);
     auto ylast = gridInqYval(gridID, ysize - 1);
     auto yinc = gridInqYinc(gridID);
-    fprintf(stdout, "%33s : %.*g", yname.c_str(), dig, yfirst);
+    std::fprintf(stdout, "%33s : %.*g", yname.c_str(), dig, yfirst);
     if (ysize > 1)
     {
       auto gridtype = gridInqType(gridID);
-      fprintf(stdout, " to %.*g", dig, ylast);
+      std::fprintf(stdout, " to %.*g", dig, ylast);
       if (is_not_equal(yinc, 0.0) && gridtype != GRID_GAUSSIAN && gridtype != GRID_GAUSSIAN_REDUCED)
-        fprintf(stdout, " by %.*g", dig, yinc);
+        std::fprintf(stdout, " by %.*g", dig, yinc);
     }
-    if (yunits.size()) fprintf(stdout, " [%s]", yunits.c_str());
-    fprintf(stdout, "\n");
+    if (yunits.size()) std::fprintf(stdout, " [%s]", yunits.c_str());
+    std::fprintf(stdout, "\n");
   }
 }
 
@@ -248,38 +248,38 @@ print_xyvals2D(int gridID, int dig)
     auto xinc = (gridtype == GRID_CURVILINEAR) ? calc_curvi_xinc(gridID) : 0.0;
     auto yinc = (gridtype == GRID_CURVILINEAR) ? calc_curvi_yinc(gridID) : 0.0;
 
-    fprintf(stdout, "%33s : %.*g", xname.c_str(), dig, xmm.min);
-    if (gridsize > 1) fprintf(stdout, " to %.*g", dig, xmm.max);
-    if (is_not_equal(xinc, 0.0)) fprintf(stdout, " by %.*g", dig, xinc);
-    if (xunits.size()) fprintf(stdout, " [%s]", xunits.c_str());
-    if (gridIsCircular(gridID)) fprintf(stdout, "  circular");
-    fprintf(stdout, "\n");
-    fprintf(stdout, "%33s : %.*g", yname.c_str(), dig, ymm.min);
-    if (gridsize > 1) fprintf(stdout, " to %.*g", dig, ymm.max);
-    if (is_not_equal(yinc, 0.0)) fprintf(stdout, " by %.*g", dig, yinc);
-    if (yunits.size()) fprintf(stdout, " [%s]", yunits.c_str());
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "%33s : %.*g", xname.c_str(), dig, xmm.min);
+    if (gridsize > 1) std::fprintf(stdout, " to %.*g", dig, xmm.max);
+    if (is_not_equal(xinc, 0.0)) std::fprintf(stdout, " by %.*g", dig, xinc);
+    if (xunits.size()) std::fprintf(stdout, " [%s]", xunits.c_str());
+    if (gridIsCircular(gridID)) std::fprintf(stdout, "  circular");
+    std::fprintf(stdout, "\n");
+    std::fprintf(stdout, "%33s : %.*g", yname.c_str(), dig, ymm.min);
+    if (gridsize > 1) std::fprintf(stdout, " to %.*g", dig, ymm.max);
+    if (is_not_equal(yinc, 0.0)) std::fprintf(stdout, " by %.*g", dig, yinc);
+    if (yunits.size()) std::fprintf(stdout, " [%s]", yunits.c_str());
+    std::fprintf(stdout, "\n");
   }
 }
 
 static void
 printGridNumPoints(int gridtype, int gridID, size_t gridsize, size_t xsize, size_t ysize)
 {
-  fprintf(stdout, "points=%zu", gridsize);
+  std::fprintf(stdout, "points=%zu", gridsize);
   if (gridtype == GRID_GAUSSIAN_REDUCED)
-    fprintf(stdout, "  nlat=%zu", ysize);
+    std::fprintf(stdout, "  nlat=%zu", ysize);
   else if (xsize && ysize)
-    fprintf(stdout, " (%zux%zu)", xsize, ysize);
+    std::fprintf(stdout, " (%zux%zu)", xsize, ysize);
 
   auto numLPE = gridInqNP(gridID);
   if (numLPE > 0)
   {
-    if (gridtype == GRID_GAUSSIAN) fprintf(stdout, "  F%d", numLPE);
-    if (gridtype == GRID_GAUSSIAN_REDUCED) fprintf(stdout, "  N%d", numLPE);
+    if (gridtype == GRID_GAUSSIAN) std::fprintf(stdout, "  F%d", numLPE);
+    if (gridtype == GRID_GAUSSIAN_REDUCED) std::fprintf(stdout, "  N%d", numLPE);
   }
   reset_text_color(stdout);
 
-  fprintf(stdout, "\n");
+  std::fprintf(stdout, "\n");
 }
 
 static void
@@ -287,27 +287,27 @@ print_projection_parameter(int gridID, std::string gmapname)
 {
   if (gmapname.empty()) gmapname = "undefined";
   set_text_color(stdout, BLUE);
-  fprintf(stdout, "         %24s", "mapping");
+  std::fprintf(stdout, "         %24s", "mapping");
   reset_text_color(stdout);
-  fprintf(stdout, " : ");
+  std::fprintf(stdout, " : ");
   set_text_color(stdout, GREEN);
-  fprintf(stdout, "%s", gmapname.c_str());
+  std::fprintf(stdout, "%s", gmapname.c_str());
 
   if (gmapname == "healpix")
   {
     auto nside = cdo::inq_att_int(gridID, CDI_GLOBAL, "healpix_nside");
     auto order = cdo::inq_att_string(gridID, CDI_GLOBAL, "healpix_order");
-    fprintf(stdout, "  nside=%d", nside);
-    fprintf(stdout, "  order=%s", order.size() ? order.c_str() : "undefined");
+    std::fprintf(stdout, "  nside=%d", nside);
+    std::fprintf(stdout, "  order=%s", order.size() ? order.c_str() : "undefined");
   }
 
-  fprintf(stdout, "\n");
+  std::fprintf(stdout, "\n");
   reset_text_color(stdout);
 
   if (grid_has_proj_params(gridID))
   {
     auto projParams = grid_get_proj_params(gridID);
-    if (projParams.size()) fprintf(stdout, "         %24s : %s\n", "proj_params", projParams.c_str());
+    if (projParams.size()) std::fprintf(stdout, "         %24s : %s\n", "proj_params", projParams.c_str());
   }
 }
 
@@ -315,19 +315,19 @@ static void
 print_healpix_parameter(int gridID, size_t gridSize)
 {
   set_text_color(stdout, BLUE);
-  fprintf(stdout, "         %24s", "parameter");
+  std::fprintf(stdout, "         %24s", "parameter");
   reset_text_color(stdout);
-  fprintf(stdout, " : ");
+  std::fprintf(stdout, " : ");
   set_text_color(stdout, GREEN);
 
   auto refinementLevel = cdo::inq_att_int(gridID, CDI_GLOBAL, "refinement_level");
   auto order = cdo::inq_att_string(gridID, CDI_GLOBAL, "indexing_scheme");
-  fprintf(stdout, "refinement_level=%d", refinementLevel);
-  fprintf(stdout, "  indexing_scheme=%s", order.size() ? order.c_str() : "undefined");
+  std::fprintf(stdout, "refinement_level=%d", refinementLevel);
+  std::fprintf(stdout, "  indexing_scheme=%s", order.size() ? order.c_str() : "undefined");
 
-  if (gridSize == gridInqIndices(gridID, nullptr)) { fprintf(stdout, "  cell_index=true"); }
+  if (gridSize == gridInqIndices(gridID, nullptr)) { std::fprintf(stdout, "  cell_index=true"); }
 
-  fprintf(stdout, "\n");
+  std::fprintf(stdout, "\n");
   reset_text_color(stdout);
 }
 
@@ -338,7 +338,7 @@ printGridInfoKernel(int gridID, int index, int lproj)
   auto gridType = gridInqType(gridID);
 
   if (lproj && gridType != GRID_PROJECTION)
-    fprintf(stderr, "Internal problem (%s): sub grid not equal GRID_PROJECTION!\n", __func__);
+    std::fprintf(stderr, "Internal problem (%s): sub grid not equal GRID_PROJECTION!\n", __func__);
 
   auto trunc = gridInqTrunc(gridID);
   auto gridsize = gridInqSize(gridID);
@@ -347,11 +347,11 @@ printGridInfoKernel(int gridID, int index, int lproj)
 
   if (!lproj)
   {
-    fprintf(stdout, "  %4d : ", index + 1);
+    std::fprintf(stdout, "  %4d : ", index + 1);
     set_text_color(stdout, BLUE);
-    fprintf(stdout, "%-24s", gridNamePtr(gridType));
+    std::fprintf(stdout, "%-24s", gridNamePtr(gridType));
     reset_text_color(stdout);
-    fprintf(stdout, " : ");
+    std::fprintf(stdout, " : ");
   }
 
   if (gridType == GRID_LONLAT || gridType == GRID_PROJECTION || gridType == GRID_GENERIC || gridType == GRID_CHARXY
@@ -375,30 +375,30 @@ printGridInfoKernel(int gridID, int index, int lproj)
 
     if (gridInqXbounds(gridID, NULL) || gridInqYbounds(gridID, NULL))
     {
-      fprintf(stdout, "%33s :", "available");
-      if (gridType == GRID_GAUSSIAN_REDUCED && gridInqXvals(gridID, NULL)) fprintf(stdout, " xvals");
+      std::fprintf(stdout, "%33s :", "available");
+      if (gridType == GRID_GAUSSIAN_REDUCED && gridInqXvals(gridID, NULL)) std::fprintf(stdout, " xvals");
       // clang-format off
-      if      (gridInqXbounds(gridID, NULL) && gridInqYbounds(gridID, NULL)) fprintf(stdout, " cellbounds");
-      else if (gridInqXbounds(gridID, NULL)) fprintf(stdout, " xbounds");
-      else if (gridInqYbounds(gridID, NULL)) fprintf(stdout, " ybounds");
+      if      (gridInqXbounds(gridID, NULL) && gridInqYbounds(gridID, NULL)) std::fprintf(stdout, " cellbounds");
+      else if (gridInqXbounds(gridID, NULL)) std::fprintf(stdout, " xbounds");
+      else if (gridInqYbounds(gridID, NULL)) std::fprintf(stdout, " ybounds");
       // clang-format on
-      if (gridHasArea(gridID)) fprintf(stdout, " area");
-      if (gridInqMask(gridID, NULL)) fprintf(stdout, " mask");
-      fprintf(stdout, "\n");
+      if (gridHasArea(gridID)) std::fprintf(stdout, " area");
+      if (gridInqMask(gridID, NULL)) std::fprintf(stdout, " mask");
+      std::fprintf(stdout, "\n");
     }
   }
   else if (gridType == GRID_SPECTRAL)
   {
     set_text_color(stdout, GREEN);
-    fprintf(stdout, "points=%zu  nsp=%zu  T%d", gridsize, gridsize / 2, trunc);
-    if (gridInqComplexPacking(gridID)) fprintf(stdout, "  complexPacking");
+    std::fprintf(stdout, "points=%zu  nsp=%zu  T%d", gridsize, gridsize / 2, trunc);
+    if (gridInqComplexPacking(gridID)) std::fprintf(stdout, "  complexPacking");
     reset_text_color(stdout);
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "\n");
   }
   else if (gridType == GRID_FOURIER)
   {
     set_text_color(stdout, GREEN);
-    fprintf(stdout, "points=%zu  nfc=%zu  T%d\n", gridsize, gridsize / 2, trunc);
+    std::fprintf(stdout, "points=%zu  nfc=%zu  T%d\n", gridsize, gridsize / 2, trunc);
     reset_text_color(stdout);
   }
   else if (gridType == GRID_GME)
@@ -406,19 +406,19 @@ printGridInfoKernel(int gridID, int index, int lproj)
     int nd, ni, ni2, ni3;
     gridInqParamGME(gridID, &nd, &ni, &ni2, &ni3);
     set_text_color(stdout, GREEN);
-    fprintf(stdout, "points=%zu  nd=%d  ni=%d\n", gridsize, nd, ni);
+    std::fprintf(stdout, "points=%zu  nd=%d  ni=%d\n", gridsize, nd, ni);
     reset_text_color(stdout);
   }
   else if (gridType == GRID_CURVILINEAR || gridType == GRID_UNSTRUCTURED)
   {
     set_text_color(stdout, GREEN);
-    if (gridType == GRID_CURVILINEAR) { fprintf(stdout, "points=%zu (%zux%zu)", gridsize, xsize, ysize); }
-    else { fprintf(stdout, "points=%zu", gridsize); }
+    if (gridType == GRID_CURVILINEAR) { std::fprintf(stdout, "points=%zu (%zux%zu)", gridsize, xsize, ysize); }
+    else { std::fprintf(stdout, "points=%zu", gridsize); }
 
-    if (gridType == GRID_UNSTRUCTURED && gridInqNvertex(gridID) > 0) fprintf(stdout, "  nvertex=%d", gridInqNvertex(gridID));
+    if (gridType == GRID_UNSTRUCTURED && gridInqNvertex(gridID) > 0) std::fprintf(stdout, "  nvertex=%d", gridInqNvertex(gridID));
     reset_text_color(stdout);
 
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "\n");
 
     if (gridType == GRID_UNSTRUCTURED)
     {
@@ -426,14 +426,14 @@ printGridInfoKernel(int gridID, int index, int lproj)
       cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDUSED, &number);
       int position = 0;
       cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_NUMBEROFGRIDINREFERENCE, &position);
-      if (number > 0) fprintf(stdout, "%33s : number=%d  position=%d\n", "grid", number, position);
+      if (number > 0) std::fprintf(stdout, "%33s : number=%d  position=%d\n", "grid", number, position);
 
       int length = 0;
       if (CDI_NOERR == cdiInqKeyLen(gridID, CDI_GLOBAL, CDI_KEY_REFERENCEURI, &length))
       {
         char referenceLink[8192];
         cdiInqKeyString(gridID, CDI_GLOBAL, CDI_KEY_REFERENCEURI, referenceLink, &length);
-        fprintf(stdout, "%33s : %s\n", "uri", referenceLink);
+        std::fprintf(stdout, "%33s : %s\n", "uri", referenceLink);
       }
     }
 
@@ -443,9 +443,9 @@ printGridInfoKernel(int gridID, int index, int lproj)
   {
     set_text_color(stdout, GREEN);
     if (ysize == 0)
-      fprintf(stdout, "points=%zu\n", gridsize);
+      std::fprintf(stdout, "points=%zu\n", gridsize);
     else
-      fprintf(stdout, "points=%zu (%zux%zu)\n", gridsize, xsize, ysize);
+      std::fprintf(stdout, "points=%zu (%zux%zu)\n", gridsize, xsize, ysize);
     reset_text_color(stdout);
   }
 
@@ -453,11 +453,11 @@ printGridInfoKernel(int gridID, int index, int lproj)
   {
     if (gridHasArea(gridID) || gridInqXbounds(gridID, NULL) || gridInqYbounds(gridID, NULL))
     {
-      fprintf(stdout, "%33s :", "available");
-      if (gridInqXbounds(gridID, NULL) && gridInqYbounds(gridID, NULL)) fprintf(stdout, " cellbounds");
-      if (gridHasArea(gridID)) fprintf(stdout, " area");
-      if (gridInqMask(gridID, NULL)) fprintf(stdout, " mask");
-      fprintf(stdout, "\n");
+      std::fprintf(stdout, "%33s :", "available");
+      if (gridInqXbounds(gridID, NULL) && gridInqYbounds(gridID, NULL)) std::fprintf(stdout, " cellbounds");
+      if (gridHasArea(gridID)) std::fprintf(stdout, " area");
+      if (gridInqMask(gridID, NULL)) std::fprintf(stdout, " mask");
+      std::fprintf(stdout, "\n");
     }
   }
 
@@ -467,15 +467,15 @@ printGridInfoKernel(int gridID, int index, int lproj)
   if (status == CDI_NOERR && !cdiUUIDIsNull(uuid))
   {
     char uuidStr[uuidNumHexChars + 1] = { 0 };
-    if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) fprintf(stdout, "%33s : %s\n", "uuid", uuidStr);
+    if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) std::fprintf(stdout, "%33s : %s\n", "uuid", uuidStr);
   }
 
   if (Options::cdoVerbose)
   {
     int datatype;
     cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_DATATYPE, &datatype);
-    fprintf(stdout, "%33s : %s\n", "datatype", cdo::datatype_to_cstr(datatype));
-    fprintf(stdout, "%33s : %d\n", "gridID", gridID);
+    std::fprintf(stdout, "%33s : %s\n", "datatype", cdo::datatype_to_cstr(datatype));
+    std::fprintf(stdout, "%33s : %d\n", "gridID", gridID);
   }
 }
 
@@ -499,17 +499,17 @@ printZaxisBoundsInfo(int zaxisID, int dig, int levelsize, double zinc, std::stri
   auto level2 = zaxisInqUbound(zaxisID, 0);
   if (!(levelsize == 1 && is_equal(level1, level2) && std::fabs(level1) <= 0))
   {
-    fprintf(stdout, "%33s : ", "bounds");
-    fprintf(stdout, "%.*g-%.*g", dig, level1, dig, level2);
+    std::fprintf(stdout, "%33s : ", "bounds");
+    std::fprintf(stdout, "%.*g-%.*g", dig, level1, dig, level2);
     if (levelsize > 1)
     {
       level1 = zaxisInqLbound(zaxisID, levelsize - 1);
       level2 = zaxisInqUbound(zaxisID, levelsize - 1);
-      fprintf(stdout, " to %.*g-%.*g", dig, level1, dig, level2);
-      if (is_not_equal(zinc, 0)) fprintf(stdout, " by %.*g", dig, zinc);
+      std::fprintf(stdout, " to %.*g-%.*g", dig, level1, dig, level2);
+      if (is_not_equal(zinc, 0)) std::fprintf(stdout, " by %.*g", dig, zinc);
     }
-    if (zunits.size()) fprintf(stdout, " [%s]", zunits.c_str());
-    fprintf(stdout, "\n");
+    if (zunits.size()) std::fprintf(stdout, " [%s]", zunits.c_str());
+    std::fprintf(stdout, "\n");
   }
 }
 
@@ -558,14 +558,14 @@ printZaxisLevelInfo(int levelsize, int zaxisID, int zaxistype, double &zinc, int
         }
     }
 
-    fprintf(stdout, "%33s : %.*g", zname.c_str(), dig, zfirst);
+    std::fprintf(stdout, "%33s : %.*g", zname.c_str(), dig, zfirst);
     if (levelsize > 1)
     {
-      fprintf(stdout, " to %.*g", dig, zlast);
-      if (is_not_equal(zinc, 0.0)) fprintf(stdout, " by %.*g", dig, zinc);
+      std::fprintf(stdout, " to %.*g", dig, zlast);
+      if (is_not_equal(zinc, 0.0)) std::fprintf(stdout, " by %.*g", dig, zinc);
     }
-    if (zunits.size()) fprintf(stdout, " [%s]", zunits.c_str());
-    fprintf(stdout, "\n");
+    if (zunits.size()) std::fprintf(stdout, " [%s]", zunits.c_str());
+    std::fprintf(stdout, "\n");
   }
 }
 
@@ -576,18 +576,18 @@ printZaxisHybridInfo(int zaxisID)
   int vctsize = zaxisInqVctSize(zaxisID);
   if (vctsize || psname.size())
   {
-    fprintf(stdout, "%33s :", "available");
-    if (vctsize) fprintf(stdout, " vct");
-    if (psname.size()) fprintf(stdout, "  ps: %s", psname.c_str());
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "%33s :", "available");
+    if (vctsize) std::fprintf(stdout, " vct");
+    if (psname.size()) std::fprintf(stdout, "  ps: %s", psname.c_str());
+    std::fprintf(stdout, "\n");
   }
 }
 
 static void
 printZaxisGenericInfo(int ltype, int zaxistype, const char *zaxisname)
 {
-  if (zaxistype == ZAXIS_GENERIC && ltype != 0) { fprintf(stdout, "%-12s (ltype=%3d)", zaxisname, ltype); }
-  else { fprintf(stdout, "%-24s", zaxisname); }
+  if (zaxistype == ZAXIS_GENERIC && ltype != 0) { std::fprintf(stdout, "%-12s (ltype=%3d)", zaxisname, ltype); }
+  else { std::fprintf(stdout, "%-24s", zaxisname); }
 }
 
 static void
@@ -597,8 +597,8 @@ printZaxisReferenceInfo(int zaxisID)
   // cdiInqKeyInt(zaxisID, CDI_GLOBAL, CDI_KEY_NUMBEROFVGRIDUSED, &number)
   // if (number > 0)
   {
-    fprintf(stdout, "%33s : ", "zaxis");
-    fprintf(stdout, "number=%d\n", number);
+    std::fprintf(stdout, "%33s : ", "zaxis");
+    std::fprintf(stdout, "number=%d\n", number);
   }
 
   unsigned char uuid[CDI_UUID_SIZE] = { 0 };
@@ -607,7 +607,7 @@ printZaxisReferenceInfo(int zaxisID)
   if (status == CDI_NOERR && !cdiUUIDIsNull(uuid))
   {
     char uuidStr[uuidNumHexChars + 1] = { 0 };
-    if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) fprintf(stdout, "%33s : %s\n", "uuid", uuidStr);
+    if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) std::fprintf(stdout, "%33s : %s\n", "uuid", uuidStr);
   }
 }
 
@@ -632,20 +632,20 @@ print_zaxis_info(int vlistID)
     auto zunits = cdo::inq_key_string(zaxisID, CDI_GLOBAL, CDI_KEY_UNITS);
     if (zunits.size() > 12) zunits.resize(12);
 
-    fprintf(stdout, "  %4d : ", vlistZaxisIndex(vlistID, zaxisID) + 1);
+    std::fprintf(stdout, "  %4d : ", vlistZaxisIndex(vlistID, zaxisID) + 1);
     set_text_color(stdout, BLUE);
     printZaxisGenericInfo(ltype, zaxistype, zaxisname);
 
     reset_text_color(stdout);
 
-    fprintf(stdout, " :");
+    std::fprintf(stdout, " :");
 
     set_text_color(stdout, GREEN);
-    fprintf(stdout, " levels=%d", levelsize);
+    std::fprintf(stdout, " levels=%d", levelsize);
     int zscalar = (levelsize == 1) ? zaxisInqScalar(zaxisID) : false;
-    if (zscalar) fprintf(stdout, "  scalar");
+    if (zscalar) std::fprintf(stdout, "  scalar");
     reset_text_color(stdout);
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "\n");
 
     double zinc = 0.0;
     if (zaxisInqLevels(zaxisID, NULL)) printZaxisLevelInfo(levelsize, zaxisID, zaxistype, zinc, dig, zname, zunits);
@@ -657,14 +657,14 @@ print_zaxis_info(int vlistID)
 
     if (zaxistype == ZAXIS_REFERENCE) printZaxisReferenceInfo(zaxisID);
 
-    if (ltype != ltype2 && ltype2 != -1) fprintf(stdout, "%33s : %d\n", "typeOfSecondFixedSurface", ltype2);
+    if (ltype != ltype2 && ltype2 != -1) std::fprintf(stdout, "%33s : %d\n", "typeOfSecondFixedSurface", ltype2);
 
     if (Options::cdoVerbose)
     {
       int datatype;
       cdiInqKeyInt(zaxisID, CDI_GLOBAL, CDI_KEY_DATATYPE, &datatype);
-      fprintf(stdout, "%33s : %s\n", "datatype", cdo::datatype_to_cstr(datatype));
-      fprintf(stdout, "%33s : %d\n", "zaxisID", zaxisID);
+      std::fprintf(stdout, "%33s : %s\n", "datatype", cdo::datatype_to_cstr(datatype));
+      std::fprintf(stdout, "%33s : %d\n", "zaxisID", zaxisID);
     }
   }
 }
@@ -678,9 +678,9 @@ print_subtype_info(int vlistID)
     auto subtypeID = vlistSubtype(vlistID, index);
     auto subtypesize = subtypeInqSize(subtypeID);
     // subtypePrint(subtypeID);
-    fprintf(stdout, "  %4d : %-24s :", vlistSubtypeIndex(vlistID, subtypeID) + 1, "tiles");
-    fprintf(stdout, " ntiles=%d", subtypesize);
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "  %4d : %-24s :", vlistSubtypeIndex(vlistID, subtypeID) + 1, "tiles");
+    std::fprintf(stdout, " ntiles=%d", subtypesize);
+    std::fprintf(stdout, "\n");
   }
 }
 
@@ -690,10 +690,10 @@ printDateTime(int ntimeout, CdiDateTime vDateTime)
   if (ntimeout == 4)
   {
     ntimeout = 0;
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "\n");
   }
 
-  fprintf(stdout, " %s %s", date_to_string(vDateTime.date).c_str(), time_to_string(vDateTime.time).c_str());
+  std::fprintf(stdout, " %s %s", date_to_string(vDateTime.date).c_str(), time_to_string(vDateTime.time).c_str());
 
   return ++ntimeout;
 }
@@ -712,11 +712,11 @@ printDot(int ndotout, int *nfact, int *ncout)
     {
       *ncout = 0;
       ndotout = 0;
-      fprintf(stdout, "\n   ");
+      std::fprintf(stdout, "\n   ");
       (*nfact) *= 10;
     }
 
-    fprintf(stdout, ".");
+    std::fprintf(stdout, ".");
     fflush(stdout);
     ndotout++;
   }
@@ -759,7 +759,7 @@ print_timesteps(CdoStreamID streamID, int taxisID, int verbose)
     if (verbose || tsID < NumTimestep) { ntimeout = printDateTime(ntimeout, vDateTime); }
     else
     {
-      if (tsID == 2 * NumTimestep) fprintf(stdout, "\n   ");
+      if (tsID == 2 * NumTimestep) std::fprintf(stdout, "\n   ");
       if (tsID >= 2 * NumTimestep) ndotout = printDot(ndotout, &nfact, &ncout);
 
       if (nvdatetime < NumTimestep)
@@ -779,7 +779,7 @@ print_timesteps(CdoStreamID streamID, int taxisID, int verbose)
 
   if (nvdatetime)
   {
-    fprintf(stdout, "\n");
+    std::fprintf(stdout, "\n");
 
     ntimeout = 0;
     int toff = 0;

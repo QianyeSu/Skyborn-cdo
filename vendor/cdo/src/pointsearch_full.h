@@ -24,7 +24,7 @@ public:
   {
     create(lons, lats);
   }
-  ~PointsearchFull() {}
+  //  ~PointsearchFull() {}
 
   size_t
   search_nearest(PointLonLat const &pointLL, size_t *index, double *dist) override
@@ -70,7 +70,7 @@ public:
     if (warning)
     {
       warning = false;
-      fprintf(stderr, "PointsearchFull::search_qnearest() not implemented\n");
+      std::fprintf(stderr, "PointsearchFull::search_qnearest() not implemented\n");
     }
 
     size_t numIndices = 0;

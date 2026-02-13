@@ -66,7 +66,7 @@ bool Use_FFTW = true;
 bool VersionInfo = true;
 int CMOR_Mode = false;
 
-bool cdoDiag = false;
+bool CDO_diagnostic = false;
 
 MemType CDO_Memtype(MemType::Native);
 bool CDO_Async_Read = false;
@@ -97,7 +97,7 @@ cdo_num_varnames()
   return cdoVarnames.size();
 }
 
-bool REMAP_genweights = true;
+bool RemapGenerateWeights{ true };
 
 const char *cdoExpName = nullptr;
 }  // namespace Options
@@ -132,35 +132,35 @@ void
 set_compression(int streamID, int filetype)
 {
   if (Options::cdoCompress)
+  {
+    if (filetype == CDI_FILETYPE_GRB || filetype == CDI_FILETYPE_GRB2)
     {
-      if (filetype == CDI_FILETYPE_GRB || filetype == CDI_FILETYPE_GRB2)
-        {
-          Options::cdoCompType = CDI_COMPRESS_SZIP;
-          Options::cdoCompLevel = 0;
-        }
-      else if (filetype == CDI_FILETYPE_NC4 || filetype == CDI_FILETYPE_NC4C || filetype == CDI_FILETYPE_NCZARR)
-        {
-          Options::cdoCompType = CDI_COMPRESS_ZIP;
-          Options::cdoCompLevel = 1;
-        }
+      Options::cdoCompType = CDI_COMPRESS_SZIP;
+      Options::cdoCompLevel = 0;
     }
+    else if (filetype == CDI_FILETYPE_NC4 || filetype == CDI_FILETYPE_NC4C || filetype == CDI_FILETYPE_NCZARR)
+    {
+      Options::cdoCompType = CDI_COMPRESS_ZIP;
+      Options::cdoCompLevel = 1;
+    }
+  }
 
   if (Options::cdoCompType != CDI_COMPRESS_NONE)
-    {
-      /*      streamDefShuffle(streamID, Options::cdoShuffle);*/
+  {
+    /*      streamDefShuffle(streamID, Options::cdoShuffle);*/
 
-      streamDefCompType(streamID, Options::cdoCompType);
-      streamDefCompLevel(streamID, Options::cdoCompLevel);
+    streamDefCompType(streamID, Options::cdoCompType);
+    streamDefCompLevel(streamID, Options::cdoCompLevel);
 
-      if (Options::cdoCompType == CDI_COMPRESS_SZIP && !filetype_has_szip(filetype))
-        cdo_warning("SZIP compression not available for non GRIB/NetCDF4 data!");
+    if (Options::cdoCompType == CDI_COMPRESS_SZIP && !filetype_has_szip(filetype))
+      cdo_warning("SZIP compression not available for non GRIB/NetCDF4 data!");
 
-      if (Options::cdoCompType == CDI_COMPRESS_JPEG && filetype != CDI_FILETYPE_GRB2)
-        cdo_warning("JPEG compression not available for non GRIB2 data!");
+    if (Options::cdoCompType == CDI_COMPRESS_JPEG && filetype != CDI_FILETYPE_GRB2)
+      cdo_warning("JPEG compression not available for non GRIB2 data!");
 
-      if (Options::cdoCompType == CDI_COMPRESS_ZIP && !filetype_has_zip(filetype))
-        cdo_warning("Deflate compression not available for non NetCDF4 data!");
-    }
+    if (Options::cdoCompType == CDI_COMPRESS_ZIP && !filetype_has_zip(filetype))
+      cdo_warning("Deflate compression not available for non NetCDF4 data!");
+  }
 
   if (Options::filterSpec.size() > 0) { streamDefFilter(streamID, Options::filterSpec.c_str()); }
 }
@@ -184,55 +184,55 @@ cdo_get_search_radius(void)
 }
 
 void
-cdo_print_attributes(FILE *fp, int cdiID, int varID, int nblanks)
+cdo_print_attributes(std::FILE *fp, int cdiID, int varID, int nblanks)
 {
   int natts;
   cdiInqNatts(cdiID, varID, &natts);
 
   for (int ia = 0; ia < natts; ++ia)
-    {
-      char attname[CDI_MAX_NAME];
-      int atttype, attlen;
-      cdiInqAtt(cdiID, varID, ia, attname, &atttype, &attlen);
+  {
+    char attname[CDI_MAX_NAME];
+    int atttype, attlen;
+    cdiInqAtt(cdiID, varID, ia, attname, &atttype, &attlen);
 
-      if (atttype == CDI_DATATYPE_INT8 || atttype == CDI_DATATYPE_UINT8 || atttype == CDI_DATATYPE_INT16
-          || atttype == CDI_DATATYPE_UINT16 || atttype == CDI_DATATYPE_INT32 || atttype == CDI_DATATYPE_UINT32)
-        {
-          std::vector<int> attint(attlen);
-          cdiInqAttInt(cdiID, varID, attname, attlen, attint.data());
-          fprintf(fp, "%*s", nblanks, "");
-          fprintf(fp, "%s = ", attname);
-          for (int i = 0; i < attlen; ++i)
-            {
-              if (i) fprintf(fp, ", ");
-              fprintf(fp, "%d", attint[i]);
-            }
-          fprintf(fp, "\n");
-        }
-      else if (atttype == CDI_DATATYPE_FLT32 || atttype == CDI_DATATYPE_FLT64)
-        {
-          char fltstr[128];
-          std::vector<double> attflt(attlen);
-          cdiInqAttFlt(cdiID, varID, attname, attlen, attflt.data());
-          fprintf(fp, "%*s", nblanks, "");
-          fprintf(fp, "%s = ", attname);
-          for (int i = 0; i < attlen; ++i)
-            {
-              if (i) fprintf(fp, ", ");
-              if (atttype == CDI_DATATYPE_FLT32)
-                fprintf(fp, "%sf", double_to_att_str(Options::CDO_flt_digits, fltstr, sizeof(fltstr), attflt[i]));
-              else
-                fprintf(fp, "%s", double_to_att_str(Options::CDO_dbl_digits, fltstr, sizeof(fltstr), attflt[i]));
-            }
-          fprintf(fp, "\n");
-        }
-      else if (atttype == CDI_DATATYPE_TXT)
-        {
-          std::vector<char> atttxt(attlen + 1);
-          cdiInqAttTxt(cdiID, varID, attname, attlen, atttxt.data());
-          atttxt[attlen] = 0;
-          fprintf(fp, "%*s", nblanks, "");
-          fprintf(fp, "%s = \"%s\"\n", attname, atttxt.data());
-        }
+    if (atttype == CDI_DATATYPE_INT8 || atttype == CDI_DATATYPE_UINT8 || atttype == CDI_DATATYPE_INT16
+        || atttype == CDI_DATATYPE_UINT16 || atttype == CDI_DATATYPE_INT32 || atttype == CDI_DATATYPE_UINT32)
+    {
+      std::vector<int> attint(attlen);
+      cdiInqAttInt(cdiID, varID, attname, attlen, attint.data());
+      std::fprintf(fp, "%*s", nblanks, "");
+      std::fprintf(fp, "%s = ", attname);
+      for (int i = 0; i < attlen; ++i)
+      {
+        if (i) std::fprintf(fp, ", ");
+        std::fprintf(fp, "%d", attint[i]);
+      }
+      std::fprintf(fp, "\n");
     }
+    else if (atttype == CDI_DATATYPE_FLT32 || atttype == CDI_DATATYPE_FLT64)
+    {
+      char fltstr[128];
+      std::vector<double> attflt(attlen);
+      cdiInqAttFlt(cdiID, varID, attname, attlen, attflt.data());
+      std::fprintf(fp, "%*s", nblanks, "");
+      std::fprintf(fp, "%s = ", attname);
+      for (int i = 0; i < attlen; ++i)
+      {
+        if (i) std::fprintf(fp, ", ");
+        if (atttype == CDI_DATATYPE_FLT32)
+          std::fprintf(fp, "%sf", double_to_att_str(Options::CDO_flt_digits, fltstr, sizeof(fltstr), attflt[i]));
+        else
+          std::fprintf(fp, "%s", double_to_att_str(Options::CDO_dbl_digits, fltstr, sizeof(fltstr), attflt[i]));
+      }
+      std::fprintf(fp, "\n");
+    }
+    else if (atttype == CDI_DATATYPE_TXT)
+    {
+      std::vector<char> atttxt(attlen + 1);
+      cdiInqAttTxt(cdiID, varID, attname, attlen, atttxt.data());
+      atttxt[attlen] = 0;
+      std::fprintf(fp, "%*s", nblanks, "");
+      std::fprintf(fp, "%s = \"%s\"\n", attname, atttxt.data());
+    }
+  }
 }

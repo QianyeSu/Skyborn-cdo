@@ -121,7 +121,7 @@ cdfSearchIDBySize(size_t startIdx, size_t numIDs, const CdfGrid cdfGridVec[/*num
       }
     }
   }
-  return (struct idSearch) { .numNonMatching = numNonMatching, .foundID = foundID, .foundIdx = foundIdx };
+  return (struct idSearch){ .numNonMatching = numNonMatching, .foundID = foundID, .foundIdx = foundIdx };
 }
 
 static SizeType
@@ -516,7 +516,7 @@ cdfPostDefActionAddPutVal(struct cdfPostDefActionList **list_, int fileID, int n
   delayedPutVals->fileID = fileID;
   delayedPutVals->ncvarid = ncvarid;
   *list_ = cdfPostDefActionAdd(
-      *list_, (struct cdfPostDefAction) { .data = (void *) delayedPutVals, .action = cdfDelayedPutVarDouble, .cleanup = cleanup });
+      *list_, (struct cdfPostDefAction){ .data = (void *) delayedPutVals, .action = cdfDelayedPutVarDouble, .cleanup = cleanup });
 }
 
 static inline void
@@ -527,7 +527,7 @@ cdfPostDefActionAddPut1Int(struct cdfPostDefActionList **list_, int fileID, int 
   delayedPutVals->fileID = fileID;
   delayedPutVals->ncvarid = ncvarid;
   *list_ = cdfPostDefActionAdd(
-      *list_, (struct cdfPostDefAction) { .data = (void *) delayedPutVals, .action = cdfDelayedPutVarInt1, .cleanup = cleanup });
+      *list_, (struct cdfPostDefAction){ .data = (void *) delayedPutVals, .action = cdfDelayedPutVarInt1, .cleanup = cleanup });
 }
 
 static void
@@ -920,7 +920,7 @@ cdfDefIrregularGridCommon(stream_t *streamptr, int gridID, size_t xsize, size_t 
     streamptr->ncmode = 2;
   }
 
-  return (struct cdfDefIrregularGridCommonIDs) {
+  return (struct cdfDefIrregularGridCommonIDs){
     .xdimID = xdimID, .ydimID = ydimID, .ncxvarid = ncxvarid, .ncyvarid = ncyvarid, .ncavarid = ncavarid, .delayed = delayed
   };
 }
@@ -1550,7 +1550,7 @@ static struct cdfPostDefActionList *
 cdf_def_zaxis_hybrid(stream_t *streamptr, int type, int *ncvarid, int zaxisID, int zaxisindex, int xtype, size_t dimlen, int *dimID,
                      char *axisname)
 {
-  struct cdfPostDefActionList *(*def_zaxis_hybrid_delegate)(stream_t *streamptr, int type, int *ncvarid, int zaxisID,
+  struct cdfPostDefActionList *(*def_zaxis_hybrid_delegate)(stream_t * streamptr, int type, int *ncvarid, int zaxisID,
                                                             int zaxisindex, int xtype, size_t dimlen, int *dimID, char *axisname)
       = ((!CDI_CMOR_Mode && CDI_Convention == CDI_CONVENTION_ECHAM) || type == ZAXIS_HYBRID_HALF) ? cdf_def_zaxis_hybrid_echam
                                                                                                   : cdf_def_zaxis_hybrid_cf;
@@ -1610,7 +1610,7 @@ cdfDefZaxisChar(stream_t *streamptr, int zaxisID, char *axisname, int *dimID, si
   int length = sizeof(dimname);
   cdiInqKeyString(zaxisID, CDI_GLOBAL, CDI_KEY_DIMNAME, dimname, &length);
   *dimID = checkDimName(fileID, dimlen, dimname);
-  if (dimlen <= 0) Error("No strings delivered for a character axis.");
+  if (dimlen == 0) Error("No strings delivered for a character axis.");
   if (dimname[0] == 0)
   {
     memcpy(dimname, "area_type", 10);
@@ -1826,6 +1826,22 @@ static struct cdfPostDefActionList *
 cdf_def_grid_indices(stream_t *streamptr, int gridID, int gridIndex)
 {
   int fileID = streamptr->fileID;
+
+  int dataType = CDI_UNDEFID;
+  cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_DATATYPE, &dataType);
+  nc_type xtype = (dataType == CDI_DATATYPE_INT32) ? NC_INT : NC_INT64;
+
+  if (xtype == NC_INT64)
+  {
+    int fileFormat;
+    int status = nc_inq_format(fileID, &fileFormat);
+    if (status == NC_NOERR && fileFormat != NC_FORMAT_NETCDF4 && fileFormat != NC_FORMAT_NETCDF4_CLASSIC)
+    {
+      Warning("The grid cell indices couldn't be stored because 64-bit integer is not supported by data format!");
+      return NULL;
+    }
+  }
+
   SizeType dimlen = gridInqSize(gridID);
 
   bool switchNCMode = (streamptr->ncmode == 2);
@@ -1843,11 +1859,6 @@ cdf_def_grid_indices(stream_t *streamptr, int gridID, int gridIndex)
 
   int dimID = checkDimName(fileID, (size_t) dimlen, dimname);
   if (dimID == CDI_UNDEFID) cdf_def_dim(fileID, dimname, (size_t) dimlen, &dimID);
-
-  int dataType = CDI_UNDEFID;
-  cdiInqKeyInt(gridID, CDI_GLOBAL, CDI_KEY_DATATYPE, &dataType);
-  nc_type xtype = NC_INT64;
-  if (dataType == CDI_DATATYPE_INT32) xtype = NC_INT;
 
   static const char axisname[] = "cell_index";
   static const char stdname[] = "healpix_index";
@@ -1938,10 +1949,8 @@ cdfDefCharacter(stream_t *streamptr, int gridID, int gridIndex, int cdiAxisID, i
     int gridtype0 = gridInqType(gridID0);
     if (gridtype0 == GRID_CHARXY)
     {
-      if (gridInqXIsc(gridID0) == strlen && gridInqXsize(gridID0) == dimlen)
-        return;
-      else if (gridInqYIsc(gridID0) == strlen && gridInqYsize(gridID0) == dimlen)
-        return;
+      if (gridInqXIsc(gridID0) == strlen && gridInqXsize(gridID0) == dimlen) { return; }
+      else if (gridInqYIsc(gridID0) == strlen && gridInqYsize(gridID0) == dimlen) { return; }
     }
   }
 
@@ -2197,8 +2206,11 @@ cdf_define_grid(stream_t *streamptr, int gridID, int gridIndex)
     if (gridSize == gridInqIndices(gridID, NULL))
     {
       struct cdfPostDefActionList *idelayed = cdf_def_grid_indices(streamptr, gridID, gridIndex);
-      delayed = cdfPostDefActionConcat(delayed, idelayed);
-      Free(idelayed);
+      if (idelayed)
+      {
+        delayed = cdfPostDefActionConcat(delayed, idelayed);
+        Free(idelayed);
+      }
     }
   }
   else if (gridType == GRID_GENERIC)

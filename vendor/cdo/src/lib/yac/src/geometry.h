@@ -2,14 +2,6 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-/** \example test_geometry.c
- * This contains some tests for basic routines of \ref geometry.h.
- */
-
-/** \example test_angle.c
- * This contains some tests for angle calculations of \ref geometry.h.
- */
-
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
@@ -23,7 +15,7 @@
 #include <math.h>
 #include <float.h>
 
-#include "basic_grid.h"
+#include "yac_types.h"
 #include "grid_cell.h"
 #include "utils_core.h"
 
@@ -64,11 +56,6 @@ struct bounding_circle {
    double sq_crd; // sq_crd = (chord)^2
 };
 
-/** \example test_circle.c
- * This contains some examples on how to use the yac_circle interfaces
- * routines.
- */
-
 enum yac_circle_type {
    GREAT_CIRCLE = YAC_GREAT_CIRCLE_EDGE,
    LAT_CIRCLE   = YAC_LAT_CIRCLE_EDGE,
@@ -94,10 +81,6 @@ struct yac_circle {
     } p;
   } data;
 };
-
-/** \example test_point_in_cell.c
- * This contains examples on how to use point_in_cell.
- */
 
 /**
  * checks whether a given point is within a given cell \n
@@ -176,10 +159,6 @@ int yac_intersect_vec (
   enum yac_edge_type edge_type_b, double const c[3], double const d[3],
   double p[3], double q[3]);
 
-/** \example test_cell_bnd_circle.c
- * These are some examples on how to use \ref yac_get_cell_bounding_circle.
- */
-
 /**
  * gets the bounding circle for a grid cell
  * @param[in] cell grid cell (coordinates have to be in radian)
@@ -187,54 +166,6 @@ int yac_intersect_vec (
  */
 void yac_get_cell_bounding_circle(struct yac_grid_cell cell,
                                   struct bounding_circle * bnd_circle);
-
-/**
- * computes the circumscribe circle for a triangle on the sphere
- * @param[in]  a          coordinates of first point (xyz)
- * @param[in]  b          coordinates of second point (xyz)
- * @param[in]  c          coordinates of thrid point (xyz)
- * @param[out] bnd_circle circumscribe circle
- * @remark it is assumed that all three edges of the triangle are great circles
- */
-void yac_get_cell_circumscribe_circle_unstruct_triangle(
-   double a[3], double b[3], double c[3], struct bounding_circle * bnd_circle);
-
-/**
- * computes the smallest bounding circle for a triangle on the sphere
- * @param[in]  a          coordinates of first point (xyz)
- * @param[in]  b          coordinates of second point (xyz)
- * @param[in]  c          coordinates of thrid point (xyz)
- * @param[out] bnd_circle bounding circle
- * @remark it is assumed that all three edges of the triangle are great circles
- */
-void yac_get_cell_bounding_circle_unstruct_triangle(
-   double a[3], double b[3], double c[3], struct bounding_circle * bnd_circle);
-
-/**
- * computes the circumscribe circle for a quad on the sphere
- * @param[in]  a          coordinates of first point (xyz)
- * @param[in]  b          coordinates of second point (xyz)
- * @param[in]  c          coordinates of thrid point (xyz)
- * @param[out] bnd_circle circumscribe circle
- * @remark it is assumed that all edges of the quad are either circles of
- *         longitude or latitude
- */
-void yac_get_cell_circumscribe_circle_reg_quad(
-   double a[3], double b[3], double c[3],
-   struct bounding_circle * bnd_circle);
-
-/**
- * computes the smallest bounding circle for a triangle on the sphere
- * @param[in]  a          coordinates of first point (xyz)
- * @param[in]  b          coordinates of second point (xyz)
- * @param[in]  c          coordinates of thrid point (xyz)
- * @param[out] bnd_circle bounding circle
- * @remark it is assumed that all edges of the quad are either circles of
- *         longitude or latitude
- */
-void yac_get_cell_bounding_circle_reg_quad(
-   double a[3], double b[3], double c[3],
-   struct bounding_circle * bnd_circle);
 
 /**
  * checks whether two extents overlap
@@ -271,7 +202,38 @@ static inline int yac_point_in_bounding_circle_vec(
 
   return
     bnd_circle->sq_crd >=
-    sq_len_diff_vec(bnd_circle->base_vector, point_vector);
+      sq_len_diff_vec(bnd_circle->base_vector, point_vector);
+}
+
+static inline double clamp_abs_one(double val) {
+  return val > -1.0 ? (val < 1.0 ? val : 1.0) : -1.0;
+}
+
+/**
+ * compute the sine and cosine of a provided angle in RAD
+ * (avoids values close to zero and ensures that the result is in
+ *  the range [-1,1])
+ * @param[in]  angle angle in the range of [-PI;PI]
+ * @param[out] sin_value
+ * @param[out] cos_value
+ */
+static inline void compute_sin_cos(
+  double angle, double * sin_value, double * cos_value) {
+
+  double abs_angle = fabs(angle);
+  if (abs_angle < yac_angle_low_tol) {
+    *sin_value = 0.0;
+    *cos_value = 1.0;
+  } else  if (fabs(abs_angle - M_PI) < yac_angle_low_tol) {
+    *sin_value = 0.0;
+    *cos_value = -1.0;
+  } else if (fabs(abs_angle - M_PI_2) < yac_angle_low_tol) {
+    *sin_value = copysign(1.0, angle);
+    *cos_value = 0.0;
+  } else {
+    *sin_value = clamp_abs_one(sin(angle));
+    *cos_value = clamp_abs_one(cos(angle));
+  }
 }
 
 /**
@@ -286,13 +248,16 @@ static inline int yac_point_in_bounding_circle_vec(
  */
 static inline void LLtoXYZ(double lon, double lat, double p_out[]) {
 
-   while (lon < -M_PI) lon += 2.0 * M_PI;
-   while (lon >= M_PI) lon -= 2.0 * M_PI;
+  while (lon < -M_PI) lon += 2.0 * M_PI;
+  while (lon >= M_PI) lon -= 2.0 * M_PI;
 
-   double cos_lat = cos(lat);
-   p_out[0] = cos_lat * cos(lon);
-   p_out[1] = cos_lat * sin(lon);
-   p_out[2] = sin(lat);
+  double sin_lon, cos_lon, sin_lat, cos_lat;
+  compute_sin_cos(lon, &sin_lon, &cos_lon);
+  compute_sin_cos(lat, &sin_lat, &cos_lat);
+
+  p_out[0] = cos_lat * cos_lon;
+  p_out[1] = cos_lat * sin_lon;
+  p_out[2] = sin_lat;
 }
 
 /**
@@ -396,10 +361,6 @@ static inline double get_vector_angle(double const a[3], double const b[3]) {
 
    return fabs(atan2(cross_abs, dot));
    */
-}
-
-static inline double clamp_abs_one(double val) {
-  return val > -1.0 ? (val < 1.0 ? val : 1.0) : -1.0;
 }
 
 static inline struct sin_cos_angle sin_cos_angle_new(double sin, double cos) {

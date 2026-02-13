@@ -1,3 +1,23 @@
+2025-11-06  Uwe Schulzweida
+
+	* Version 2.5.4 released
+
+2025-10-27  Uwe Schulzweida
+
+	* Replace cdi_has_ncfilter() by cdiGetConfig(CDI_NC_HAS_FILTER)
+	* Replace cdi_has_ncdap() by cdiGetConfig(CDI_NC_HAS_DAP)
+	* Replace cdi_has_cgribex() by cdiGetConfig(CDI_HAS_CGRIBEX)
+	* Add interface function cdiGetConfig()
+	* cdf_def_var_filter: changed error to warning
+
+2025-10-09  Uwe Schulzweida
+
+	* is_timeaxis_units: tu string is not null terminated (bug fix)
+
+2025-08-29  Uwe Schulzweida
+
+	* strcasecmp not defined [Bug #12250]
+
 2025-07-24  Uwe Schulzweida
 
 	* Version 2.5.3 released

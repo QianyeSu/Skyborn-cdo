@@ -209,16 +209,14 @@ radius_str_to_deg(std::string const &string)
 
   if (*endptr != 0)
   {
-    if (std::strncmp(endptr, "km", 2) == 0)
-      radius = 360 * ((radius * 1000) / (2.0 * PlanetRadiusDefault * M_PI));
-    else if (std::strncmp(endptr, "m", 1) == 0)
-      radius = 360 * ((radius) / (2.0 * PlanetRadiusDefault * M_PI));
-    else if (std::strncmp(endptr, "deg", 3) == 0)
-      ;
-    else if (std::strncmp(endptr, "rad", 3) == 0)
-      radius *= RAD2DEG;
+    if (std::strncmp(endptr, "km", 2) == 0) { radius = 360 * ((radius * 1000) / (2.0 * PlanetRadiusDefault * M_PI)); }
+    else if (std::strncmp(endptr, "m", 1) == 0) { radius = 360 * (radius / (2.0 * PlanetRadiusDefault * M_PI)); }
+    else if (std::strncmp(endptr, "deg", 3) == 0) { ; }
+    else if (std::strncmp(endptr, "rad", 3) == 0) { radius *= RAD2DEG; }
     else
+    {
       cdo_abort("Float parameter >%s< contains invalid character at position %d!", string, (int) (endptr - string.c_str() + 1));
+    }
   }
 
   if (radius > 180.0) radius = 180.0;
@@ -265,31 +263,25 @@ param_to_string(int param)
 /* time/date/season converisons */
 /* =================================================================================== */
 void
-season_to_months(std::string const &season, int *imonths)
+season_to_months(std::string const &season, int (&imonths)[13])
 {
-  const char *const smons = "JFMAMJJASONDJFMAMJJASOND";
+  std::string smons{ "JFMAMJJASONDJFMAMJJASOND" };
   const int imons[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-  assert(std::strlen(smons) == (sizeof(imons) / sizeof(int)));
+  assert(smons.size() == (sizeof(imons) / sizeof(int)));
 
   if (season == "ANN")
   {
-    for (size_t k = 0; k < 12; ++k) imonths[k + 1] = 1;
+    for (int k = 1; k < 13; ++k) imonths[k] = 1;
   }
   else
   {
-    auto len = season.size();
-    if (len > 12) cdo_abort("Too many months %d (limit=12)!", (int) len);
-    char *const season_u = strdup(season.c_str());
-    cstr_to_upper(season_u);
-    const char *const sstr = std::strstr(smons, season_u);
-    std::free(season_u);
-    if (sstr != nullptr)
-    {
-      size_t ks = (size_t) (sstr - smons);
-      size_t ke = ks + len;
-      for (size_t k = ks; k < ke; ++k) imonths[imons[k]]++;
-    }
-    else { cdo_abort("Season %s not available!", season); }
+    auto len = (int) season.size();
+    if (len > 12) cdo_abort("Too many months %d (limit=12)!", len);
+    auto pos = smons.find(season);
+    if (pos == std::string::npos) { cdo_abort("Season %s not available!", season); }
+    auto ks = (int) pos;
+    auto ke = ks + len;
+    for (int k = ks; k < ke; ++k) imonths[imons[k]]++;
   }
 }
 

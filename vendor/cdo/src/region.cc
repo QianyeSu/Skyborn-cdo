@@ -56,7 +56,7 @@ read_coords(size_t segmentNo, Varray<double> &xvals, Varray<double> &yvals, std:
   }
 
   if (Options::cdoVerbose)
-    for (size_t i = 0; i < number; ++i) fprintf(stderr, "%zu %g %g\n", i + 1, xvals[i], yvals[i]);
+    for (size_t i = 0; i < number; ++i) std::fprintf(stderr, "%zu %g %g\n", i + 1, xvals[i], yvals[i]);
 
   return number;
 }

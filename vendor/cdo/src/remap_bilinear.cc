@@ -30,7 +30,7 @@ std::pair<double, double>
 remap_find_weights(PointLonLat const &pointLL, const SquareCorners &squareCorners)
 {
   constexpr double converge = 1.0e-10;  // Convergence criterion
-  extern long RemapMaxIteration;
+  constexpr long MaxIteration = 100;    // Max iteration count for i, j iteration
 
   auto const &lons = squareCorners.lons;
   auto const &lats = squareCorners.lats;
@@ -58,7 +58,7 @@ remap_find_weights(PointLonLat const &pointLL, const SquareCorners &squareCorner
   double yguess = 0.5;
 
   long iter = 0;  // iteration counters
-  for (iter = 0; iter < RemapMaxIteration; ++iter)
+  for (iter = 0; iter < MaxIteration; ++iter)
   {
     auto dthp = pointLL.lat() - lats[0] - dth1 * xguess - dth2 * yguess - dth3 * xguess * yguess;
     auto dphp = pointLL.lon() - lons[0];
@@ -83,7 +83,7 @@ remap_find_weights(PointLonLat const &pointLL, const SquareCorners &squareCorner
     yguess += delj;
   }
 
-  if (iter >= RemapMaxIteration) xguess = yguess = -1.0;
+  if (iter >= MaxIteration) xguess = yguess = -1.0;
 
   return std::make_pair(xguess, yguess);
 }
@@ -100,7 +100,7 @@ bilinear_set_weights(double xfrac, double yfrac, double (&weights)[4])
 }
 
 int
-num_src_points(Vmask const &mask, const size_t (&indices)[4], double (&lats)[4])
+num_src_points(Vmask const &mask, size_t const (&indices)[4], double (&lats)[4])
 {
   int num = 4;
 
@@ -299,7 +299,7 @@ remap_bilinear_weights(RemapSearch &rsearch, RemapVars &rv)
 
     if (!tgtGrid->mask[tgtCellIndex]) continue;
 
-    auto pointLL = remapgrid_get_lonlat(tgtGrid, tgtCellIndex);
+    auto pointLL = tgtGrid->get_lonlat(tgtCellIndex);
 
     auto &tgtCellFrac = tgtGrid->cellFrac[tgtCellIndex];
     if (isHealpixGrid)
@@ -317,7 +317,7 @@ remap_bilinear_weights(RemapSearch &rsearch, RemapVars &rv)
 
 template <typename T>
 static inline T
-bilinear_remap(Varray<T> const &srcArray, const double (&wgt)[4], const size_t (&ind)[4])
+bilinear_remap(Varray<T> const &srcArray, size_t const (&ind)[4], double const (&wgt)[4])
 {
   return srcArray[ind[0]] * wgt[0] + srcArray[ind[1]] * wgt[1] + srcArray[ind[2]] * wgt[2] + srcArray[ind[3]] * wgt[3];
 }
@@ -345,7 +345,7 @@ remap_bilinear_regular(RemapSearch &rsearch, Varray<T1> const &srcArray, Vmask c
       // Successfully found xfrac, yfrac - compute weights
       bilinear_set_weights(xfrac, yfrac, weights);
       bilinear_sort_weights(squareCorners.indices, weights);
-      tgtValue = bilinear_remap(srcArray, weights, squareCorners.indices);
+      tgtValue = bilinear_remap(srcArray, squareCorners.indices, weights);
     }
     else
     {
@@ -362,7 +362,7 @@ remap_bilinear_regular(RemapSearch &rsearch, Varray<T1> const &srcArray, Vmask c
     {
       renormalize_weights(squareCorners.lats, weights);
       bilinear_sort_weights(squareCorners.indices, weights);
-      tgtValue = bilinear_remap(srcArray, weights, squareCorners.indices);
+      tgtValue = bilinear_remap(srcArray, squareCorners.indices, weights);
     }
   }
 }
@@ -372,8 +372,8 @@ static void
 remap_bilinear_healpix(const RemapSearch &rsearch, Varray<T1> const &srcArray, Vmask const &srcGridMask, PointLonLat const &pointLL,
                        T2 &tgtValue)
 {
-  double weights[4];  // bilinear weights for four corners
   size_t indices[4];  // indices for the four source points
+  double weights[4];  // bilinear weights for four corners
 
   hp_bilinear_interpolate_weights(rsearch.srcGrid->hpParams, pointLL.lon(), pointLL.lat(), indices, weights);
 
@@ -382,7 +382,7 @@ remap_bilinear_healpix(const RemapSearch &rsearch, Varray<T1> const &srcArray, V
   if (searchResult > 0)
   {
     bilinear_sort_weights(indices, weights);
-    tgtValue = bilinear_remap(srcArray, weights, indices);
+    tgtValue = bilinear_remap(srcArray, indices, weights);
   }
 }
 
@@ -432,7 +432,7 @@ remap_bilinear(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissv
 
     if (!tgtGrid->mask[tgtCellIndex]) continue;
 
-    auto pointLL = remapgrid_get_lonlat(tgtGrid, tgtCellIndex);
+    auto pointLL = tgtGrid->get_lonlat(tgtCellIndex);
 
     if (isHealpixGrid)
       remap_bilinear_healpix(rsearch, srcArray, srcGridMask, pointLL, tgtValue);

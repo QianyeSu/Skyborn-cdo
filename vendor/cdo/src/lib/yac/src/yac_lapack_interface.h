@@ -16,15 +16,15 @@
 #error None of the supported LAPACK interfaces is available
 #endif
 
-#if YAC_LAPACK_INTERFACE_ID == 1  // Intel MKL LAPACKE
+#if YAC_LAPACK_INTERFACE_ID == 1 // Intel MKL LAPACKE
 
 #include <mkl_lapacke.h>
 
-#elif YAC_LAPACK_INTERFACE_ID == 2  // Netlib LAPACKE
+#elif YAC_LAPACK_INTERFACE_ID == 2 // Netlib LAPACKE
 
 #include <lapacke.h>
 
-#elif YAC_LAPACK_INTERFACE_ID == 3  // ATLAS CLAPACK
+#elif YAC_LAPACK_INTERFACE_ID == 3 // ATLAS CLAPACK
 
 #include <clapack.h>
 
@@ -45,18 +45,21 @@ lapack_int LAPACKE_dgels_work( int matrix_layout, char trans, lapack_int m,
                                double* work, lapack_int lwork );
 #endif
 
-lapack_int LAPACKE_dgesv(int matrix_layout, lapack_int n, lapack_int nrhs, double *a, lapack_int lda, lapack_int *ipiv, double *b,
-                         lapack_int ldb);
+lapack_int LAPACKE_dgesv( int matrix_layout, lapack_int n, lapack_int nrhs,
+                          double* a, lapack_int lda, lapack_int* ipiv,
+                          double* b, lapack_int ldb );
 
-lapack_int LAPACKE_dgetrf(int matrix_layout, lapack_int m, lapack_int n, double *a, lapack_int lda, lapack_int *ipiv);
+lapack_int LAPACKE_dgetrf( int matrix_layout, lapack_int m, lapack_int n,
+                           double* a, lapack_int lda, lapack_int* ipiv );
 
-lapack_int LAPACKE_dgetri_work(int matrix_layout, lapack_int n, double *a, lapack_int lda, const lapack_int *ipiv, double *work,
-                               lapack_int lwork);
+lapack_int LAPACKE_dgetri_work( int matrix_layout, lapack_int n, double* a,
+                                lapack_int lda, const lapack_int* ipiv,
+                                double* work, lapack_int lwork );
 
 #define YAC_LAPACK_NO_DSYTR
 #define YAC_LAPACK_C_INDEXING
 
-#elif YAC_LAPACK_INTERFACE_ID == 4  // Netlib CLAPACK
+#elif YAC_LAPACK_INTERFACE_ID == 4 // Netlib CLAPACK
 
 #include <f2c.h>
 
@@ -73,21 +76,26 @@ lapack_int LAPACKE_dgels_work( int matrix_layout, char trans, lapack_int m,
                                double* work, lapack_int lwork );
 #endif
 
-lapack_int LAPACKE_dgesv(int matrix_layout, lapack_int n, lapack_int nrhs, double *a, lapack_int lda, lapack_int *ipiv, double *b,
-                         lapack_int ldb);
+lapack_int LAPACKE_dgesv( int matrix_layout, lapack_int n, lapack_int nrhs,
+                          double* a, lapack_int lda, lapack_int* ipiv,
+                          double* b, lapack_int ldb );
 
-lapack_int LAPACKE_dgetrf(int matrix_layout, lapack_int m, lapack_int n, double *a, lapack_int lda, lapack_int *ipiv);
+lapack_int LAPACKE_dgetrf( int matrix_layout, lapack_int m, lapack_int n,
+                           double* a, lapack_int lda, lapack_int* ipiv );
 
-lapack_int LAPACKE_dgetri_work(int matrix_layout, lapack_int n, double *a, lapack_int lda, const lapack_int *ipiv, double *work,
-                               lapack_int lwork);
+lapack_int LAPACKE_dgetri_work( int matrix_layout, lapack_int n, double* a,
+                                lapack_int lda, const lapack_int* ipiv,
+                                double* work, lapack_int lwork );
 
-lapack_int LAPACKE_dsytrf_work(int matrix_layout, char uplo, lapack_int n, double *a, lapack_int lda, lapack_int *ipiv,
-                               double *work, lapack_int lwork);
+lapack_int LAPACKE_dsytrf_work( int matrix_layout, char uplo, lapack_int n,
+                                double* a, lapack_int lda, lapack_int* ipiv,
+                                double* work, lapack_int lwork );
 
-lapack_int LAPACKE_dsytri_work(int matrix_layout, char uplo, lapack_int n, double *a, lapack_int lda, const lapack_int *ipiv,
-                               double *work);
+lapack_int LAPACKE_dsytri_work( int matrix_layout, char uplo, lapack_int n,
+                                double* a, lapack_int lda,
+                                const lapack_int* ipiv, double* work );
 
-#elif YAC_LAPACK_INTERFACE_ID == 5  // Fortran LAPACK
+#elif YAC_LAPACK_INTERFACE_ID == 5 // Fortran LAPACK
 
 #ifndef lapack_int
 #define lapack_int int
@@ -102,19 +110,24 @@ lapack_int LAPACKE_dgels_work( int matrix_layout, char trans, lapack_int m,
                                double* work, lapack_int lwork );
 #endif
 
-lapack_int LAPACKE_dgesv(int matrix_layout, lapack_int n, lapack_int nrhs, double *a, lapack_int lda, lapack_int *ipiv, double *b,
-                         lapack_int ldb);
+lapack_int LAPACKE_dgesv( int matrix_layout, lapack_int n, lapack_int nrhs,
+                          double* a, lapack_int lda, lapack_int* ipiv,
+                          double* b, lapack_int ldb );
 
-lapack_int LAPACKE_dgetrf(int matrix_layout, lapack_int m, lapack_int n, double *a, lapack_int lda, lapack_int *ipiv);
+lapack_int LAPACKE_dgetrf( int matrix_layout, lapack_int m, lapack_int n,
+                           double* a, lapack_int lda, lapack_int* ipiv );
 
-lapack_int LAPACKE_dgetri_work(int matrix_layout, lapack_int n, double *a, lapack_int lda, const lapack_int *ipiv, double *work,
-                               lapack_int lwork);
+lapack_int LAPACKE_dgetri_work( int matrix_layout, lapack_int n, double* a,
+                                lapack_int lda, const lapack_int* ipiv,
+                                double* work, lapack_int lwork );
 
-lapack_int LAPACKE_dsytrf_work(int matrix_layout, char uplo, lapack_int n, double *a, lapack_int lda, lapack_int *ipiv,
-                               double *work, lapack_int lwork);
+lapack_int LAPACKE_dsytrf_work( int matrix_layout, char uplo, lapack_int n,
+                                double* a, lapack_int lda, lapack_int* ipiv,
+                                double* work, lapack_int lwork );
 
-lapack_int LAPACKE_dsytri_work(int matrix_layout, char uplo, lapack_int n, double *a, lapack_int lda, const lapack_int *ipiv,
-                               double *work);
+lapack_int LAPACKE_dsytri_work( int matrix_layout, char uplo, lapack_int n,
+                                double* a, lapack_int lda,
+                                const lapack_int* ipiv, double* work );
 
 #else
 
@@ -122,4 +135,5 @@ lapack_int LAPACKE_dsytri_work(int matrix_layout, char uplo, lapack_int n, doubl
 
 #endif
 
-#endif  // YAC_LAPACK_INTERFACE_H
+#endif // YAC_LAPACK_INTERFACE_H
+

@@ -17,12 +17,10 @@ extern "C"
 HpOrder
 hp_get_order(std::string const &orderName)
 {
-  // clang-format off
-  if      (orderName == "xy")     return HpOrder::XY;
-  else if (orderName == "ring")   return HpOrder::Ring;
-  else if (orderName == "nest")   return HpOrder::Nested;
-  else if (orderName == "nested") return HpOrder::Nested;
-  // clang-format on
+  if (orderName == "xy") return HpOrder::XY;
+  if (orderName == "ring") return HpOrder::Ring;
+  if (orderName == "nest") return HpOrder::Nested;
+  if (orderName == "nested") return HpOrder::Nested;
   return HpOrder::Undef;
 }
 

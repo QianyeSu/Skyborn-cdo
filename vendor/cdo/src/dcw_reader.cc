@@ -25,10 +25,13 @@
 
 #define DCW_SITE "ftp://ftp.soest.hawaii.edu/gmt"
 
+namespace
+{
 struct DCW_Country_State  // Information per country with state
 {
   char country[4];  // 2/3-char country code ISO 3166-1 (e.g. BR, US) for countries with states
 };
+}  // namespace
 
 static bool
 dcw_get_path(const char *name, const char *suffix, char *path)
@@ -38,29 +41,29 @@ dcw_get_path(const char *name, const char *suffix, char *path)
   bool found = false;
 
   if (readEnv)
-    {
-      DCW_Dir = getenv("DIR_DCW");
-      readEnv = false;
-    }
+  {
+    DCW_Dir = getenv("DIR_DCW");
+    readEnv = false;
+  }
 
   if (DCW_Dir)
-    {
-      std::snprintf(path, PATH_MAX, "%s/%s%s", DCW_Dir, name, suffix);
-      if (access(path, R_OK) == 0) found = true;
-    }
+  {
+    std::snprintf(path, PATH_MAX, "%s/%s%s", DCW_Dir, name, suffix);
+    if (access(path, R_OK) == 0) found = true;
+  }
   else
-    {
-      fprintf(stderr, "Environment variable DIR_DCW not set!\n");
-      return found;
-    }
+  {
+    std::fprintf(stderr, "Environment variable DIR_DCW not set!\n");
+    return found;
+  }
 
   if (!found)
-    {
-      printf("Unable to find or open the Digital Chart of the World\n");
-      printf("Perhaps you did not install this file in DIR_DCW?\n");
-      printf("Use your package manager to install package dcw-gmt.\n");
-      printf("Alternatively, get the latest dcw-gmt-<version>.tar.gz or dcw-gmt-<version>.zip from the %s.\n", DCW_SITE);
-    }
+  {
+    printf("Unable to find or open the Digital Chart of the World\n");
+    printf("Perhaps you did not install this file in DIR_DCW?\n");
+    printf("Use your package manager to install package dcw-gmt.\n");
+    printf("Alternatively, get the latest dcw-gmt-<version>.tar.gz or dcw-gmt-<version>.zip from the %s.\n", DCW_SITE);
+  }
 
   return found;
 }
@@ -78,63 +81,69 @@ dcw_load_lists(DCW_Lists &dcw_lists)
   char path[PATH_MAX] = { 0 };
   if (!dcw_get_path("dcw-countries", ".txt", path)) return -1;
 
+  auto &countries = dcw_lists.countries;
+  countries.resize(n_alloc);
+
   // Get countries first
-  auto fp = std::fopen(path, "r");
-  if (fp == nullptr)
+  {
+    auto fp = std::fopen(path, "r");
+    if (fp == nullptr)
     {
-      fprintf(stderr, "Unable to open file %s [permission trouble?]\n", path);
+      std::fprintf(stderr, "Unable to open file %s [permission trouble?]\n", path);
       return -1;
     }
 
-  auto &countries = dcw_lists.countries;
-  countries.resize(n_alloc);
-  k = 0;
-  while (fgets(line, BUFSIZ, fp))
+    k = 0;
+    while (fgets(line, BUFSIZ, fp))
     {
       if (line[0] == '#') continue;  // Skip comments
       std::sscanf(line, "%s %s %[^\n]", countries[k].continent, countries[k].code, countries[k].name);
       k++;
       if (k == n_alloc)
-        {
-          n_alloc += 100;
-          countries.resize(n_alloc);
-        }
+      {
+        n_alloc += 100;
+        countries.resize(n_alloc);
+      }
     }
 
-  std::fclose(fp);
+    std::fclose(fp);
+  }
 
   dim[0] = k;  // Number of countries
 
   countries.resize(k);
 
   // Get states
+  auto &states = dcw_lists.states;
+  states.resize(n_alloc);
+
   if (!dcw_get_path("dcw-states", ".txt", path)) { return -1; }
 
-  fp = std::fopen(path, "r");
-  if (fp == nullptr)
+  {
+    auto fp = std::fopen(path, "r");
+    if (fp == nullptr)
     {
-      fprintf(stderr, "Unable to open file %s [permission trouble?]\n", path);
+      std::fprintf(stderr, "Unable to open file %s [permission trouble?]\n", path);
       return -1;
     }
 
-  auto &states = dcw_lists.states;
-  states.resize(n_alloc);
-  k = 0;
-  n = 1;
-  while (fgets(line, BUFSIZ, fp))
+    k = 0;
+    n = 1;
+    while (fgets(line, BUFSIZ, fp))
     {
       if (line[0] == '#') continue;  // Skip comments
       std::sscanf(line, "%s %s %[^\n]", states[k].country, states[k].code, states[k].name);
       if (k && std::strcmp(states[k].country, states[k - 1].country)) n++;  // New country with states
       k++;
       if (k == n_alloc)
-        {
-          n_alloc += 100;
-          states.resize(n_alloc);
-        }
+      {
+        n_alloc += 100;
+        states.resize(n_alloc);
+      }
     }
 
-  std::fclose(fp);
+    std::fclose(fp);
+  }
 
   dim[1] = k;  // Number of states
   states.resize(k);
@@ -155,7 +164,7 @@ dcw_load_lists(DCW_Lists &dcw_lists)
   }
   */
 
-  // fprintf(stderr, "# DCW: Found %u countries, %u countries with states, and %u states\n", dim[0], dim[2], dim[1]);
+  // std::fprintf(stderr, "# DCW: Found %u countries, %u countries with states, and %u states\n", dim[0], dim[2], dim[1]);
 
   return 0;
 }
@@ -166,18 +175,18 @@ dcw_find_country(std::string const &code, const std::vector<DCW_Country> &list)
   int low = 0, high = (int) list.size() - 1;
 
   while (low <= high)
-    {
-      auto midpoint = low + (high - low) / 2;
+  {
+    auto midpoint = low + (high - low) / 2;
 
-      // check to see if value is equal to item in array
-      auto way = std::strcmp(code.c_str(), list[midpoint].code);
-      if (way == 0) return midpoint;
+    // check to see if value is equal to item in array
+    auto way = std::strcmp(code.c_str(), list[midpoint].code);
+    if (way == 0) return midpoint;
 
-      if (way < 0)
-        high = midpoint - 1;
-      else
-        low = midpoint + 1;
-    }
+    if (way < 0)
+      high = midpoint - 1;
+    else
+      low = midpoint + 1;
+  }
 
   // item was not found
   return -1;
@@ -189,9 +198,9 @@ dcw_find_state(std::string const &code, const std::vector<DCW_State> &list)
   auto country = code.substr(0, 2);
   auto state = code.substr(2);
   for (size_t i = 0, n = list.size(); i < n; ++i)
-    {
-      if (country == list[i].country && state == list[i].code) return i;
-    }
+  {
+    if (country == list[i].country && state == list[i].code) return i;
+  }
 
   // item was not found
   return -1;
@@ -220,12 +229,12 @@ dcw_open_nc()
 #ifdef HAVE_LIBNETCDF
   auto status = nc_open(path, NC_NOWRITE, &ncid);
   if (status)
-    {
-      fprintf(stderr, "Cannot open file %s!\n", path);
-      return -1;
-    }
+  {
+    std::fprintf(stderr, "Cannot open file %s!\n", path);
+    return -1;
+  }
 #else
-  fprintf(stderr, "dcw_open_nc failed: NetCDF support not compiled in!\n");
+  std::fprintf(stderr, "dcw_open_nc failed: NetCDF support not compiled in!\n");
 #endif
 
   return ncid;
@@ -239,62 +248,62 @@ dcw_get_region(const DCW_Lists &dcw_lists, std::vector<std::string> const &codeL
 
   int numEntries = 0;
   for (auto &code : codeList)
+  {
+    auto ks = (code.size() > 2) ? dcw_find_state(code, dcw_lists.states) : dcw_find_country(code, dcw_lists.countries);
+    if (ks == -1)
     {
-      auto ks = (code.size() > 2) ? dcw_find_state(code, dcw_lists.states) : dcw_find_country(code, dcw_lists.countries);
-      if (ks == -1)
-        {
-          fprintf(stderr, "No country code matching <%s>!\n", code.c_str());
-          return 3;
-        }
-
-      // auto &country = dcw_lists.countries[ks];
-      // auto is_Antarctica = (!std::strncmp(country.code, "AQ", 2U));
-
-      auto xname = code + "_lon";
-      auto yname = code + "_lat";
-
-      double west = 0.0, east = 0.0, south = 0.0, north = 0.0;
-#ifdef HAVE_LIBNETCDF
-      if (nc_get_minmax(ncid, xname, west, east)) continue;
-      if (nc_get_minmax(ncid, yname, south, north)) continue;
-#endif
-      // if (west <= 0 && east >=0) fprintf(stderr, "%s: %g %g\n", code.c_str(), west, east);
-      // if (west >= 180 && east >=180) fprintf(stderr, "%s: %g %g\n", code.c_str(), west, east);
-      if (west >= 180.0 && east > 180.0)
-        {
-          west -= 360.0;
-          east -= 360.0;
-        }
-      if (numEntries > 0)
-        {
-          if (east <= 0.0 && region.west >= 0.0)
-            {
-              west += 360.0;
-              east += 360.0;
-            }
-          else if (east >= 180.0 && region.east <= 0.0)
-            {
-              region.west += 360.0;
-              region.east += 360.0;
-            }
-        }
-      region.west = std::min(region.west, west);
-      region.south = std::min(region.south, south);
-      region.east = std::max(region.east, east);
-      region.north = std::max(region.north, north);
-
-      numEntries++;
+      std::fprintf(stderr, "No country code matching <%s>!\n", code.c_str());
+      return 3;
     }
+
+    // auto &country = dcw_lists.countries[ks];
+    // auto is_Antarctica = (!std::strncmp(country.code, "AQ", 2U));
+
+    auto xname = code + "_lon";
+    auto yname = code + "_lat";
+
+    double west = 0.0, east = 0.0, south = 0.0, north = 0.0;
+#ifdef HAVE_LIBNETCDF
+    if (nc_get_minmax(ncid, xname, west, east)) continue;
+    if (nc_get_minmax(ncid, yname, south, north)) continue;
+#endif
+    // if (west <= 0 && east >=0) std::fprintf(stderr, "%s: %g %g\n", code.c_str(), west, east);
+    // if (west >= 180 && east >=180) std::fprintf(stderr, "%s: %g %g\n", code.c_str(), west, east);
+    if (west >= 180.0 && east > 180.0)
+    {
+      west -= 360.0;
+      east -= 360.0;
+    }
+    if (numEntries > 0)
+    {
+      if (east <= 0.0 && region.west >= 0.0)
+      {
+        west += 360.0;
+        east += 360.0;
+      }
+      else if (east >= 180.0 && region.east <= 0.0)
+      {
+        region.west += 360.0;
+        region.east += 360.0;
+      }
+    }
+    region.west = std::min(region.west, west);
+    region.south = std::min(region.south, south);
+    region.east = std::max(region.east, east);
+    region.north = std::max(region.north, north);
+
+    numEntries++;
+  }
 
 #ifdef HAVE_LIBNETCDF
   nc_close(ncid);
 #endif
 
   if (numEntries == 0)
-    {
-      printf("Empty code list!\n");
-      return 2;
-    }
+  {
+    printf("Empty code list!\n");
+    return 2;
+  }
 
   return 0;
 }
@@ -364,11 +373,11 @@ nc_get_lonlat(int ncid, std::string const &xname, std::string const &yname, std:
   xscale = 1.0 / xscale;
   yscale = 1.0 / yscale;
   for (size_t i = 0; i < np; ++i)  // Unpack
-    {
-      x[i] = (xshort[i] == 65535U) ? 0.0 : xshort[i] * xscale + xmin;
-      y[i] = (xshort[i] == 65535U) ? 0.0 : yshort[i] * yscale + ymin;
-      //  use ^ xshort to check for undefined values !!!
-    }
+  {
+    x[i] = (xshort[i] == 65535U) ? 0.0 : xshort[i] * xscale + xmin;
+    y[i] = (xshort[i] == 65535U) ? 0.0 : yshort[i] * yscale + ymin;
+    //  use ^ xshort to check for undefined values !!!
+  }
 
   return 0;
 }
@@ -384,43 +393,43 @@ dcw_get_lonlat(const DCW_Lists &dcw_lists, std::vector<std::string> const &codeL
   size_t numVals = 0;
   int numEntries = 0;
   for (auto &code : codeList)
+  {
+    auto ks = (code.size() > 2) ? dcw_find_state(code, dcw_lists.states) : dcw_find_country(code, dcw_lists.countries);
+    if (ks == -1)
     {
-      auto ks = (code.size() > 2) ? dcw_find_state(code, dcw_lists.states) : dcw_find_country(code, dcw_lists.countries);
-      if (ks == -1)
-        {
-          fprintf(stderr, "No country code matching <%s>!\n", code.c_str());
-          return 3;
-        }
-
-      // auto &country = dcw_lists.countries[ks];
-      // auto is_Antarctica = (!std::strncmp(country.code, "AQ", 2U));
-
-      auto xname = code + "_lon";
-      auto yname = code + "_lat";
-
-      std::vector<double> x, y;
-#ifdef HAVE_LIBNETCDF
-      if (nc_get_lonlat(ncid, xname, yname, x, y)) continue;
-#endif
-      auto offset = lon.size();
-      numVals += x.size();
-      lon.resize(numVals);
-      lat.resize(numVals);
-      for (size_t i = 0, n = x.size(); i < n; ++i) lon[offset + i] = x[i];
-      for (size_t i = 0, n = y.size(); i < n; ++i) lat[offset + i] = y[i];
-
-      numEntries++;
+      std::fprintf(stderr, "No country code matching <%s>!\n", code.c_str());
+      return 3;
     }
+
+    // auto &country = dcw_lists.countries[ks];
+    // auto is_Antarctica = (!std::strncmp(country.code, "AQ", 2U));
+
+    auto xname = code + "_lon";
+    auto yname = code + "_lat";
+
+    std::vector<double> x, y;
+#ifdef HAVE_LIBNETCDF
+    if (nc_get_lonlat(ncid, xname, yname, x, y)) continue;
+#endif
+    auto offset = lon.size();
+    numVals += x.size();
+    lon.resize(numVals);
+    lat.resize(numVals);
+    for (size_t i = 0, n = x.size(); i < n; ++i) lon[offset + i] = x[i];
+    for (size_t i = 0, n = y.size(); i < n; ++i) lat[offset + i] = y[i];
+
+    numEntries++;
+  }
 
 #ifdef HAVE_LIBNETCDF
   nc_close(ncid);
 #endif
 
   if (numEntries == 0)
-    {
-      printf("Empty code list!\n");
-      return 2;
-    }
+  {
+    printf("Empty code list!\n");
+    return 2;
+  }
 
   return 0;
 }
@@ -433,46 +442,46 @@ dcw_print_lonlat(const DCW_Lists &dcw_lists, std::vector<std::string> const &cod
 
   int numEntries = 0;
   for (auto &code : codeList)
+  {
+    auto ks = (code.size() > 2) ? dcw_find_state(code, dcw_lists.states) : dcw_find_country(code, dcw_lists.countries);
+    if (ks == -1)
     {
-      auto ks = (code.size() > 2) ? dcw_find_state(code, dcw_lists.states) : dcw_find_country(code, dcw_lists.countries);
-      if (ks == -1)
-        {
-          printf("No country code matching <%s>!\n", code.c_str());
-          return 3;
-        }
-
-      auto &country = dcw_lists.countries[ks];
-      // auto is_Antarctica = (!std::strncmp(country.code, "AQ", 2U));
-
-      auto xname = code + "_lon";
-      auto yname = code + "_lat";
-
-      std::vector<double> x, y;
-#ifdef HAVE_LIBNETCDF
-      if (nc_get_lonlat(ncid, xname, yname, x, y)) continue;
-#endif
-      size_t nseg = 0;
-      auto n = x.size();
-      for (size_t i = 0; i < n; ++i)
-        {
-          if (x[i] == 0.0 && y[i] == 0.0)
-            printf("> %s  %s  Segment %zu\n", country.code, country.name, nseg++);
-          else
-            printf("%.12g  %.12g\n", x[i], y[i]);
-        }
-
-      numEntries++;
+      printf("No country code matching <%s>!\n", code.c_str());
+      return 3;
     }
+
+    auto &country = dcw_lists.countries[ks];
+    // auto is_Antarctica = (!std::strncmp(country.code, "AQ", 2U));
+
+    auto xname = code + "_lon";
+    auto yname = code + "_lat";
+
+    std::vector<double> x, y;
+#ifdef HAVE_LIBNETCDF
+    if (nc_get_lonlat(ncid, xname, yname, x, y)) continue;
+#endif
+    size_t nseg = 0;
+    auto n = x.size();
+    for (size_t i = 0; i < n; ++i)
+    {
+      if (x[i] == 0.0 && y[i] == 0.0)
+        printf("> %s  %s  Segment %zu\n", country.code, country.name, nseg++);
+      else
+        printf("%.12g  %.12g\n", x[i], y[i]);
+    }
+
+    numEntries++;
+  }
 
 #ifdef HAVE_LIBNETCDF
   nc_close(ncid);
 #endif
 
   if (numEntries == 0)
-    {
-      printf("Empty code list!\n");
-      return 2;
-    }
+  {
+    printf("Empty code list!\n");
+    return 2;
+  }
 
   return 0;
 }
@@ -490,22 +499,22 @@ dcw_expand_code_list(const DCW_Lists &dcw_lists, std::vector<std::string> const 
   codeListExpand.reserve(codeList.size());
 
   for (auto &code : codeList)
+  {
+    if (code.size() == 2 || code.size() == 4 || code.size() == 5) { codeListExpand.push_back(code); }
+    else if (code.size() == 3 && code[0] == '=')
     {
-      if (code.size() == 2 || code.size() == 4 || code.size() == 5) { codeListExpand.push_back(code); }
-      else if (code.size() == 3 && code[0] == '=')
-        {
-          int n = 0;
-          for (auto &country : dcw_lists.countries)
-            {
-              if (std::strncmp(country.continent, &code[1], 2)) continue;  // Not this one
-              codeListExpand.push_back(country.code);
-              n++;
-            }
+      int n = 0;
+      for (auto &country : dcw_lists.countries)
+      {
+        if (std::strncmp(country.continent, &code[1], 2)) continue;  // Not this one
+        codeListExpand.push_back(country.code);
+        n++;
+      }
 
-          if (n == 0) fprintf(stderr, "Wrong DCW country or continent code <%s>\n", code.c_str() + 1);
-        }
-      else { fprintf(stderr, "Wrong DCW country or continent code <%s>\n", code.c_str()); }
+      if (n == 0) std::fprintf(stderr, "Wrong DCW country or continent code <%s>\n", code.c_str() + 1);
     }
+    else { std::fprintf(stderr, "Wrong DCW country or continent code <%s>\n", code.c_str()); }
+  }
 
   return codeListExpand;
 }
@@ -539,7 +548,7 @@ dcw_print_states(const DCW_Lists &dcw_lists)
 void
 dcw_print_polygons(const DCW_Lists &dcw_lists, std::vector<std::string> const &codeList)
 {
-  if (dcw_print_lonlat(dcw_lists, codeList)) fprintf(stderr, "dcw_print_lonlat failed!\n");
+  if (dcw_print_lonlat(dcw_lists, codeList)) std::fprintf(stderr, "dcw_print_lonlat failed!\n");
 }
 
 void
@@ -576,8 +585,8 @@ analyze_segments(std::vector<double> const &lon, std::vector<double> const &lat)
 
           if (xmin < 180.0 && xmax > 180.0)
             {
-              fprintf(stderr, "> Segment %zu\n", nseg++);
-              fprintf(stderr, "> xmin, xmax, ymin, ymax %g %g %g %g\n", xmin, xmax, ymin, ymax);
+              std::fprintf(stderr, "> Segment %zu\n", nseg++);
+              std::fprintf(stderr, "> xmin, xmax, ymin, ymax %g %g %g %g\n", xmin, xmax, ymin, ymax);
             }
         }
     }
@@ -601,7 +610,7 @@ static void
 print_lonlat(const DCW_Lists &dcw_lists, std::vector<std::string> const &codeList)
 {
   std::vector<double> lon, lat;
-  if (dcw_get_lonlat(dcw_lists, codeList, lon, lat)) fprintf(stderr, "dcw_get_lonlat failed!\n");
+  if (dcw_get_lonlat(dcw_lists, codeList, lon, lat)) std::fprintf(stderr, "dcw_get_lonlat failed!\n");
 
   analyze_segments(lon, lat);
   dump_lonlat(lon, lat);
@@ -612,7 +621,7 @@ int main(void)
   DCW_Lists dcw_lists;
   if (dcw_load_lists(dcw_lists))
     {
-      fprintf(stderr, "dcw_load_lists failed!\n");
+      std::fprintf(stderr, "dcw_load_lists failed!\n");
       return -1;
     }
 
@@ -642,7 +651,7 @@ int main(void)
   codeList = dcw_expand_code_list(dcw_lists, codeList);
 
   Region region;
-  if (dcw_get_region(dcw_lists, codeList, region)) fprintf(stderr, "dcw_get_region() failed!\n");
+  if (dcw_get_region(dcw_lists, codeList, region)) std::fprintf(stderr, "dcw_get_region() failed!\n");
 
   printf("#   West=%g  East=%g  South=%g  North=%g\n", region.west, region.east, region.south, region.north);
   printf("#\n");

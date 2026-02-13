@@ -399,7 +399,7 @@ vlist_read_vct(int vlistID, int &zaxisID_ML, int &numHybridLevels, int &numFullL
 
             if (Options::cdoVerbose)
             {
-              for (int i = 0; i < vctsize / 2; ++i) fprintf(stdout, "%5d %25.17f %25.17f\n", i, vct[i], vct[vctsize / 2 + i]);
+              for (int i = 0; i < vctsize / 2; ++i) std::fprintf(stdout, "%5d %25.17f %25.17f\n", i, vct[i], vct[vctsize / 2 + i]);
             }
           }
         }

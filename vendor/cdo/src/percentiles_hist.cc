@@ -27,7 +27,7 @@ histGetEnvNumBins()
   constexpr int NBINS_DEFAULT = 101;
   constexpr int NBINS_MINIMUM = 11;
 
-  const auto str = getenv("CDO_PCTL_NBINS");
+  auto const *str = getenv("CDO_PCTL_NBINS");
 
   return (str != nullptr) ? std::max(atoi(str), NBINS_MINIMUM) : NBINS_DEFAULT;
 }
@@ -84,7 +84,7 @@ histBin(HistogramEntry &hist)
 
   std::vector<float> values(hist.nsamp);
 
-  const auto fltptr = FLT_PTR(hist.ptr);
+  auto const *fltptr = FLT_PTR(hist.ptr);
   for (int i = 0; i < hist.nsamp; ++i) values[i] = fltptr[i];
 
   if (hist.isUint32)
@@ -244,7 +244,10 @@ histGetPercentile(const HistogramEntry &hist, double p)
 
     return hist.min + bin * hist.step;
   }
-  else { return percentile(FLT_PTR(hist.ptr), hist.nsamp, p); }
+  else
+  {
+    return percentile(FLT_PTR(hist.ptr), hist.nsamp, p);
+  }
 }
 
 void

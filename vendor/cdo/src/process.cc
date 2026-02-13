@@ -24,10 +24,11 @@
 #endif
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <sstream>
 
-#include "cdo_process.h"
+#include "process.h"
 #include "cdo_options.h"
 #include "fileStream.h"
 #include "pipeStream.h"
@@ -307,7 +308,7 @@ Process::create_output()
   if (auto retVal = nc_create_mem("test_name", 0, 4096, &ncid))
   {
     printf("Error: %s\n", nc_strerror(retVal));
-    exit(1);
+    std::exit(1);
   }
   if (PROCESS) std::cout << "created ncid: " << ncid << std::endl;
 

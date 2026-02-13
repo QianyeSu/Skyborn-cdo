@@ -28,7 +28,7 @@ static constexpr double cpair = 1004.6;
 static constexpr double eta_pbl = 0.8;  // upper limit of BPL eta coordiante
 
 #ifdef OUTPUT
-static FILE *fpold, *fpnew;
+static std::FILE *fpold{}, *fpnew{};
 #endif
 
 static long
@@ -134,9 +134,9 @@ hetaeta_sc(bool ltq, int lpsmod, long ij, long ngp, long nlev1, long nlev2, long
       double t = ltq ? t1[ijk] : 0;
       double q = ltq ? q1[ijk] : 0;
       double fi = ltq ? fi1[k] : 0;
-      fprintf(fpold, "%3d %18.10f %18.10f %18.10f %18.10f", k, fi / g, pf1[k], t, q);
-      for (int iv = 0; iv < nvars; ++iv) fprintf(fpold, " %18.10f", vars1[iv][ijk]);
-      fprintf(fpold, "\n");
+      std::fprintf(fpold, "%3d %18.10f %18.10f %18.10f %18.10f", k, fi / g, pf1[k], t, q);
+      for (int iv = 0; iv < nvars; ++iv) std::fprintf(fpold, " %18.10f", vars1[iv][ijk]);
+      std::fprintf(fpold, "\n");
     }
 #endif
 
@@ -379,9 +379,9 @@ hetaeta_sc(bool ltq, int lpsmod, long ij, long ngp, long nlev1, long nlev2, long
       double t = ltq ? t1[ijk] : 0;
       double q = ltq ? q1[ijk] : 0;
       double fi = ltq ? fi1[k] : 0;
-      fprintf(fpnew, "%3d %18.10f %18.10f %18.10f %18.10f", k, fi / g, pf2[k], t, q);
-      for (int iv = 0; iv < nvars; ++iv) fprintf(fpnew, " %18.10f", vars2[iv][ijk]);
-      fprintf(fpnew, "\n");
+      std::fprintf(fpnew, "%3d %18.10f %18.10f %18.10f %18.10f", k, fi / g, pf2[k], t, q);
+      for (int iv = 0; iv < nvars; ++iv) std::fprintf(fpnew, " %18.10f", vars2[iv][ijk]);
+      std::fprintf(fpnew, "\n");
     }
 #endif
 
@@ -537,8 +537,8 @@ hetaeta(bool ltq, int ngp, Vmask const &imiss, int nlev1, const double *ah1, con
 #ifdef _OPENMP
 #pragma omp parallel for default(none) firstprivate(lpsmod) schedule(dynamic, 1)                                                  \
     shared(ngp, ph1, lnph1, fi1, pf1, lnpf1, tv1, theta1, rh1, zvar, ph2, lnph2, fi2, pf2, rh_pbl, zt2, zq2, theta_pbl, rh2, wgt, \
-               idx, vars_pbl, af1, bf1, etah2, af2, bf2, w1, w2, jl1, jl2, ltq, nvars, imiss, ah1, bh1, ps1, nlev1, epsm1i, q1,   \
-               t1, fis1, fis2, ps2, ah2, bh2, nlev2, vars1, vars2, t2, q2, tscor, pscor, secor, jblt)
+           idx, vars_pbl, af1, bf1, etah2, af2, bf2, w1, w2, jl1, jl2, ltq, nvars, imiss, ah1, bh1, ps1, nlev1, epsm1i, q1, t1,   \
+           fis1, fis2, ps2, ah2, bh2, nlev2, vars1, vars2, t2, q2, tscor, pscor, secor, jblt)
 #endif
   for (int ij = 0; ij < ngp; ++ij)
   {

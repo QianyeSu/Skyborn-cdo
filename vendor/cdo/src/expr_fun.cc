@@ -350,7 +350,7 @@ oper_expr_var_var(int oper, bool hasMV, size_t n, double mv1, double mv2, double
 }
 
 void
-fld_field_init(Field &field, size_t numMissVals, double missval, size_t ngp, double *array, double *w)
+fld_field_init(Field &field, size_t numMissVals, double missval, size_t ngp, double const *array, double const *w)
 {
   field.size = ngp;
   field.numMissVals = numMissVals;
@@ -383,12 +383,12 @@ fld_weights(int gridID, size_t ngp)
 void
 vert_weights(int zaxisID, size_t nlev, Varray<double> &weights)
 {
-  Varray<double> thickness(nlev);
   weights.resize(nlev, 1.0);
 
   if (nlev > 1)
   {
     static auto printWarning = true;
+    Varray<double> thickness(nlev);
     auto wstatus = get_layer_thickness(1, 0, 0, zaxisID, nlev, thickness, weights);
     if (wstatus == 0 && printWarning)
     {

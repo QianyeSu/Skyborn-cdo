@@ -1,4 +1,5 @@
 #include <csignal>
+#include <cstdlib>
 #include "cdo_def_options.h"
 #include "cdo_getopt.h"
 #include "percentiles.h"
@@ -72,7 +73,7 @@ setup_options()
           {
             std::cerr << "No debug level given please choose: " << std::endl;
             print_debug_options();
-            exit(EXIT_SUCCESS);
+            std::exit(EXIT_SUCCESS);
           })
       ->add_effect(
           [&](std::string const &argument)
@@ -81,7 +82,7 @@ setup_options()
             if (tokens.empty())
             {
               print_debug_options();
-              exit(EXIT_SUCCESS);
+              std::exit(EXIT_SUCCESS);
             }
 
             unsigned cdoDebugLevel = 0;
@@ -163,12 +164,12 @@ setup_options()
           {
             auto intarg = parameter_to_bool(argument);
             if (intarg != 0 && intarg != 1) cdo_abort("Unsupported value for option --remap_weights %d [false|true]", intarg);
-            Options::REMAP_genweights = intarg;
+            Options::RemapGenerateWeights = intarg;
           })
       ->add_help("Generate remap weights (default: 1).");
 
   CLIOptions::option("no_remap_weights")
-      ->add_effect([&]() { Options::REMAP_genweights = 0; })
+      ->add_effect([&]() { Options::RemapGenerateWeights = 0; })
       ->add_help("Switch off generation of remap weights.");
 
   CLIOptions::option("enableexcept")
@@ -215,17 +216,17 @@ setup_options()
       ->set_internal(true)
       ->add_effect([&]() { Options::CDO_Memtype = MemType::Float; })
       ->set_category("Numeric")
-      ->add_help("Using single precision floats for data in memory.");
+      ->add_help("Uses single precision floats for reading data.");
 
   CLIOptions::option("single")
       ->add_effect([&]() { Options::CDO_Memtype = MemType::Float; })
       ->set_category("Numeric")
-      ->add_help("Using single precision floats for data in memory.");
+      ->add_help("Uses single precision floats for reading data.");
 
   CLIOptions::option("double")
       ->add_effect([&]() { Options::CDO_Memtype = MemType::Double; })
       ->set_category("Numeric")
-      ->add_help("Using double precision floats for data in memory.");
+      ->add_help("Uses double precision floats for reading data.");
 
   CLIOptions::option("rusage")
       ->add_effect([&]() { Options::CDO_Rusage = 1; })
@@ -270,9 +271,10 @@ setup_options()
               cdo_abort("option --%s: can't be combined with option --%s", "absolute_taxis (-a)", "relative_taxis (-r)");
             CdoDefault::TaxisType = TAXIS_ABSOLUTE;
           })
-      ->add_help("Generate an absolute time axis.");
+      ->add_help("Generate an absolute time axis.")
+      ->shortform('a');
 
-  CLIOptions::option("force")->add_effect([&]() { Options::force = true; })->add_help("Forcing a CDO process.")->shortform('a');
+  CLIOptions::option("force")->add_effect([&]() { Options::force = true; })->add_help("Forcing a CDO process.");
 
   CLIOptions::option("fast")
       ->set_internal(true)
@@ -356,6 +358,7 @@ setup_options()
       ->add_help("Remove chunk specification.");
 
   CLIOptions::option("lock_io")
+      ->set_internal(true)
       ->add_effect([&]() { Threading::cdoLockIO = true; })
       ->add_help("Lock IO (sequential access).")
       ->shortform('L');
@@ -404,10 +407,22 @@ setup_options()
       ->describe_argument("nthreads")
       ->add_effect([&](std::string const &argument) { Threading::ompNumUserRequestedThreads = parameter_to_int(argument); })
       ->set_category("Multi Threading")
-      ->add_help("Set number of OpenMP threads.")->shortform('P');
+      ->add_help("Set number of OpenMP threads.")
+      ->shortform('P');
 
   CLIOptions::option("async_read")
-      ->set_internal(true)
+      ->describe_argument("true|false")
+      ->add_effect(
+          [&](std::string const &argument)
+          {
+            Options::CDO_Async_Read = parameter_to_bool(argument);
+            Options::CDO_task = Options::CDO_Async_Read;
+          })
+      ->set_category("Multi Threading")
+      ->add_help("Read input data asynchronously [default: false].",
+                 "Available for the operators: diff, info, trend, detrend, Timstat");
+
+  CLIOptions::option("p")
       ->add_effect(
           [&]()
           {
@@ -415,7 +430,7 @@ setup_options()
             Options::CDO_task = true;
           })
       ->set_category("Multi Threading")
-      ->add_help("Enables parallel read.")
+      ->add_help("Read input data asynchronously, short for '--async_read true'")
       ->shortform('p');
 
   CLIOptions::option("sortname")
@@ -458,9 +473,9 @@ setup_options()
       ->add_help("Generate a relative time axis.")
       ->shortform('r');
 
-  CLIOptions::option("cdo_diagnostic")
-      ->add_effect([&]() { Options::cdoDiag = true; })
-      ->add_help("Create an extra output stream for the module TIMSTAT. This stream",
+  CLIOptions::option("diagnostic")
+      ->add_effect([&]() { Options::CDO_diagnostic = true; })
+      ->add_help("Create a diagnostic output stream for the module TIMSTAT. This stream",
                  "contains the number of non missing values for each output period.")
       ->shortform('S');
 
@@ -503,13 +518,15 @@ setup_options()
       ->shortform('v');
 
   CLIOptions::option("disable_warnings")
-      ->add_effect([&]() {  // disable warning messages
-        MpMO::enable_warnings(false);
-        extern int _Verbose;  // CDI Warnings
-        _Verbose = 0;
-      })
+      ->add_effect(
+          [&]() {  // disable warning messages
+            MpMO::enable_warnings(false);
+            extern int _Verbose;  // CDI Warnings
+            _Verbose = 0;
+          })
       ->set_category("Output")
-      ->add_help("Disable warning messages.")->shortform('w');
+      ->add_help("Disable warning messages.")
+      ->shortform('w');
 
   CLIOptions::option("par_io")
       ->set_internal(true)
@@ -530,20 +547,23 @@ setup_options()
   CLIOptions::option("compress")
       ->add_effect([&]() { Options::cdoCompress = true; })
       ->set_category("Compression")
-      ->add_help("Enables compression. Default = SZIP")->shortform('Z');
+      ->add_help("Enables compression. Default = SZIP")
+      ->shortform('Z');
 
   CLIOptions::option("filter")
       ->describe_argument("filterspec")
       ->add_effect([&](std::string const &argument) { cdo::set_filterspec(argument); })
       ->set_category("Compression")
-      ->add_help("NetCDF4 filter specification")->shortform('F');
+      ->add_help("NetCDF4 filter specification")
+      ->shortform('F');
 
   CLIOptions::option("compression_type")
       ->describe_argument("aec|jpeg|zip[_1-9]|zstd[1-19]")
       ->set_category("Compression")
       ->add_effect([&](std::string const &argument) { cdo::set_compression_type(argument); })
       ->add_help("aec         AEC compression of GRIB2 records", "jpeg        JPEG compression of GRIB2 records",
-                 "zip[_1-9]   Deflate compression of NetCDF4 variables", "zstd[_1-19] Zstandard compression of NetCDF4 variables")->shortform('z');
+                 "zip[_1-9]   Deflate compression of NetCDF4 variables", "zstd[_1-19] Zstandard compression of NetCDF4 variables")
+      ->shortform('z');
 
   CLIOptions::option("nsb")
       ->set_internal(true)

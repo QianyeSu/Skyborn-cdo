@@ -1,10 +1,10 @@
 ! This file was automatically generated, don't edit!
 !
-! Fortran interface for CDI library version 2.5.3
+! Fortran interface for CDI library version 2.5.4
 !
 ! Author:
 ! -------
-! Uwe Schulzweida, MPI-MET, Hamburg,   July 2025
+! Uwe Schulzweida, MPI-MET, Hamburg,   October 2025
 !
 
 !
@@ -466,6 +466,16 @@
       PARAMETER (CALENDAR_366DAYS       =  5)
       INTEGER    CALENDAR_NONE
       PARAMETER (CALENDAR_NONE          =  6)
+      INTEGER    CDI_HAS_CGRIBEX
+      PARAMETER (CDI_HAS_CGRIBEX        =  1)
+      INTEGER    CDI_NC_HAS_FILTER
+      PARAMETER (CDI_NC_HAS_FILTER      =  2)
+      INTEGER    CDI_NC_HAS_DAP
+      PARAMETER (CDI_NC_HAS_DAP         =  3)
+      INTEGER    CDI_NC_HAS_S3
+      PARAMETER (CDI_NC_HAS_S3          =  4)
+      INTEGER    CDI_NC_HAS_HDF5
+      PARAMETER (CDI_NC_HAS_HDF5        =  5)
 !
 !  number of unsigned char needed to store UUID
 !
@@ -498,8 +508,12 @@
       EXTERNAL        cdiPrintVersion
 
       INTEGER         cdiHaveFiletype
-!                                    (INTEGER         filetype)
+!                                    (INTEGER         fileType)
       EXTERNAL        cdiHaveFiletype
+
+      INTEGER         cdiGetConfig
+!                                    (INTEGER         confType)
+      EXTERNAL        cdiGetConfig
 
 !                     cdiDefMissval
 !                                    (DOUBLEPRECISION missval)

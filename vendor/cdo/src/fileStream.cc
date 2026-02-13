@@ -126,7 +126,7 @@ FileStream::open_write(int p_filetype)
 
   Debug(FILE_STREAM, "fileID: %d  path: %s", m_fileID, m_name);
 
-  if (Options::PrintFilename) fprintf(stdout, "%s ", m_name.c_str());
+  if (Options::PrintFilename) std::fprintf(stdout, "%s ", m_name.c_str());
 
   return m_cdoStreamID;
 }
