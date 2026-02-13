@@ -39,13 +39,35 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Verify patches were applied
+# Verify critical patches were applied
 echo "[skyborn-cdo] Verifying patches..."
 if ! grep -q "#include <pthread.h>" "${CDO_SOURCE}/src/process.h"; then
-    echo "[skyborn-cdo] ERROR: pthread.h patch not applied!"
+    echo "[skyborn-cdo] ERROR: pthread.h patch not applied to process.h!"
+    head -25 "${CDO_SOURCE}/src/process.h"
+    exit 1
+fi
+if ! grep -q 'std::to_string' "${CDO_SOURCE}/src/mpmo_color.h"; then
+    echo "[skyborn-cdo] ERROR: mpmo_color.h rewrite not applied!"
+    head -90 "${CDO_SOURCE}/src/mpmo_color.h"
     exit 1
 fi
 echo "[skyborn-cdo] Patches verified OK"
+
+# Create GCC 15 workaround header: ensure std::locale is complete
+# before <sstream> templates are processed.
+# GCC 15.2.0 has a bug where sstream's basic_stringstream constructor
+# fails because basic_ios::init() is not visible when std::locale is
+# incomplete (only forward-declared via <ios>).
+GCC15_FIX="${CDO_SOURCE}/src/gcc15_fix.h"
+cat > "${GCC15_FIX}" << 'FIXEOF'
+/* GCC 15 workaround: ensure std::locale is fully defined before
+   any <sstream> header is processed. Without this, GCC 15's
+   template body checking causes false errors in libstdc++. */
+#ifdef __cplusplus
+#include <locale>
+#endif
+FIXEOF
+echo "[skyborn-cdo] Created GCC 15 workaround header: ${GCC15_FIX}"
 
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
@@ -99,7 +121,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     --disable-custom-modules \
     --enable-cgribex \
     CFLAGS="-O2 -I${DEPS_PREFIX}/include" \
-    CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -fpermissive -Wno-error -I${DEPS_PREFIX}/include" \
+    CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -Wno-template-body -include ${GCC15_FIX} -I${DEPS_PREFIX}/include" \
     CPPFLAGS="-I${DEPS_PREFIX}/include" \
     LDFLAGS="-L${DEPS_PREFIX}/lib" \
     LIBS="-lz -lm -lws2_32 -lrpcrt4"

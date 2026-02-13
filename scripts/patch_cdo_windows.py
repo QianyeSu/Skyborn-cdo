@@ -192,14 +192,60 @@ class WindowsPatcher:
                  r'\1#include <stdexcept>\n'),
             ]),
 
-            # --- src/mpmo_color.h: add missing headers for GCC 15 stringstream bug ---
+            # --- src/mpmo_color.h: rewrite text_color() to avoid sstream ---
+            # GCC 15.2.0 has a bug where basic_stringstream's constructor
+            # triggers a "has no member named init" error. The root cause is
+            # std::locale being incomplete when sstream templates are defined.
+            # Fix: replace std::stringstream with std::string + std::to_string().
             ("src/mpmo_color.h", [
-                ("Add iostream and locale for GCC 15 stringstream support",
+                ("Remove sstream include (replaced by string-based impl)",
+                 '#include <sstream>\n',
+                 '// #include <sstream>  // removed: GCC 15 sstream bug workaround\n'),
+
+                ("Rewrite text_color() without stringstream",
                  re.compile(
-                     r'(#include <sstream>\s*\n)',
-                     re.MULTILINE
+                     r'static inline std::string\s*\n'
+                     r'text_color\(TextColor foreground = NO_COLOR, TextMode mode = MODELESS, TextColor background = NO_COLOR\)\s*\n'
+                     r'\{\s*\n'
+                     r'.*?return s\.str\(\);\s*\n'
+                     r'\}',
+                     re.DOTALL
                  ),
-                 r'\1#include <iostream>\n#include <locale>\n'),
+                 # Use a lambda to avoid regex backreference interpretation of \0 in \033
+                 lambda m: (
+                     'static inline std::string\n'
+                     'text_color(TextColor foreground = NO_COLOR, TextMode mode = MODELESS, TextColor background = NO_COLOR)\n'
+                     '{\n'
+                     '  if (!color_enabled()) return "";\n'
+                     '\n'
+                     '  std::string s = "\\033[";\n'
+                     '  bool tty = true;\n'
+                     '\n'
+                     '  if (!tty)\n'
+                     '    return s + "m";\n'
+                     '\n'
+                     '  if (!foreground && !background)\n'
+                     '    s += "0";\n'
+                     '\n'
+                     '  if (foreground)\n'
+                     '  {\n'
+                     '    s += std::to_string(static_cast<int>(foreground));\n'
+                     '    if (background) s += ";";\n'
+                     '  }\n'
+                     '  if (background)\n'
+                     '  {\n'
+                     '    s += std::to_string(10 + static_cast<int>(background));\n'
+                     '    if (mode) s += ";";\n'
+                     '  }\n'
+                     '  else if (mode) { s += ";"; }\n'
+                     '\n'
+                     '  if (mode)\n'
+                     '    s += std::to_string(static_cast<int>(mode));\n'
+                     '\n'
+                     '  s += "m";\n'
+                     '  return s;\n'
+                     '}'
+                 )),
             ]),
 
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
