@@ -35,8 +35,17 @@ cd "${CDO_SOURCE}"
 echo "[skyborn-cdo] Applying Windows compatibility patches..."
 python "${PROJECT_DIR}/scripts/patch_cdo_windows.py" apply --cdo-src "${CDO_SOURCE}"
 if [ $? -ne 0 ]; then
-    echo "[skyborn-cdo] Warning: Some patches failed to apply, continuing anyway..."
+    echo "[skyborn-cdo] ERROR: Patches failed to apply!"
+    exit 1
 fi
+
+# Verify patches were applied
+echo "[skyborn-cdo] Verifying patches..."
+if ! grep -q "#include <pthread.h>" "${CDO_SOURCE}/src/process.h"; then
+    echo "[skyborn-cdo] ERROR: pthread.h patch not applied!"
+    exit 1
+fi
+echo "[skyborn-cdo] Patches verified OK"
 
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
@@ -90,7 +99,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     --disable-custom-modules \
     --enable-cgribex \
     CFLAGS="-O2 -I${DEPS_PREFIX}/include" \
-    CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -Wno-template-body -I${DEPS_PREFIX}/include" \
+    CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -fpermissive -Wno-error -I${DEPS_PREFIX}/include" \
     CPPFLAGS="-I${DEPS_PREFIX}/include" \
     LDFLAGS="-L${DEPS_PREFIX}/lib" \
     LIBS="-lz -lm -lws2_32 -lrpcrt4"

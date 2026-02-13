@@ -192,6 +192,16 @@ class WindowsPatcher:
                  r'\1#include <stdexcept>\n'),
             ]),
 
+            # --- src/mpmo_color.h: add missing headers for GCC 15 stringstream bug ---
+            ("src/mpmo_color.h", [
+                ("Add iostream and locale for GCC 15 stringstream support",
+                 re.compile(
+                     r'(#include <sstream>\s*\n)',
+                     re.MULTILINE
+                 ),
+                 r'\1#include <iostream>\n#include <locale>\n'),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
