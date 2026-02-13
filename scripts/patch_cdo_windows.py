@@ -120,18 +120,24 @@ class WindowsPatcher:
 
                 ("cdo_init_is_tty: Windows implementation",
                  re.compile(
-                     r'(static\s+void\s+cdo_init_is_tty\s*\(\s*\)\s*\{)'
-                     r'([^}]+)'
+                     r'(static\s+void\s+cdo_init_is_tty\s*\(\s*\)\s*\{\s*\n)'
+                     r'(\s+struct stat statbuf;\s*\n'
+                     r'\s+fstat\(0, &statbuf\);\s*\n'
+                     r'\s+if \(S_ISCHR\(statbuf\.st_mode\)\)[^}]+\}\s*\n'
+                     r'\s+fstat\(1, &statbuf\);\s*\n'
+                     r'[^}]+stdoutIsTerminal[^}]+\}\s*\n'
+                     r'\s+fstat\(2, &statbuf\);\s*\n'
+                     r'[^}]+stderrIsTerminal[^}]+\}\s*\n)'
                      r'(\})',
-                     re.DOTALL
+                     re.MULTILINE
                  ),
-                 lambda m: (
-                     m.group(1) + '\n#ifdef _WIN32\n'
-                     '  cdo::stdinIsTerminal = _isatty(_fileno(stdin));\n'
-                     '  cdo::stdoutIsTerminal = _isatty(_fileno(stdout));\n'
-                     '  cdo::stderrIsTerminal = _isatty(_fileno(stderr));\n'
-                     '#else' + m.group(2) + '#endif\n' + m.group(3)
-                 )),
+                 r'\1#ifdef _WIN32\n'
+                 r'  cdo::stdinIsTerminal = _isatty(_fileno(stdin));\n'
+                 r'  cdo::stdoutIsTerminal = _isatty(_fileno(stdout));\n'
+                 r'  cdo::stderrIsTerminal = _isatty(_fileno(stderr));\n'
+                 r'#else\n'
+                 r'\2#endif\n'
+                 r'\3'),
 
                 ("Add fflush before clear_processes",
                  re.compile(
@@ -154,6 +160,7 @@ class WindowsPatcher:
             # MinGW's unistd.h includes "process.h" (for Windows process mgmt),
             # which gets resolved to CDO's src/process.h due to -I../../../../src.
             # CDO's process.h is C++ only. Guard it to avoid pulling in <vector>.
+            # Also, pthread_t doesn't exist on MinGW - use HANDLE on Windows.
             ("src/process.h", [
                 ("Guard C++ content from C compiler",
                  re.compile(
@@ -163,9 +170,41 @@ class WindowsPatcher:
                  ),
                  r'\1\n#ifdef __cplusplus\n'),
 
+                ("Define pthread_t as HANDLE on Windows",
+                 re.compile(
+                     r'(#ifdef __cplusplus\s*\n)',
+                     re.MULTILINE
+                 ),
+                 r'\1\n#ifdef _WIN32\n'
+                 r'#include <windows.h>\n'
+                 r'typedef HANDLE pthread_t;\n'
+                 r'#else\n'
+                 r'#include <pthread.h>\n'
+                 r'#endif\n'),
+
                 ("Close C++ guard at end",
                  "#endif /* PROCESS_H */",
                  "#endif /* __cplusplus */\n#endif /* PROCESS_H */"),
+            ]),
+
+            # --- src/varray.h: add missing <iostream> for std::cerr ---
+            ("src/varray.h", [
+                ("Add iostream header for std::cerr",
+                 re.compile(
+                     r'(#include\s+"compare\.h"\s*\n)',
+                     re.MULTILINE
+                 ),
+                 r'\1#include <iostream>\n'),
+            ]),
+
+            # --- src/field.h: add missing <stdexcept> for std::runtime_error ---
+            ("src/field.h", [
+                ("Add stdexcept header for std::runtime_error",
+                 re.compile(
+                     r'(#include\s+"cdo_vlist\.h"\s*\n)',
+                     re.MULTILINE
+                 ),
+                 r'\1#include <stdexcept>\n'),
             ]),
 
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
