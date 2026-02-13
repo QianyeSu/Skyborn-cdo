@@ -48,7 +48,7 @@ bicubic_set_weights(double xfrac, double yfrac, double (&weights)[4][4])
   // clang-format on
 }
 
-int num_src_points(Vmask const &mask, const size_t (&indices)[4], double (&lats)[4]);
+int num_src_points(Vmask const &mask, size_t const (&indices)[4], double (&lats)[4]);
 
 static void
 renormalize_weights(const double (&lats)[4], double (&weights)[4][4])
@@ -166,7 +166,7 @@ remap_bicubic_weights(RemapSearch &rsearch, RemapVars &rv)
 
     if (!tgtGrid->mask[tgtCellIndex]) continue;
 
-    auto pointLL = remapgrid_get_lonlat(tgtGrid, tgtCellIndex);
+    auto pointLL = tgtGrid->get_lonlat(tgtCellIndex);
 
     SquareCorners squareCorners;
     double weights[4][4];  //  bicubic weights for four corners
@@ -221,7 +221,7 @@ remap_bicubic_weights(RemapSearch &rsearch, RemapVars &rv)
 // -----------------------------------------------------------------------
 template <typename T>
 static T
-bicubic_remap(Varray<T> const &srcArray, const double (&wgt)[4][4], const size_t (&ind)[4], const RemapGradients &gradients)
+bicubic_remap(Varray<T> const &srcArray, size_t const (&ind)[4], double const (&wgt)[4][4], RemapGradients const &gradients)
 {
   auto const &glat = gradients.lat;
   auto const &glon = gradients.lon;
@@ -277,7 +277,7 @@ remap_bicubic(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissva
 
     if (!tgtGrid->mask[tgtCellIndex]) continue;
 
-    auto pointLL = remapgrid_get_lonlat(tgtGrid, tgtCellIndex);
+    auto pointLL = tgtGrid->get_lonlat(tgtCellIndex);
 
     SquareCorners squareCorners;
     double weights[4][4];  //  bicubic weights for four corners
@@ -297,7 +297,7 @@ remap_bicubic(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissva
         // Successfully found xfrac, yfrac - compute weights
         bicubic_set_weights(xfrac, yfrac, weights);
         bicubic_sort_weights(squareCorners.indices, weights);
-        tgtValue = bicubic_remap(srcArray, weights, squareCorners.indices, gradients);
+        tgtValue = bicubic_remap(srcArray, squareCorners.indices, weights, gradients);
       }
       else
       {
@@ -314,7 +314,7 @@ remap_bicubic(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissva
       {
         renormalize_weights(squareCorners.lats, weights);
         bicubic_sort_weights(squareCorners.indices, weights);
-        tgtValue = bicubic_remap(srcArray, weights, squareCorners.indices, gradients);
+        tgtValue = bicubic_remap(srcArray, squareCorners.indices, weights, gradients);
       }
     }
   }

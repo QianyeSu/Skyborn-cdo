@@ -53,7 +53,7 @@ public:
   do_cellsearch(bool isReg2dCell, const GridCell &gridCell, Varray<size_t> &searchIndices)
   {
     if (m_strategy) { return m_strategy->do_cellsearch(isReg2dCell, gridCell, searchIndices); }
-    fprintf(stderr, "CellsearchUnstruct::do_cellsearch: CellsearchStrategy not initialized!\n");
+    std::fprintf(stderr, "CellsearchUnstruct::do_cellsearch: CellsearchStrategy not initialized!\n");
     return 0;
   }
 

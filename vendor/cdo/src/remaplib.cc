@@ -15,11 +15,8 @@
 #include "gridreference.h"
 #include "remap.h"
 
-static bool RemapGenWeights = true;
-static bool RemapWriteRemap = false;
-
-constexpr size_t DefaultMaxIteration = 100;
-size_t RemapMaxIteration = DefaultMaxIteration;  // Max iteration count for i, j iteration
+static bool RemapGenerateWeights{ true };
+static bool RemapWriteWeights{ false };
 
 static void
 print_healpix_warning_and_abort(void)
@@ -44,42 +41,12 @@ remap_check_mask_indices(const size_t (&indices)[4], Vmask const &mask)
 }
 
 void
-remap_set_int(int remapvar, int value)
+remap_set_option(RemapOption remapOption, int value)
 {
   // clang-format off
-  if      (remapvar == REMAP_WRITE_REMAP)   RemapWriteRemap = (value > 0);
-  else if (remapvar == REMAP_GENWEIGHTS)    RemapGenWeights = (value > 0);
-  else if (remapvar == REMAP_MAX_ITER)      RemapMaxIteration = value;
-  else    cdo_abort("Unsupported remap variable (%d)!", remapvar);
+  if      (remapOption == RemapOption::WriteWeights)    RemapWriteWeights = (value > 0);
+  else if (remapOption == RemapOption::GenerateWeights) RemapGenerateWeights = (value > 0);
   // clang-format on
-}
-
-PointLonLat
-remapgrid_get_lonlat(const RemapGrid *grid, size_t index)
-{
-  double lon{}, lat{};
-
-  if (grid->type == RemapGridType::Reg2D)
-  {
-    auto nx = grid->dims[0];
-    auto iy = index / nx;
-    auto ix = index - iy * nx;
-    lat = grid->centerLatsReg2d[iy];
-    lon = grid->centerLonsReg2d[ix];
-    if (lon < 0) lon += PI2;
-  }
-  else if (grid->type == RemapGridType::HealPix)
-  {
-    hp_index_to_lonlat(grid->hpParams, index, &lon, &lat);
-    // if (lon < 0) lon += PI2;
-  }
-  else
-  {
-    lat = grid->centerLats[index];
-    lon = grid->centerLons[index];
-  }
-
-  return PointLonLat(lon, lat);
 }
 
 void
@@ -317,7 +284,7 @@ remap_define_grid(RemapMethod mapType, int gridID, RemapGrid &grid, char const *
       destroyGrid = true;
       gridID = gridToUnstructured(grid.gridID, needCorners);
     }
-    else if (RemapWriteRemap || grid.type != RemapGridType::Reg2D)
+    else if (RemapWriteWeights || grid.type != RemapGridType::Reg2D)
     {
       destroyGrid = true;
       gridID = gridToCurvilinear(grid.gridID, NeedCorners::Yes);
@@ -346,11 +313,11 @@ remap_define_grid(RemapMethod mapType, int gridID, RemapGrid &grid, char const *
   // Initialize logical mask
   init_mask(gridID, grid);
 
-  if (!RemapWriteRemap && grid.type == RemapGridType::Reg2D) return;
+  if (!RemapWriteWeights && grid.type == RemapGridType::Reg2D) return;
 
   if (isHealpixGrid)
   {
-    if (RemapWriteRemap)
+    if (RemapWriteWeights)
     {
       if (grid.centerLons.size() == 0 || grid.centerLats.size() == 0)
         cdo_abort("Internal problem - lonlat coordinates not allocated!");
@@ -404,7 +371,7 @@ remap_grid_alloc(RemapMethod mapType, RemapGrid &grid)
   // only needed for srcGrid and remap_gen_weights
   grid.mask.resize(grid.size);
 
-  if (RemapWriteRemap || (grid.type != RemapGridType::Reg2D && grid.type != RemapGridType::HealPix))
+  if (RemapWriteWeights || (grid.type != RemapGridType::Reg2D && grid.type != RemapGridType::HealPix))
   {
     grid.centerLons.resize(grid.size);
     grid.centerLats.resize(grid.size);
@@ -413,7 +380,7 @@ remap_grid_alloc(RemapMethod mapType, RemapGrid &grid)
   auto needCellarea = (mapType == RemapMethod::CONSERV);
   if (needCellarea) grid.cellArea.resize(grid.size, 0.0);
 
-  if (RemapGenWeights || mapType == RemapMethod::CONSERV) { grid.cellFrac.resize(grid.size, 0.0); }
+  if (RemapGenerateWeights || mapType == RemapMethod::CONSERV) { grid.cellFrac.resize(grid.size, 0.0); }
 
   if (grid.needCellCorners && grid.numCorners > 0)
   {
@@ -512,7 +479,7 @@ remap_init_grids(RemapMethod mapType, bool doExtrapolate, int gridID1, RemapGrid
   {
     if (is_reg2d_grid(gridID1)) { srcGrid.type = RemapGridType::Reg2D; }
     else if (is_global_healpix_grid(gridID1) && mapType == RemapMethod::BILINEAR) { srcGrid.type = RemapGridType::HealPix; }
-    else if (is_global_healpix_grid(gridID1) && mapType == RemapMethod::KNN && !RemapGenWeights)
+    else if (is_global_healpix_grid(gridID1) && mapType == RemapMethod::KNN && !RemapGenerateWeights)
     {
       srcGrid.type = RemapGridType::HealPix;
     }
@@ -524,7 +491,7 @@ remap_init_grids(RemapMethod mapType, bool doExtrapolate, int gridID1, RemapGrid
     // else srcGrid.type = -1;
   }
 
-  if (!RemapGenWeights && is_reg2d_grid(gridID2) && tgtGrid.type != RemapGridType::Reg2D)
+  if (!RemapGenerateWeights && is_reg2d_grid(gridID2) && tgtGrid.type != RemapGridType::Reg2D)
   {
     if (mapType == RemapMethod::KNN) { tgtGrid.type = RemapGridType::Reg2D; }
     if (mapType == RemapMethod::BILINEAR && (srcGrid.type == RemapGridType::Reg2D || srcGrid.type == RemapGridType::HealPix))
@@ -533,7 +500,7 @@ remap_init_grids(RemapMethod mapType, bool doExtrapolate, int gridID1, RemapGrid
     }
   }
 
-  if (!RemapGenWeights && is_healpix_grid(gridID2))
+  if (!RemapGenerateWeights && is_healpix_grid(gridID2))
   {
     if (mapType == RemapMethod::BILINEAR || mapType == RemapMethod::KNN) { tgtGrid.type = RemapGridType::HealPix; }
   }
@@ -581,7 +548,10 @@ remap_init_grids(RemapMethod mapType, bool doExtrapolate, int gridID1, RemapGrid
       if (Options::force == false && needCorners == NeedCorners::Yes) { print_healpix_warning_and_abort(); }
       gridID1 = gridToUnstructured(srcGrid.gridID, needCorners);
     }
-    else { gridID1 = gridToCurvilinear(srcGrid.gridID, needCorners); }
+    else
+    {
+      gridID1 = gridToCurvilinear(srcGrid.gridID, needCorners);
+    }
     srcGrid.gridID = gridID1;
     srcGrid.tmpgridID = srcGrid.gridID;
   }

@@ -12,6 +12,7 @@
 
 #include <cdi.h>
 
+#include "c_wrapper.h"
 #include "param_conversion.h"
 #include "cdo_options.h"
 #include "cdo_zaxis.h"
@@ -82,7 +83,7 @@ struct KVMap
 }  // namespace
 
 static void
-zaxis_read_data(std::vector<KVMap> const &kvmap, ZaxisDesciption &zaxis, size_t &natts, const char *dname)
+zaxis_read_data(std::vector<KVMap> const &kvmap, ZaxisDesciption &zaxis, size_t &natts, std::string const &dname)
 {
   for (size_t ik = 0; ik < kvmap.size(); ++ik)
   {
@@ -96,69 +97,69 @@ zaxis_read_data(std::vector<KVMap> const &kvmap, ZaxisDesciption &zaxis, size_t 
     auto const &value = kv->values[0];
 
     // clang-format off
-      if (key == "zaxistype")
-        {
-          auto zaxistype = parameter_to_word(value);
-          if      (zaxistype == "pressure") zaxis.type = ZAXIS_PRESSURE;
-          else if (zaxistype == "hybrid_half") zaxis.type = ZAXIS_HYBRID_HALF;
-          else if (zaxistype == "hybrid") zaxis.type = ZAXIS_HYBRID;
-          else if (zaxistype == "height") zaxis.type = ZAXIS_HEIGHT;
-          else if (zaxistype == "depth_below_sea") zaxis.type = ZAXIS_DEPTH_BELOW_SEA;
-          else if (zaxistype == "depth_below_land") zaxis.type = ZAXIS_DEPTH_BELOW_LAND;
-          else if (zaxistype == "isentropic") zaxis.type = ZAXIS_ISENTROPIC;
-          else if (zaxistype == "surface") zaxis.type = ZAXIS_SURFACE;
-          else if (zaxistype == "generic") zaxis.type = ZAXIS_GENERIC;
-          else if (zaxistype == "generalized_height") zaxis.type = ZAXIS_REFERENCE;
-          else cdo_abort("Invalid zaxis type: %s (zaxis description file: %s)", zaxistype, dname);
-        }
-      else if (key == "datatype")
-        {
-          auto datatype = parameter_to_word(value);
-          if      (datatype == "double") zaxis.datatype = CDI_DATATYPE_FLT64;
-          else if (datatype == "float")  zaxis.datatype = CDI_DATATYPE_FLT32;
-          else if (datatype == "int")    zaxis.datatype = CDI_DATATYPE_INT32;
-          else if (datatype == "short")  zaxis.datatype = CDI_DATATYPE_INT16;
-          else cdo_abort("Invalid datatype: %s (zaxis description file: %s)", datatype, dname);
-        }
-      else if (key == "size")     zaxis.size = parameter_to_int(value);
-      else if (key == "scalar")   zaxis.scalar = parameter_to_bool(value);
-      else if (key == "vctsize")  zaxis.vctsize = parameter_to_int(value);
-      else if (key == "name")     zaxis.name = parameter_to_word(value);
-      else if (key == "units")    zaxis.units = parameter_to_word(value);
-      else if (key == "longname") zaxis.longname = value;
-      else if (key == "levels")
-        {
-          if (zaxis.size == 0) cdo_abort("size undefined (zaxis description file: %s)!", dname);
-          if (zaxis.size != nvalues) cdo_abort("size=%zu and number of levels=%zu differ!", zaxis.size, nvalues);
-          zaxis.vals.resize(zaxis.size);
-          for (size_t i = 0; i < zaxis.size; ++i) zaxis.vals[i] = parameter_to_double(values[i]);
-        }
-      else if (key == "lbounds")
-        {
-          if (zaxis.size == 0) cdo_abort("size undefined (zaxis description file: %s)!", dname);
-          if (zaxis.size != nvalues) cdo_abort("size=%zu and number of lbounds=%zu differ!", zaxis.size, nvalues);
-          zaxis.lbounds.resize(zaxis.size);
-          for (size_t i = 0; i < zaxis.size; ++i) zaxis.lbounds[i] = parameter_to_double(values[i]);
-        }
-      else if (key == "ubounds")
-        {
-          if (zaxis.size == 0) cdo_abort("size undefined (zaxis description file: %s)!", dname);
-          if (zaxis.size != nvalues) cdo_abort("size=%zu and number of ubounds=%zu differ!", zaxis.size, nvalues);
-          zaxis.ubounds.resize(zaxis.size);
-          for (size_t i = 0; i < zaxis.size; ++i) zaxis.ubounds[i] = parameter_to_double(values[i]);
-        }
-      else if (key == "vct")
-        {
-          if (zaxis.vctsize == 0) cdo_abort("vctsize undefined (zaxis description file: %s)!", dname);
-          if (zaxis.vctsize != nvalues) cdo_abort("vctsize=%zu and size of vct=%zu differ!", zaxis.vctsize, nvalues);
-          zaxis.vct.resize(zaxis.vctsize);
-          for (size_t i = 0; i < zaxis.vctsize; ++i) zaxis.vct[i] = parameter_to_double(values[i]);
-        }
-      else
-        {
-          natts = ik;
-          break;
-        }
+    if (key == "zaxistype")
+    {
+      auto zaxistype = parameter_to_word(value);
+      if      (zaxistype == "pressure") zaxis.type = ZAXIS_PRESSURE;
+      else if (zaxistype == "hybrid_half") zaxis.type = ZAXIS_HYBRID_HALF;
+      else if (zaxistype == "hybrid") zaxis.type = ZAXIS_HYBRID;
+      else if (zaxistype == "height") zaxis.type = ZAXIS_HEIGHT;
+      else if (zaxistype == "depth_below_sea") zaxis.type = ZAXIS_DEPTH_BELOW_SEA;
+      else if (zaxistype == "depth_below_land") zaxis.type = ZAXIS_DEPTH_BELOW_LAND;
+      else if (zaxistype == "isentropic") zaxis.type = ZAXIS_ISENTROPIC;
+      else if (zaxistype == "surface") zaxis.type = ZAXIS_SURFACE;
+      else if (zaxistype == "generic") zaxis.type = ZAXIS_GENERIC;
+      else if (zaxistype == "generalized_height") zaxis.type = ZAXIS_REFERENCE;
+      else cdo_abort("Invalid zaxis type: %s (zaxis description file: %s)", zaxistype, dname);
+    }
+    else if (key == "datatype")
+    {
+      auto datatype = parameter_to_word(value);
+      if      (datatype == "double") zaxis.datatype = CDI_DATATYPE_FLT64;
+      else if (datatype == "float")  zaxis.datatype = CDI_DATATYPE_FLT32;
+      else if (datatype == "int")    zaxis.datatype = CDI_DATATYPE_INT32;
+      else if (datatype == "short")  zaxis.datatype = CDI_DATATYPE_INT16;
+      else cdo_abort("Invalid datatype: %s (zaxis description file: %s)", datatype, dname);
+    }
+    else if (key == "size")     zaxis.size = parameter_to_int(value);
+    else if (key == "scalar")   zaxis.scalar = parameter_to_bool(value);
+    else if (key == "vctsize")  zaxis.vctsize = parameter_to_int(value);
+    else if (key == "name")     zaxis.name = parameter_to_word(value);
+    else if (key == "units")    zaxis.units = parameter_to_word(value);
+    else if (key == "longname") zaxis.longname = value;
+    else if (key == "levels")
+    {
+      if (zaxis.size == 0) cdo_abort("size undefined (zaxis description file: %s)!", dname);
+      if (zaxis.size != nvalues) cdo_abort("size=%zu and number of levels=%zu differ!", zaxis.size, nvalues);
+      zaxis.vals.resize(zaxis.size);
+      for (size_t i = 0; i < zaxis.size; ++i) zaxis.vals[i] = parameter_to_double(values[i]);
+    }
+    else if (key == "lbounds")
+    {
+      if (zaxis.size == 0) cdo_abort("size undefined (zaxis description file: %s)!", dname);
+      if (zaxis.size != nvalues) cdo_abort("size=%zu and number of lbounds=%zu differ!", zaxis.size, nvalues);
+      zaxis.lbounds.resize(zaxis.size);
+      for (size_t i = 0; i < zaxis.size; ++i) zaxis.lbounds[i] = parameter_to_double(values[i]);
+    }
+    else if (key == "ubounds")
+    {
+      if (zaxis.size == 0) cdo_abort("size undefined (zaxis description file: %s)!", dname);
+      if (zaxis.size != nvalues) cdo_abort("size=%zu and number of ubounds=%zu differ!", zaxis.size, nvalues);
+      zaxis.ubounds.resize(zaxis.size);
+      for (size_t i = 0; i < zaxis.size; ++i) zaxis.ubounds[i] = parameter_to_double(values[i]);
+    }
+    else if (key == "vct")
+    {
+      if (zaxis.vctsize == 0) cdo_abort("vctsize undefined (zaxis description file: %s)!", dname);
+      if (zaxis.vctsize != nvalues) cdo_abort("vctsize=%zu and size of vct=%zu differ!", zaxis.vctsize, nvalues);
+      zaxis.vct.resize(zaxis.vctsize);
+      for (size_t i = 0; i < zaxis.vctsize; ++i) zaxis.vct[i] = parameter_to_double(values[i]);
+    }
+    else
+    {
+      natts = ik;
+      break;
+    }
     // clang-format on
   }
 }
@@ -213,7 +214,7 @@ zaxis_read_attributes(size_t natts, std::vector<KVMap> const &kvmap, int zaxisID
 }
 
 int
-zaxis_from_file(FILE *zfp, const char *filename)
+zaxis_from_file(std::FILE *zfp, std::string const &filename)
 {
   PMList pmlist;
   pmlist.read_namelist(zfp, filename);
@@ -306,23 +307,22 @@ zaxis_from_name(std::string const &zaxisname)
   return zaxisID;
 }
 
-static int
-cdo_define_zaxis(const char *pzaxisfile)
+int
+cdo_define_zaxis(std::string zaxisfile)
 {
   int zaxisID = CDI_UNDEFID;
   bool isreg = false;
 
-  auto len = std::strlen(pzaxisfile);
-  char *zaxisfile = strdup(pzaxisfile);
-
+  auto len = zaxisfile.size();
   int zaxisNumber = 1;
   if (len > 2 && zaxisfile[len - 2] == ':' && std::isdigit(zaxisfile[len - 1]))
   {
     zaxisNumber = zaxisfile[len - 1] - '0';
-    zaxisfile[len - 2] = 0;
+    zaxisfile.pop_back();
+    zaxisfile.pop_back();
   }
 
-  auto fileno = open(zaxisfile, O_RDONLY);
+  auto fileno = open(zaxisfile.c_str(), O_RDONLY);
   if (fileno >= 0)
   {
     struct stat filestat;
@@ -338,7 +338,7 @@ cdo_define_zaxis(const char *pzaxisfile)
   else
   {
     char buffer[4];
-    if (read(fileno, buffer, 4) != 4) cdo_sys_error("Read grid from %s failed!", zaxisfile);
+    if (read(fileno, buffer, 4) != 4) cdo_sys_error("Read zaxis from %s failed!", zaxisfile);
 
     close(fileno);
 
@@ -346,7 +346,7 @@ cdo_define_zaxis(const char *pzaxisfile)
     {
       Debug(cdoDebug, "Zaxis from CDI file");
       open_lock();
-      auto streamID = streamOpenRead(zaxisfile);
+      auto streamID = streamOpenRead(zaxisfile.c_str());
       open_unlock();
       if (streamID >= 0)
       {
@@ -361,23 +361,14 @@ cdo_define_zaxis(const char *pzaxisfile)
     if (zaxisID == CDI_UNDEFID)
     {
       Debug(cdoDebug, "zaxis from ASCII file");
-      auto zfp = std::fopen(zaxisfile, "r");
-      zaxisID = zaxis_from_file(zfp, zaxisfile);
-      std::fclose(zfp);
+      auto fobj = c_fopen(zaxisfile, "r");
+      if (fobj.get() != nullptr) { zaxisID = zaxis_from_file(fobj.get(), zaxisfile); }
     }
 
     if (zaxisID == CDI_UNDEFID) cdo_abort("Invalid zaxis description file %s!", zaxisfile);
   }
 
-  std::free(zaxisfile);
-
   return zaxisID;
-}
-
-int
-cdo_define_zaxis(std::string const &zaxisfile)
-{
-  return cdo_define_zaxis(zaxisfile.c_str());
 }
 
 void

@@ -17,7 +17,7 @@
 /**
  * \page sphere_part_docu Sphere Partitioning Algorithm
  *
- * The following describes how the Sphere Partitioning algorithm generates a
+ * The following describes how the Sphere Partitioning Algorithm generates a
  * tree data structure for a given set of polygons on a sphere.
  * This tree structure allows to easily search all cells in the given data
  * set that overlaps with another given cell or point (set of cells or points).
@@ -64,12 +64,8 @@
  * - returns list of matching polygons
  */
 
-#include "basic_grid.h"
+#include "yac_types.h"
 #include "geometry.h"
-
-/** \example test_bnd_sphere_part.c
- * This contains a test of the bounding circle sphere part algorithm.
- */
 
 struct point_sphere_part_search;
 

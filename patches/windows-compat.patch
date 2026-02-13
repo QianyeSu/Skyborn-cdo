@@ -16,7 +16,8 @@
  #include <cstring>
  #include <cstdlib>
  #include <csignal>
-@@ -120,11 +128,24 @@
+@@ -131,14 +139,27 @@
+ 
  static void
  cdo_init_is_tty()
  {
@@ -41,7 +42,9 @@
    if (S_ISCHR(statbuf.st_mode)) { cdo::stderrIsTerminal = true; }
 +#endif
  }
-@@ -474,6 +495,13 @@
+ 
+ static void
+@@ -498,6 +519,13 @@
      totalTimer.start();
      g_processManager.run_processes();
      totalTimer.stop();
@@ -73,51 +76,56 @@
 +#ifndef _WIN32
  #include <unistd.h>
 +#endif
- #include <climits>
  
+ #include <cdi.h>
 --- a/src/dcw_reader.cc
 +++ b/src/dcw_reader.cc
-@@ -16,4 +16,6 @@
+@@ -16,5 +16,7 @@
  #include <cstdlib>
  #include <cstring>
 +#ifndef _WIN32
  #include <unistd.h>
 +#endif
  
---- a/src/CMOR.cc
-+++ b/src/CMOR.cc
-@@ -61,5 +61,7 @@
+ #include <algorithm>  // sort
+--- a/src/operators/CMOR.cc
++++ b/src/operators/CMOR.cc
+@@ -62,4 +62,6 @@
  
  #include <cassert>
 +#ifndef _WIN32
  #include <unistd.h>
 +#endif
  #include <netcdf.h>
- 
 --- a/src/cdo_zaxis.cc
 +++ b/src/cdo_zaxis.cc
-@@ -9,4 +9,6 @@
+@@ -9,5 +9,7 @@
  #include <cstdlib>
  #include <fcntl.h>
 +#ifndef _WIN32
  #include <unistd.h>
 +#endif
  
+ #include <cdi.h>
 --- a/src/cdo_getopt.cc
 +++ b/src/cdo_getopt.cc
-@@ -24,4 +24,8 @@
- #include <sys/stat.h>
- #include <stdio.h>
+@@ -17,6 +17,13 @@
+ #define CLIOP_DBG false
+ 
 +#ifdef _WIN32
 +#include <io.h>
++#include <windows.h>
 +#else
+ #include <sys/ioctl.h>
++#endif
+ #include <sys/stat.h>
++#ifndef _WIN32
  #include <unistd.h>
 +#endif
- 
+ #include <algorithm>
 --- a/src/expr_lex.cc
 +++ b/src/expr_lex.cc
-@@ -556,9 +556,11 @@
- 
+@@ -557,7 +557,9 @@
  #ifndef YY_NO_UNISTD_H
  /* Special case for "unistd.h", since it is non-ANSI. We include it way
   * down here because we want the user's section 1 to have been scanned first.
@@ -127,4 +135,4 @@
  #include <unistd.h>
 +#endif
  #endif
- 
+

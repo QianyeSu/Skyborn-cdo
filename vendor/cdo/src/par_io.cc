@@ -26,12 +26,12 @@ read_field(void *arg)
   auto p_numMissVals = read_arg->numMissVals;
   auto p_array = read_arg->array;
 
-  // fprintf(stderr, "read_field: streamID = %d\n", streamID);
+  // std::fprintf(stderr, "read_field: streamID = %d\n", streamID);
   auto [varID, levelID] = cdo_inq_field(streamID);
   *p_varID = varID;
   *p_levelID = levelID;
   cdo_read_field(streamID, p_array, p_numMissVals);
-  // fprintf(stderr, "read_field: varID %d levelID %d\n", *p_varID, *p_levelID);
+  // std::fprintf(stderr, "read_field: varID %d levelID %d\n", *p_varID, *p_levelID);
 
   return nullptr;
 }
@@ -69,14 +69,14 @@ par_read_field(CdoStreamID streamID, int *varID, int *levelID, double *array, si
 #ifdef HAVE_LIBPTHREAD
   else
   {
-    // fprintf(stderr, "parIO1: %ld streamID %d %d %d\n", (long)thrID, streamID, fieldID, numFields);
+    // std::fprintf(stderr, "parIO1: %ld streamID %d %d %d\n", (long)thrID, streamID, fieldID, numFields);
     rval = pthread_join(thrID, nullptr);
     if (rval != 0) cdo_abort("pthread_join failed!");
 
     *varID = parIO->varID;
     *levelID = parIO->levelID;
     *numMissVals = parIO->numMissVals;
-    // fprintf(stderr, "parIO2: %ld streamID %d %d %d\n", (long)thrID, streamID, *varID, *levelID);
+    // std::fprintf(stderr, "parIO2: %ld streamID %d %d %d\n", (long)thrID, streamID, *varID, *levelID);
     array_copy(parIO->array_size, parIO->array, array);
   }
 
@@ -97,11 +97,11 @@ par_read_field(CdoStreamID streamID, int *varID, int *levelID, double *array, si
       read_arg->numMissVals = &parIO->numMissVals;
       read_arg->array = parIO->array;
 
-      // fprintf(stderr, "pthread_create: streamID %d %d\n", read_arg->streamID,streamID);
+      // std::fprintf(stderr, "pthread_create: streamID %d %d\n", read_arg->streamID,streamID);
       rval = pthread_create(&thrID, &parIO->attr, read_field, read_arg);
       if (rval != 0) cdo_abort("pthread_create failed!");
 
-      // fprintf(stderr, "thrID = %ld\n", (long) thrID);
+      // std::fprintf(stderr, "thrID = %ld\n", (long) thrID);
       parIO->thrID = thrID;
     }
     else

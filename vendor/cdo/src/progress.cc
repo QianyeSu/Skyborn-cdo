@@ -46,7 +46,7 @@ Progress::update(double curval, double offset, double refval)
 
   if (value == -1)
   {
-    contextLen = fprintf(stdout, "%s: %3d%%", context, 0);
+    contextLen = std::fprintf(stdout, "%s: %3d%%", context, 0);
     fflush(stdout);
     contextActive = true;
   }
@@ -54,14 +54,14 @@ Progress::update(double curval, double offset, double refval)
   if (newValue != value)
   {
     value = newValue;
-    fprintf(stdout, "\b\b\b\b%3d%%", value);
+    std::fprintf(stdout, "\b\b\b\b%3d%%", value);
     fflush(stdout);
   }
 
   if (value == 100 && contextActive)
   {
     contextActive = false;
-    while (contextLen--) fprintf(stdout, "\b \b");
+    while (contextLen--) std::fprintf(stdout, "\b \b");
     fflush(stdout);
   }
 }

@@ -165,7 +165,7 @@ getrgb(char *line, int rgb[], int color_model)
 #define READERR -1
 
 int
-cpt_read(FILE *fp, CPT *cpt)
+cpt_read(std::FILE *fp, CPT *cpt)
 {
   int ncolors;
   int status = 0;
@@ -197,7 +197,7 @@ cpt_read(FILE *fp, CPT *cpt)
         color_model = CMYK;
       else
       {
-        fprintf(stderr, "%s: unrecognized COLOR_MODEL\n", __func__);
+        std::fprintf(stderr, "%s: unrecognized COLOR_MODEL\n", __func__);
         return (READERR);
       }
     }
@@ -220,7 +220,7 @@ cpt_read(FILE *fp, CPT *cpt)
       if ((nread = std::sscanf(&line[2], "%s %s %s %s", T1, T2, T3, T4)) < 1) error++;
       if (T1[0] == 'p' || T1[0] == 'P')
       { /* Gave a pattern */
-        fprintf(stderr, "%s: CPT Pattern fill (%s) unsupported!\n", __func__, T1);
+        std::fprintf(stderr, "%s: CPT Pattern fill (%s) unsupported!\n", __func__, T1);
         return (READERR);
       }
       else
@@ -283,7 +283,7 @@ cpt_read(FILE *fp, CPT *cpt)
     { /* Skip this slice */
       if (nread != 4)
       {
-        fprintf(stderr, "%s: z-slice to skip not in [z0 - z1 -] format!\n", __func__);
+        std::fprintf(stderr, "%s: z-slice to skip not in [z0 - z1 -] format!\n", __func__);
         return (READERR);
       }
       cpt->lut[n].z_high = atof(T2);
@@ -292,7 +292,7 @@ cpt_read(FILE *fp, CPT *cpt)
     }
     else if (T1[0] == 'p' || T1[0] == 'P')
     { /* Gave pattern fill */
-      fprintf(stderr, "%s: CPT Pattern fill (%s) unsupported!\n", __func__, T1);
+      std::fprintf(stderr, "%s: CPT Pattern fill (%s) unsupported!\n", __func__, T1);
       return (READERR);
     }
     else
@@ -324,7 +324,7 @@ cpt_read(FILE *fp, CPT *cpt)
       dz = cpt->lut[n].z_high - cpt->lut[n].z_low;
       if (std::fabs(dz) <= 0)
       {
-        fprintf(stderr, "%s: Z-slice with dz = 0\n", __func__);
+        std::fprintf(stderr, "%s: Z-slice with dz = 0\n", __func__);
         return (READERR);
       }
       cpt->lut[n].i_dz = 1.0 / dz;
@@ -345,13 +345,13 @@ cpt_read(FILE *fp, CPT *cpt)
 
   if (error)
   {
-    fprintf(stderr, "%s: Decoding error\n", __func__);
+    std::fprintf(stderr, "%s: Decoding error\n", __func__);
     return (READERR);
   }
 
   if (n == 0)
   {
-    fprintf(stderr, "%s: CPT file has no z-slices!\n", __func__);
+    std::fprintf(stderr, "%s: CPT file has no z-slices!\n", __func__);
     return (READERR);
   }
 
@@ -366,7 +366,7 @@ cpt_read(FILE *fp, CPT *cpt)
   annot += cpt->lut[i].annot;
   if (gap)
   {
-    fprintf(stderr, "%s: Color palette table has gaps - aborts!\n", __func__);
+    std::fprintf(stderr, "%s: Color palette table has gaps - aborts!\n", __func__);
     return (READERR);
   }
 
@@ -382,7 +382,7 @@ cpt_read(FILE *fp, CPT *cpt)
 }
 
 int
-cpt_write(FILE *fp, const CPT &cpt)
+cpt_write(std::FILE *fp, const CPT &cpt)
 {
   char code[3] = { 'B', 'F', 'N' };
   int n, k;
@@ -390,23 +390,23 @@ cpt_write(FILE *fp, const CPT &cpt)
 
   for (n = 0; n < cpt.ncolors; ++n)
   {
-    fprintf(fp, "%g\t%d\t%d\t%d\t%g\t%d\t%d\t%d\n", cpt.lut[n].z_low, cpt.lut[n].rgb_low[0], cpt.lut[n].rgb_low[1],
+    std::fprintf(fp, "%g\t%d\t%d\t%d\t%g\t%d\t%d\t%d\n", cpt.lut[n].z_low, cpt.lut[n].rgb_low[0], cpt.lut[n].rgb_low[1],
             cpt.lut[n].rgb_low[2], cpt.lut[n].z_high, cpt.lut[n].rgb_high[0], cpt.lut[n].rgb_high[1], cpt.lut[n].rgb_high[2]);
   }
 
   for (k = 0; k < 3; ++k)
   {
     if (cpt.bfn[k].skip)
-      fprintf(fp, "%c -\n", code[k]);
+      std::fprintf(fp, "%c -\n", code[k]);
     else
-      fprintf(fp, "%c\t%d\t%d\t%d\n", code[k], cpt.bfn[k].rgb[0], cpt.bfn[k].rgb[1], cpt.bfn[k].rgb[2]);
+      std::fprintf(fp, "%c\t%d\t%d\t%d\n", code[k], cpt.bfn[k].rgb[0], cpt.bfn[k].rgb[1], cpt.bfn[k].rgb[2]);
   }
 
   return status;
 }
 
 int
-cpt_write_c(FILE *fp, const CPT &cpt, const char *name)
+cpt_write_c(std::FILE *fp, const CPT &cpt, const char *name)
 {
   char lut_name[4096];
   char cpt_name[4096];
@@ -418,26 +418,26 @@ cpt_write_c(FILE *fp, const CPT &cpt, const char *name)
   std::strcpy(cpt_name, name);
   std::strcat(cpt_name, "_cpt");
 
-  fprintf(fp, "\nstatic LUT %s[] = {\n", lut_name);
+  std::fprintf(fp, "\nstatic LUT %s[] = {\n", lut_name);
   for (n = 0; n < cpt.ncolors; ++n)
   {
-    fprintf(fp, "  { %7g, %7g, %7g, {%3d, %3d, %3d}, {%3d, %3d, %3d}, {%3d, %3d, %3d}, %d, %d},\n", cpt.lut[n].z_low,
+    std::fprintf(fp, "  { %7g, %7g, %7g, {%3d, %3d, %3d}, {%3d, %3d, %3d}, {%3d, %3d, %3d}, %d, %d},\n", cpt.lut[n].z_low,
             cpt.lut[n].z_high, cpt.lut[n].i_dz, cpt.lut[n].rgb_low[0], cpt.lut[n].rgb_low[1], cpt.lut[n].rgb_low[2],
             cpt.lut[n].rgb_high[0], cpt.lut[n].rgb_high[1], cpt.lut[n].rgb_high[2], cpt.lut[n].rgb_diff[0], cpt.lut[n].rgb_diff[1],
             cpt.lut[n].rgb_diff[2], cpt.lut[n].annot, cpt.lut[n].skip);
   }
-  fprintf(fp, "};\n");
+  std::fprintf(fp, "};\n");
 
-  fprintf(fp, "\nstatic const CPT %s = {\n", cpt_name);
-  fprintf(fp, "  %d,\n", cpt.ncolors);
-  fprintf(fp, "  %s,\n", lut_name);
-  fprintf(fp, "  {\n");
+  std::fprintf(fp, "\nstatic const CPT %s = {\n", cpt_name);
+  std::fprintf(fp, "  %d,\n", cpt.ncolors);
+  std::fprintf(fp, "  %s,\n", lut_name);
+  std::fprintf(fp, "  {\n");
   for (k = 0; k < 3; ++k)
   {
-    fprintf(fp, "    {{%3d, %3d, %3d}, %d},\n", cpt.bfn[k].rgb[0], cpt.bfn[k].rgb[1], cpt.bfn[k].rgb[2], cpt.bfn[k].skip);
+    std::fprintf(fp, "    {{%3d, %3d, %3d}, %d},\n", cpt.bfn[k].rgb[0], cpt.bfn[k].rgb[1], cpt.bfn[k].rgb[2], cpt.bfn[k].skip);
   }
-  fprintf(fp, "  }\n");
-  fprintf(fp, "};\n");
+  std::fprintf(fp, "  }\n");
+  std::fprintf(fp, "};\n");
 
   return status;
 }

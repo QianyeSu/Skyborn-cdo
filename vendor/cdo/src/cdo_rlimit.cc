@@ -37,13 +37,13 @@
       {                                                                                  \
         if (sizeof(RLIM_T) > sizeof(long))                                               \
           {                                                                              \
-            fprintf(stderr, "CUR %-15s = %llu\n", #resource, (long long) rlim.rlim_cur); \
-            fprintf(stderr, "MAX %-15s = %llu\n", #resource, (long long) rlim.rlim_max); \
+            std::fprintf(stderr, "CUR %-15s = %llu\n", #resource, (long long) rlim.rlim_cur); \
+            std::fprintf(stderr, "MAX %-15s = %llu\n", #resource, (long long) rlim.rlim_max); \
           }                                                                              \
         else                                                                             \
           {                                                                              \
-            fprintf(stderr, "CUR %-15s = %lu\n", #resource, (long) rlim.rlim_cur);       \
-            fprintf(stderr, "MAX %-15s = %lu\n", #resource, (long) rlim.rlim_max);       \
+            std::fprintf(stderr, "CUR %-15s = %lu\n", #resource, (long) rlim.rlim_cur);       \
+            std::fprintf(stderr, "MAX %-15s = %lu\n", #resource, (long) rlim.rlim_max);       \
           }                                                                              \
       }                                                                                  \
   }
@@ -82,11 +82,11 @@ set_rlimit(struct rlimit lim, int resource, const char *rname)
     {
       if (stat == 0)
         {
-          fprintf(stderr, "Set %s to %ld\n", rname, (long) lim.rlim_cur);
+          std::fprintf(stderr, "Set %s to %ld\n", rname, (long) lim.rlim_cur);
           PRINT_RLIMIT(resource);
         }
-      else { fprintf(stderr, "Set %s to %ld failed!\n", rname, (long) lim.rlim_cur); }
-      fprintf(stderr, "\n");
+      else { std::fprintf(stderr, "Set %s to %ld failed!\n", rname, (long) lim.rlim_cur); }
+      std::fprintf(stderr, "\n");
     }
 }
 #endif

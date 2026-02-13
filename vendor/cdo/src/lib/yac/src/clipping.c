@@ -84,6 +84,16 @@ static inline struct yac_grid_cell * get_overlap_cell_buffer(size_t N) {
   return overlap_cell_buffer;
 }
 
+
+void yac_compute_overlap_buf_free() {
+
+  for (size_t i = 0; i < overlap_cell_buffer_size; ++i)
+    yac_free_grid_cell(overlap_cell_buffer + i);
+  free(overlap_cell_buffer);
+  overlap_cell_buffer = NULL;
+  overlap_cell_buffer_size = 0;
+}
+
 /* ------------------------- */
 
 static double get_edge_direction(
@@ -142,18 +152,20 @@ void yac_compute_overlap_info (size_t N,
           overlap_areas[i] =
             yac_huiliers_area_info(
               overlap_buffer[i], overlap_barycenters[i], 1.0);
-          YAC_ASSERT(
-            (overlap_barycenters[i][0] != 0.0) ||
-            (overlap_barycenters[i][1] != 0.0) ||
-            (overlap_barycenters[i][2] != 0.0),
-            "ERROR(yac_compute_overlap_info): "
-            "overlap was computed, still barycenter is sphere origin");
-          normalise_vector(overlap_barycenters[i]);
           if (overlap_areas[i] < 0.0) {
             overlap_areas[i] = -overlap_areas[i];
             overlap_barycenters[i][0] = -overlap_barycenters[i][0];
             overlap_barycenters[i][1] = -overlap_barycenters[i][1];
             overlap_barycenters[i][2] = -overlap_barycenters[i][2];
+          }
+          if (overlap_areas[i] > 0.0) {
+            YAC_ASSERT(
+              (overlap_barycenters[i][0] != 0.0) ||
+              (overlap_barycenters[i][1] != 0.0) ||
+              (overlap_barycenters[i][2] != 0.0),
+              "ERROR(yac_compute_overlap_info): "
+              "overlap was computed, still barycenter is sphere origin");
+            normalise_vector(overlap_barycenters[i]);
           }
         }
       } else {
@@ -664,7 +676,7 @@ static void circle_clipping(
           }
           // special case:
           // no intersections between the two circles
-          // (can occure if one of the two circles is a latitude circle while
+          // (can occur if one of the two circles is a latitude circle while
           //  the other is a great circle)
           case (0): {
             num_edge_intersections = 0;

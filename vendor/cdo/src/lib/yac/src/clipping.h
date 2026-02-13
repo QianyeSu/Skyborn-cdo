@@ -7,15 +7,6 @@
 
 #include "grid_cell.h"
 
-/** \example test_clipping.c
- * This contains some examples on how to use the \ref yac_cell_clipping
- * routine.
- */
-/** \example test_lat_clipping.c
- * This contains some examples on how to use the yac_cell_lat_clipping
- * routine.
- */
-
 struct yac_circle;
 
 /**
@@ -73,14 +64,6 @@ void yac_cell_lat_clipping (size_t N,
                             double lat_bounds[2],
                             struct yac_grid_cell * overlap_buffer);
 
-/** \example test_partial_areas.c
- * This contains examples on how to use \ref yac_compute_overlap_areas.
- */
-
-/** \example test_compute_overlap_area.c
- * This contains examples on how to use \ref yac_compute_overlap_areas.
- */
-
 /**
   * \brief calculates partial areas for all overlapping parts of the source
   *        cells with arbitrary target cells, this is required for conservative
@@ -134,6 +117,8 @@ void yac_compute_overlap_areas (size_t N,
   *                                 each source-target intersection
   * @param[out] overlap_barycenters coordinates of the barycenters of the
   *                                 overlap cell
+  * @remark for efficiency the overlap computation keeps an internal buffer,
+  *         which can be freed by a call to \ref yac_compute_overlap_buf_free
   *
  **/
 void yac_compute_overlap_info (size_t N,
@@ -141,6 +126,12 @@ void yac_compute_overlap_info (size_t N,
                                struct yac_grid_cell target_cell,
                                double * overlap_areas,
                                double (*overlap_barycenters)[3]);
+
+/**
+  * Frees buffer allocated by \ref yac_compute_overlap_info
+ **/
+void yac_compute_overlap_buf_free();
+
 /**
   * \brief correct interpolation weights
   *

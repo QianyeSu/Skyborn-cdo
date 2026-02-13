@@ -99,10 +99,13 @@ define_var(Compress compress, int ncId, const char *name, nc_type xtype, int ndi
 {
   int ncVarId = -1;
   nce(nc_def_var(ncId, name, xtype, ndims, dimidsp, &ncVarId));
-  // clang-format off
-  if      (compress == Compress::ZIP)  define_compression_zip(ncId, ncVarId);
-  else if (Options::filterSpec.size() && filterAvail) cdf_def_var_filter(ncId, ncVarId, Options::filterSpec.c_str());
-  // clang-format on
+  if (compress == Compress::ZIP) { define_compression_zip(ncId, ncVarId); }
+  else if (Options::filterSpec.size() && filterAvail)
+  {
+    if (cdiGetConfig(CDI_NC_HAS_FILTER) == 0)
+      cdo_abort("Filter failed, NetCDF function ncaux_h5filterspec_parselist() not available!");
+    cdf_def_var_filter(ncId, ncVarId, Options::filterSpec.c_str());
+  }
   return ncVarId;
 }
 #endif

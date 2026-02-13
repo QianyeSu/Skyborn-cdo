@@ -32,13 +32,16 @@ enum struct WeightingMethod
 std::string weightingMethod_to_string(WeightingMethod method);
 WeightingMethod string_to_weightingMethod(std::string const &methodStr);
 
+constexpr double CDO_INTERP_NNN_GAUSS_SCALE_DEFAULT = 0.1;
+constexpr double CDO_INTERP_NNN_RBF_SCALE_DEFAULT = 14.87973;
+
 struct KnnParams
 {
   size_t k{ 1 };
   size_t kMin{ 0 };
   double maxSearchDistance{ 0.0 };
-  double gaussScale{ 1.0 };
-  double rbfScale{ 1.0 };
+  double gaussScale{ CDO_INTERP_NNN_GAUSS_SCALE_DEFAULT };
+  double rbfScale{ CDO_INTERP_NNN_RBF_SCALE_DEFAULT };
   WeightingMethod weighted{ WeightingMethod::distanceWeighted };
   bool extrapolate{ false };
   // linear
@@ -53,8 +56,8 @@ private:
   size_t m_kMin{ 0 };
   size_t m_maxPoints{ 0 };
   size_t m_maxNeighbors{ 0 };
-  double m_gaussScale{ 1.0 };
-  double m_rbfScale{ 1.0 };
+  double m_gaussScale{ CDO_INTERP_NNN_GAUSS_SCALE_DEFAULT };
+  double m_rbfScale{ CDO_INTERP_NNN_RBF_SCALE_DEFAULT };
   // linear
   double m_searchRadius{ 0.0 };
   double m_weight0{ 1.0 };
@@ -90,7 +93,7 @@ public:
     if (m_needCoords) { m_srcCoords = std::make_unique<double[][3]>(m_maxPoints); }
   }
 
-  explicit KnnData(KnnParams knnParams) : m_weighted(knnParams.weighted)
+  explicit KnnData(KnnParams const &knnParams) : m_weighted(knnParams.weighted)
   {
     m_maxNeighbors = knnParams.k;
     m_kMin = knnParams.kMin;

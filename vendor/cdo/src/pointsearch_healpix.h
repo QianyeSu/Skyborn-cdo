@@ -73,7 +73,7 @@ private:
 
   void
   store_distance_healpix(double searchRadius, PointLonLat const &pointLL, KnnData &knnData, size_t numIndices, size_t *indices,
-                         double *lons, double *lats)
+                         double const *lons, double const *lats)
   {
     double tgtCoord[3];
     gcLLtoXYZ(pointLL.lon(), pointLL.lat(), tgtCoord);

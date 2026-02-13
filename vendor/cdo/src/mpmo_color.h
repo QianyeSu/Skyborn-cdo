@@ -50,10 +50,10 @@ bool color_enabled();
 
 int mpmo_get_color_mode();
 
-void set_text_color(FILE *fp, TextMode attr, TextColor fg);
-void set_text_color(FILE *fp, TextMode attr);
-void set_text_color(FILE *fp, TextColor fg);
-void reset_text_color(FILE *fp);
+void set_text_color(std::FILE *fp, TextMode attr, TextColor fg);
+void set_text_color(std::FILE *fp, TextMode attr);
+void set_text_color(std::FILE *fp, TextColor fg);
+void reset_text_color(std::FILE *fp);
 
 // Templates for converting any given input to a string
 template <class T>
@@ -84,24 +84,24 @@ text_color(TextColor foreground = NO_COLOR, TextMode mode = MODELESS, TextColor 
   if (!color_enabled()) return "";
   s << "\033[";
   if (!tty)
-    {
-      s << "m";
-      return s.str();
-    }
+  {
+    s << "m";
+    return s.str();
+  }
   if (!foreground && !background)
-    {
-      s << "0";  // reset colors if no params
-    }
+  {
+    s << "0";  // reset colors if no params
+  }
   if (foreground)
-    {
-      s << foreground;
-      if (background) s << ";";
-    }
+  {
+    s << foreground;
+    if (background) s << ";";
+  }
   if (background)
-    {
-      s << 10 + background;
-      if (mode) s << ";";
-    }
+  {
+    s << 10 + background;
+    if (mode) s << ";";
+  }
   else if (mode) { s << ";"; }
   if (mode) { s << mode; }
   s << "m";

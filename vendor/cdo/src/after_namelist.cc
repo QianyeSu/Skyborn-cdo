@@ -31,9 +31,9 @@ scan_par_obsolete(char *namelist, const char *name, int def)
   else
     value = atoi(cp);
   /*
-  fprintf(stdout, " %16.16s = %6d ", name, value);
-  if ( value == def ) fprintf(stdout, " (default)\n");
-  else                fprintf(stdout, "          \n");
+  std::fprintf(stdout, " %16.16s = %6d ", name, value);
+  if ( value == def ) std::fprintf(stdout, " (default)\n");
+  else                std::fprintf(stdout, "          \n");
   */
   return value;
 }
@@ -52,11 +52,11 @@ scan_par(int verbose, char *namelist, const char *name, int def)
 
   if (verbose)
     {
-      fprintf(stdout, " %16.16s = %6d ", name, value);
+      std::fprintf(stdout, " %16.16s = %6d ", name, value);
       if (value == def)
-        fprintf(stdout, " (default)\n");
+        std::fprintf(stdout, " (default)\n");
       else
-        fprintf(stdout, "          \n");
+        std::fprintf(stdout, "          \n");
     }
 
   return value;
@@ -72,7 +72,7 @@ scan_time(int verbose, char *namelist, int *hours, int max_hours)
   if (cp == nullptr)
     {
       hours[nrqh++] = -1;
-      if (verbose) fprintf(stdout, " %16.16s = all\n", "timesel");
+      if (verbose) std::fprintf(stdout, " %16.16s = all\n", "timesel");
       return (nrqh);
     }
 
@@ -87,9 +87,9 @@ scan_time(int verbose, char *namelist, int *hours, int max_hours)
 
   if (verbose)
     {
-      fprintf(stdout, " %16.16s = ", "timesel");
-      for (time = 0; time < nrqh; ++time) fprintf(stdout, " %02d", hours[time]);
-      fprintf(stdout, "\n");
+      std::fprintf(stdout, " %16.16s = ", "timesel");
+      for (time = 0; time < nrqh; ++time) std::fprintf(stdout, " %02d", hours[time]);
+      std::fprintf(stdout, "\n");
     }
 
   return nrqh;

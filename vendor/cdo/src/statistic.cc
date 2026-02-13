@@ -3,6 +3,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 
 #include "compare.h"
 #include "statistic.h"
@@ -49,8 +50,8 @@ gamma_help_1(double a, double x)
     if (std::fabs(del) < std::fabs(sum) * eps) return sum * std::exp(-x + a * std::log(x) - (gln));
   }
 
-  fprintf(stderr, "%s: internal error, too many iterations!\n", __func__);
-  exit(1);
+  std::fprintf(stderr, "%s: internal error, too many iterations!\n", __func__);
+  std::exit(1);
 
   return 0;
 }
@@ -81,8 +82,8 @@ gamma_help_2(double a, double x)
     if (std::fabs(del - 1) < eps) return std::exp(-x + a * std::log(x) - gln) * h;
   }
 
-  fprintf(stderr, "%s: internal error, too many iterations!\n", __func__);
-  exit(1);
+  std::fprintf(stderr, "%s: internal error, too many iterations!\n", __func__);
+  std::exit(1);
 
   return -1;
 }
@@ -92,8 +93,8 @@ incomplete_gamma(double a, double x)
 {
   if (x < 0.0 || a <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return (x < (a + 1.0)) ? gamma_help_1(a, x) : 1.0 - gamma_help_2(a, x);
@@ -104,8 +105,8 @@ beta(double a, double b)
 {
   if (a <= 0.0 || b <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return std::exp(lngamma(a) + lngamma(b) - lngamma(a + b));
@@ -146,8 +147,8 @@ beta_help(double a, double b, double x)
     if (std::fabs(del - 1.0) < eps) return h;
   }
 
-  fprintf(stderr, "%s: ERROR! Too many iterations in routine!\n", __func__);
-  exit(1);
+  std::fprintf(stderr, "%s: ERROR! Too many iterations in routine!\n", __func__);
+  std::exit(1);
 
   return -1;
 }
@@ -157,14 +158,14 @@ incomplete_beta(double a, double b, double x)
 {
   if (a <= 0.0 || b <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (x < 0.0 || x > 1.0)
   {
-    fprintf(stderr, "%s: Value out of range (0-1)!\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: Value out of range (0-1)!\n", __func__);
+    std::exit(4);
   }
 
   double c = (fp_is_equal(x, 0.) || fp_is_equal(x, 1.))
@@ -199,8 +200,8 @@ normal_inv(double p)
 
   if (p <= 0.0 || p >= 1.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (fp_is_equal(p, last_p)) return last_x;
@@ -228,8 +229,8 @@ student_t_density(double n, double x)
 {
   if (n <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return std::exp(lngamma((n + 1) / 2) - lngamma(n / 2)) / std::sqrt(n / 2) * std::pow((1 + x * x / n), -(n + 1) / 2);
@@ -240,8 +241,8 @@ student_t(double n, double x)
 {
   if (n <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (x > 0)
@@ -260,8 +261,8 @@ student_t_inv(double n, double p)
 
   if (n <= 0.0 || p <= 0.0 || p >= 1.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (fp_is_equal(n, last_n) && fp_is_equal(p, last_p)) return last_x;
@@ -291,8 +292,8 @@ chi_square_density(double n, double x)
 {
   if (n <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return (x <= 0) ? 0 : std::pow(2, -n / 2) * std::pow(x, n / 2 - 1) * std::exp(-x / 2 - lngamma(n / 2));
@@ -303,8 +304,8 @@ chi_square(double n, double x)
 {
   if (n <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return (x <= 0.0) ? 0.0 : incomplete_gamma(n / 2.0, x / 2.0);
@@ -319,8 +320,8 @@ chi_square_inv(double n, double p)
 
   if (n <= 0.0 || p <= 0.0 || p >= 1.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (fp_is_equal(n, last_n) && fp_is_equal(p, last_p)) return last_x;
@@ -356,8 +357,8 @@ chi_square_constants(double n, double p, double *c1, double *c2)
 
   if (n <= 0.0 || p <= 0.0 || p >= 1.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (fp_is_equal(n, last_n) && fp_is_equal(p, last_p))
@@ -406,8 +407,8 @@ beta_distr_density(double a, double b, double x)
 {
   if (a <= 0.0 || b <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return (x <= 0) ? 0 : (x >= 1) ? 1 : std::pow(x, a - 1) * std::pow(1 - x, b - 1) / beta(a, b);
@@ -428,8 +429,8 @@ beta_distr_inv(double a, double b, double p)
 
   if (a <= 0.0 || b <= 0.0 || p <= 0.0 || p >= 1.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (fp_is_equal(a, last_a) && fp_is_equal(b, last_b) && fp_is_equal(p, last_p)) return last_x;
@@ -473,8 +474,8 @@ beta_distr_constants(double a, double b, double p, double *c1, double *c2)
 
   if (a <= 0.0 || b <= 0.0 || p <= 0.0 || p >= 1.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   if (fp_is_equal(a, last_a) && fp_is_equal(b, last_b) && fp_is_equal(p, last_p))
@@ -530,8 +531,8 @@ fisher(double m, double n, double x)
 {
   if (m <= 0.0 || n <= 0.0)
   {
-    fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
-    exit(4);
+    std::fprintf(stderr, "%s: IMPLEMENTATION ERROR! (Invalid argument)\n", __func__);
+    std::exit(4);
   }
 
   return incomplete_beta(m / 2.0, n / 2.0, n / (n + m * x));

@@ -113,14 +113,14 @@ public:
   operator[](size_t pos) const
   {
     if (pos < size)
-      {
-        if (memType == MemType::Float)
-          return vec_f[pos];
-        else if (memType == MemType::Double)
-          return vec_d[pos];
-        else
-          throw std::runtime_error("Type of field unsupported!");
-      }
+    {
+      if (memType == MemType::Float)
+        return vec_f[pos];
+      else if (memType == MemType::Double)
+        return vec_d[pos];
+      else
+        throw std::runtime_error("Type of field unsupported!");
+    }
 
     return double();
   }

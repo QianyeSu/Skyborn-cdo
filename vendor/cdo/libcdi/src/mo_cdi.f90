@@ -220,6 +220,11 @@ module mo_cdi
   integer(c_int), public, parameter :: CALENDAR_365DAYS = 4
   integer(c_int), public, parameter :: CALENDAR_366DAYS = 5
   integer(c_int), public, parameter :: CALENDAR_NONE = 6
+  integer(c_int), public, parameter :: CDI_HAS_CGRIBEX = 1
+  integer(c_int), public, parameter :: CDI_NC_HAS_FILTER = 2
+  integer(c_int), public, parameter :: CDI_NC_HAS_DAP = 3
+  integer(c_int), public, parameter :: CDI_NC_HAS_S3 = 4
+  integer(c_int), public, parameter :: CDI_NC_HAS_HDF5 = 5
   integer(c_int), public, parameter :: CDI_UUID_SIZE = 16
 
   public t_CdiParam
@@ -244,6 +249,7 @@ module mo_cdi
   public :: cdiLibraryVersion
   public :: cdiPrintVersion
   public :: cdiHaveFiletype
+  public :: cdiGetConfig
   public :: cdiDefMissval
   public :: cdiInqMissval
   public :: cdiDefGlobal
@@ -723,9 +729,6 @@ module mo_cdi
   public :: sec_to_time
   integer(c_int), public, parameter :: HAVE_CDI_PROJ_FUNCS = 1
   public :: cdf_def_var_filter
-  public :: cdi_has_ncfilter
-  public :: cdi_has_ncdap
-  public :: cdi_has_cgribex
 
   interface
     subroutine cdiReset() bind(c, name = 'cdiReset')
@@ -739,12 +742,19 @@ module mo_cdi
     subroutine cdiPrintVersion() bind(c, name = 'cdiPrintVersion')
     end subroutine cdiPrintVersion
 
-    function cdiHaveFiletype(filetype_dummy) bind(c, name = 'cdiHaveFiletype')&
+    function cdiHaveFiletype(fileType_dummy) bind(c, name = 'cdiHaveFiletype')&
     & result(f_result)
       import c_int
-      integer(c_int), value :: filetype_dummy
+      integer(c_int), value :: fileType_dummy
       integer(c_int) :: f_result
     end function cdiHaveFiletype
+
+    function cdiGetConfig(confType_dummy) bind(c, name = 'cdiGetConfig')&
+    & result(f_result)
+      import c_int
+      integer(c_int), value :: confType_dummy
+      integer(c_int) :: f_result
+    end function cdiGetConfig
 
     subroutine cdiDefMissval(missval_dummy) bind(c, name = 'cdiDefMissval')
       import c_double
@@ -3013,23 +3023,6 @@ module mo_cdi
       integer(c_int), value :: secofday_dummy
       integer(c_int) :: f_result
     end function sec_to_time
-
-    function cdi_has_ncfilter() bind(c, name = 'cdi_has_ncfilter')&
-    & result(f_result)
-      import c_int
-      integer(c_int) :: f_result
-    end function cdi_has_ncfilter
-
-    function cdi_has_ncdap() bind(c, name = 'cdi_has_ncdap') result(f_result)
-      import c_int
-      integer(c_int) :: f_result
-    end function cdi_has_ncdap
-
-    function cdi_has_cgribex() bind(c, name = 'cdi_has_cgribex')&
-    & result(f_result)
-      import c_int
-      integer(c_int) :: f_result
-    end function cdi_has_cgribex
 
   end interface
 

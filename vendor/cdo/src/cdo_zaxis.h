@@ -5,10 +5,10 @@
 #include "varray.h"
 #include "cdi.h"
 
-int cdo_define_zaxis(std::string const &zaxisfile);
+int cdo_define_zaxis(std::string zaxisfile);
 void cdo_set_zaxes(std::string const &zaxisarg);
 int zaxis_from_name(std::string const &zaxisname);
-int zaxis_from_file(FILE *zfp, const char *filename);
+int zaxis_from_file(std::FILE *zfp, std::string const &filename);
 int zaxis_to_ltype(int zaxisID);
 double cdo_zaxis_inq_level(int zaxisID, int levelID);
 int cdo_zaxis_inq_levels(int zaxisID, double *levels);

@@ -35,7 +35,7 @@ fft_set(double *trigs, long *ifax, long n)
 {
   if (n == 0 || trigs == nullptr || ifax == nullptr)
   {
-    fprintf(stderr, "fft_set: parameter not initialized!\n");
+    std::fprintf(stderr, "fft_set: parameter not initialized!\n");
     return -2;
   }
 
@@ -90,7 +90,7 @@ fft_set(double *trigs, long *ifax, long n)
   */
   if (n > 8 || n == 7)
   {
-    fprintf(stderr, "FFT does not work with len=%ld (n=%ld)!\n", len, n);
+    std::fprintf(stderr, "FFT does not work with len=%ld (n=%ld)!\n", len, n);
     return -1;
   }
 
@@ -2001,7 +2001,7 @@ fc2gp(const double *restrict trig, const long *restrict ifax, const double *rest
   /* x(j) = sum(k=0,...,n-1)(c(k)*exp(2*i*j*k*pi/nlon))             */
   /*        where c(k) = a(k) + i*b(k) and c(n-k) = a(k)-i*b(k)     */
 
-  if (ifax[9] != nlon) fprintf(stderr, "fc2gp: wrong initialization!\n");
+  if (ifax[9] != nlon) std::fprintf(stderr, "fc2gp: wrong initialization!\n");
 
   const long nfax = ifax[0];
 
@@ -2144,7 +2144,7 @@ gp2fc(const double *trig, const long *ifax, const double *restrict gp, double *r
   /* a(k) =  (1/n) * sum(j=0,...,n-1)(x(j) * cos(2*j*k*pi/n))       */
   /* b(k) = -(1/n) * sum(j=0,...,n-1)(x(j) * sin(2*j*k*pi/n))       */
 
-  if (ifax[9] != nlon) fprintf(stderr, "gp2fc: wrong initialization!\n");
+  if (ifax[9] != nlon) std::fprintf(stderr, "gp2fc: wrong initialization!\n");
 
   const long nfax = ifax[0];
 

@@ -1,16 +1,17 @@
 #! @PYTHON@
 #
 from cdoTest import *
-#
+
+HAS_CGRIBEX=cdo_check_req("has-cgribex")
+
 IFILE=f'{DATAPATH}/pl_data.grb'
 OPERATORS=["select","delete"]
-#
-SELARGS={ "select":
-["code=130,152","code=130,152,level=9000,90","code=130,152,level=9000,90,timestep=2,3,5","code=130","level=90000"], "delete" :
-["code=129","code=129,130,level=90000,900","code=129,130,level=90000,900,timestep=1,4"]}
-#
+
 test_module = TestModule()
-#
+
+SELARGS={ "select" : ["code=130,152","code=130,152,level=9000,90","code=130,152,level=9000,90,timestep=2,3,5","code=130","level=90000"],
+          "delete" : ["code=129","code=129,130,level=90000,900","code=129,130,level=90000,900,timestep=1,4"]}
+
 for OPER in OPERATORS:
     for TNUM,SELECT in enumerate(SELARGS[OPER],1):
         RFILE=f'{DATAPATH}/select{TNUM}_ref'
@@ -20,5 +21,94 @@ for OPER in OPERATORS:
         t.add(f'{CDO}  diff {OFILE} {RFILE}')
         t.clean(OFILE)
         test_module.add(t)
-#
+
+SELARGS={ "select" : ["param=130.128,152.128","param=130.128,152.128,levidx=2,4","param=130.128,152.128,levidx=2,4,day=3,4,6","param=130.128","levidx=1,zaxisname=pressure"],
+          "delete" : ["param=129.128","param=129.128,130.128,levidx=1,3","param=129.128,130.128,levidx=1,3,day=2,5"]}
+
+for OPER in OPERATORS:
+    for TNUM,SELECT in enumerate(SELARGS[OPER],1):
+        RFILE=f'{DATAPATH}/select{TNUM}_ref'
+        OFILE=f'{OPER}{TNUM}_res'
+        t=TAPTest(f'{OPER} {SELECT}')
+        t.add(f'{CDO} {OPER},{SELECT} {IFILE} {OFILE}')
+        t.add(f'{CDO}  diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+if (HAS_CGRIBEX):
+    SELARGS={ "select" : ["name=t,lsp","name=t,lsp,level=9000,90","name=t,lsp,level=9000,90,timestep_of_year=2,3,5","name=t","levrange=90000,90000"],
+              "delete" : ["name=geosp","name=geosp,t,level=90000,900","name=geosp,t,level=90000,900,timestep_of_year=1,4"]}
+
+    for OPER in OPERATORS:
+        for TNUM,SELECT in enumerate(SELARGS[OPER],1):
+            RFILE=f'{DATAPATH}/select{TNUM}_ref'
+            OFILE=f'{OPER}{TNUM}_res'
+            t=TAPTest(f'{OPER} {SELECT}')
+            t.add(f'{CDO} {OPER},{SELECT} {IFILE} {OFILE}')
+            t.add(f'{CDO}  diff {OFILE} {RFILE}')
+            t.clean(OFILE)
+            test_module.add(t)
+
+test_module.prepare(f'{CDO}  -f srv -seq,1,5 maskfile')
+OPER="select"
+SELARGS={"steptype=instant",
+         "zaxisname=pressure,surface,gridname=lonlat",
+         "zaxisnum=1,2,gridnum=1",
+         "year=1978,month=1,day=2/6",
+         "season=DJF",
+         "dom=2jan,3jan,4jan,5jan,6jan",
+         "timestepmask=maskfile",
+         "date=1978-01-02,1978-01-03,1978-01-04,1978-01-05,1978-01-06",
+         "date=1978-01-02T12:00:00,1978-01-03T12:00:00,1978-01-04T12:00:00,1978-01-05T12:00:00,1978-01-06T12:00:00",
+         "startdate=1978-01-02T12:00:00,enddate=1978-01-06T12:00:00"}
+
+for SELECT in SELARGS:
+    OFILE=f'{OPER}{TNUM}_res'
+    t=TAPTest(f'{OPER} {SELECT}')
+    t.add(f'{CDO} {OPER},{SELECT} {IFILE} {OFILE}')
+    t.add(f'{CDO}  diff {OFILE} {IFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+t.clean(f'maskfile')
+
+TNUM=6
+OPER="select"
+SELARGS={"code=129,130,134,140", "timestep=1/16", "startdate=1978-01-02T12:00:00,enddate=1978-01-17T12:00:00"}
+IFILES=f'{DATAPATH}/seldata?.grb'
+RFILE=f'{DATAPATH}/select{TNUM}_ref'
+OFILE=f'{OPER}{TNUM}_res'
+for SELECT in SELARGS:
+    t=TAPTest(f'{OPER} {SELECT}')
+    t.add(f'{CDO} {OPER},{SELECT} {IFILES} {OFILE}')
+    t.add(f'{CDO}  diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+TNUM=7
+OPER="select"
+SELARGS={"code=130,134,timestep=3/14/2"}
+IFILES=f'{DATAPATH}/seldata?.grb'
+RFILE=f'{DATAPATH}/select{TNUM}_ref'
+OFILE=f'{OPER}{TNUM}_res'
+for SELECT in SELARGS:
+    t=TAPTest(f'{OPER} {SELECT}')
+    t.add(f'{CDO} {OPER},{SELECT} {IFILES} {OFILE}')
+    t.add(f'{CDO}  diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
+TNUM=8
+OPER="select"
+SELARGS={"code=130,140,timestep=7/12", "code=130,140,startdate=1978-01-08T12:00:00,enddate=1978-01-13T12:00:00"}
+IFILES=f'{DATAPATH}/seldata?.grb'
+RFILE=f'{DATAPATH}/select{TNUM}_ref'
+OFILE=f'{OPER}{TNUM}_res'
+for SELECT in SELARGS:
+    t=TAPTest(f'{OPER} {SELECT}')
+    t.add(f'{CDO} {OPER},{SELECT} {IFILES} {OFILE}')
+    t.add(f'{CDO}  diff {OFILE} {RFILE}')
+    t.clean(OFILE)
+    test_module.add(t)
+
 test_module.run()

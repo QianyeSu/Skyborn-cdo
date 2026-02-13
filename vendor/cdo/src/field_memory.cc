@@ -11,7 +11,7 @@
 #include "cdo_options.h"
 
 static void
-field2D_init_kernel(FieldVector2D &field2D, VarList const &varList, int ptype, bool lfill, double fillValue)
+field2D_init_kernel(FieldVector2D &field2D, VarList const &varList, int ptype, bool doFill, double fillValue)
 {
   auto allocateData = (ptype & FIELD_VEC);
   auto numVars = varList.numVars();
@@ -37,20 +37,8 @@ field2D_init_kernel(FieldVector2D &field2D, VarList const &varList, int ptype, b
 
       if (allocateData)
       {
-        if (memType == MemType::Float)
-        {
-          if (lfill)
-            field.resizef(size, (float) fillValue);
-          else
-            field.resizef(size);
-        }
-        else
-        {
-          if (lfill)
-            field.resize(size, fillValue);
-          else
-            field.resize(size);
-        }
+        if (memType == MemType::Float) { doFill ? field.resizef(size, (float) fillValue) : field.resizef(size); }
+        else { doFill ? field.resize(size, fillValue) : field.resize(size); }
       }
     }
   }

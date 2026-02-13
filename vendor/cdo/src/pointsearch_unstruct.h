@@ -57,7 +57,7 @@ public:
   search_nearest(PointLonLat const &pointLL, size_t *index, double *dist)
   {
     if (m_strategy) { return m_strategy->search_nearest(pointLL, index, dist); }
-    fprintf(stderr, "PointsearchUnstruct::search_nearest: PointsearchStrategy not initialized!\n");
+    std::fprintf(stderr, "PointsearchUnstruct::search_nearest: PointsearchStrategy not initialized!\n");
     return 0;
   }
 
@@ -65,7 +65,7 @@ public:
   search_qnearest(PointLonLat const &pointLL, size_t nnn, size_t *index, double *dist)
   {
     if (m_strategy) { return m_strategy->search_qnearest(pointLL, nnn, index, dist); }
-    fprintf(stderr, "PointsearchUnstruct::search_qnearest: PointsearchStrategy not initialized!\n");
+    std::fprintf(stderr, "PointsearchUnstruct::search_qnearest: PointsearchStrategy not initialized!\n");
     return 0;
   }
 

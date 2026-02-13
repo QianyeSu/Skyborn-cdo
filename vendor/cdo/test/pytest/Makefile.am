@@ -38,6 +38,7 @@ TESTS =\
 		Etccdi.py.test\
 		Etccdi2.py.test\
 		Expr.py.test\
+		Extra.py.test\
 		File.py.test\
 		Filter.py.test\
 		Fldpctl.py.test\
@@ -94,6 +95,7 @@ TESTS =\
 		Spectral.py.test\
 		Split.py.test\
 		Splittime.py.test\
+		Timcumsum.py.test\
 		Timfillmiss.py.test\
 		Timpctl.py.test\
 		Timselpctl.py.test\

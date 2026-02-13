@@ -93,9 +93,9 @@ set_cdi_options()
 {
   if (cdo::dbg())
   {
-    fprintf(stderr, "CMOR_Mode           = %d\n", Options::CMOR_Mode);
-    fprintf(stderr, "netcdf_hdr_pad      = %d\n", netcdf_hdr_pad);
-    fprintf(stderr, "\n");
+    std::fprintf(stderr, "CMOR_Mode           = %d\n", Options::CMOR_Mode);
+    std::fprintf(stderr, "netcdf_hdr_pad      = %d\n", netcdf_hdr_pad);
+    std::fprintf(stderr, "\n");
   }
 
   if (Threading::cdoLockIO == false) cdiDefGlobal("THREADSAFE", 1);
@@ -124,10 +124,10 @@ stackframe()
   auto frames = backtrace(callstack, 32);
   auto messages = backtrace_symbols(callstack, frames);
 
-  fprintf(stderr, "[bt] Execution path:\n");
+  std::fprintf(stderr, "[bt] Execution path:\n");
   if (messages)
   {
-    for (int i = 0; i < frames; ++i) fprintf(stderr, "[bt] %s\n", messages[i]);
+    for (int i = 0; i < frames; ++i) std::fprintf(stderr, "[bt] %s\n", messages[i]);
     std::free(messages);
   }
 #endif
@@ -386,26 +386,26 @@ setup_openMP(int numThreads)
 
   Threading::ompNumMaxThreads = omp_get_max_threads();
   if (omp_get_max_threads() > omp_get_num_procs())
-    fprintf(stderr, "Warning: Number of OMP threads=%d is greater than number of Cores=%d!\n", omp_get_max_threads(),
+    std::fprintf(stderr, "Warning: Number of OMP threads=%d is greater than number of Cores=%d!\n", omp_get_max_threads(),
             omp_get_num_procs());
 
   if (Threading::ompNumMaxThreads < numThreads)
-    fprintf(stderr, "Warning: omp_get_max_threads() returns %d!\n", Threading::ompNumMaxThreads);
+    std::fprintf(stderr, "Warning: omp_get_max_threads() returns %d!\n", Threading::ompNumMaxThreads);
 
   if (cdo::dbg()) cdo::features::print_openmp_info();
 
   if (Options::cdoVerbose)
   {
-    fprintf(stderr, " OpenMP:  num_procs=%d  max_threads=%d", omp_get_num_procs(), omp_get_max_threads());
+    std::fprintf(stderr, " OpenMP:  num_procs=%d  max_threads=%d", omp_get_num_procs(), omp_get_max_threads());
 #ifdef HAVE_OPENMP4
 #ifndef __ICC
-    fprintf(stderr, "  num_devices=%d", omp_get_num_devices());
+    std::fprintf(stderr, "  num_devices=%d", omp_get_num_devices());
 #endif
 #endif
-    fprintf(stderr, "\n");
+    std::fprintf(stderr, "\n");
   }
 #else
-  if (numThreads > 1) fprintf(stderr, "Warning: Option -P failed, OpenMP support not compiled in!\n");
+  if (numThreads > 1) std::fprintf(stderr, "Warning: Option -P failed, OpenMP support not compiled in!\n");
 #endif
 }
 

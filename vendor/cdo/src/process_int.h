@@ -8,7 +8,7 @@
 #ifndef PROCESS_INT_H
 #define PROCESS_INT_H
 
-#include "cdo_process.h"
+#include "process.h"
 #include "factory.h"
 
 void set_local_process(Process *p);

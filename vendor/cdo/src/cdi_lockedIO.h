@@ -2,7 +2,6 @@
 #define CDI_LOCKEDIO_H
 
 #include <cstddef>
-#include <cstdbool>
 
 int stream_open_read_locked(const char *filename);
 void stream_close_locked(int p_fileID);

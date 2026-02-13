@@ -255,28 +255,21 @@ find_module(std::string const &operator_name)
   return Factory::find(operator_name);
 }
 
-std::vector<std::string>
-get_module_operator_names(std::string const &module_name)
+const CdoHelp
+get_module_help(std::string const &module_name)
 {
-
-  std::vector<std::string> operator_names;
-
+  CdoHelp operator_names = {};
   auto &modules = Factory::get();
 
   std::string lower_name = "";
-  for (auto c : module_name) { lower_name += c; }
+  for (auto c : module_name) { lower_name += tolower(c); }
 
   for (auto &registered_mod : modules)
   {
     const CdoModule &mod = registered_mod.second.module;
-
     std::string lower_registered_name = "";
-    for (auto c : mod.name) { lower_registered_name += c; }
-
-    if (lower_registered_name == lower_name)
-    {
-      for (const oper_t &oper : mod.operators) { operator_names.push_back(oper.name); }
-    }
+    for (auto c : mod.name) { lower_registered_name += tolower(c); }
+    if (lower_registered_name == lower_name) { return mod.operators.begin()->help; }
   }
   return operator_names;
 }

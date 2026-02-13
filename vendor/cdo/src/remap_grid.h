@@ -7,7 +7,10 @@
 #ifndef REMAP_GRID_H
 #define REMAP_GRID_H
 
+#include <numbers>
+
 #include "varray.h"
+#include "point.h"
 #include "mpim_grid/grid_healpix.h"
 
 enum struct RemapGridType
@@ -62,6 +65,34 @@ RemapGrid
 
   Varray<double> cellArea{};  // total area of each grid cell
   Varray<double> cellFrac{};  // fractional area of grid cells participating in remapping
+
+  PointLonLat
+  get_lonlat(size_t index) const
+  {
+    double lon{}, lat{};
+
+    if (this->type == RemapGridType::Reg2D)
+    {
+      auto nx = this->dims[0];
+      auto iy = index / nx;
+      auto ix = index - iy * nx;
+      lat = this->centerLatsReg2d[iy];
+      lon = this->centerLonsReg2d[ix];
+      if (lon < 0) lon += 2.0 * std::numbers::pi;
+    }
+    else if (this->type == RemapGridType::HealPix)
+    {
+      hp_index_to_lonlat(this->hpParams, index, &lon, &lat);
+      // if (lon < 0) lon += 2.0 * std::numbers::pi;
+    }
+    else
+    {
+      lat = this->centerLats[index];
+      lon = this->centerLons[index];
+    }
+
+    return PointLonLat(lon, lat);
+  }
 };
 
 #endif /* REMAP_GRID_H */

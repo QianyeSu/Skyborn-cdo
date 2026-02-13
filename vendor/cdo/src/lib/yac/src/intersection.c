@@ -215,10 +215,6 @@ static int loncxlonc(
   return 2;
 }
 
-/** \example test_pxgc.c
- * This example contains some tests for the pxgc routine
- */
-
 static int pxgc(
   double const vec[3], double const norm_vector[3], double p[3], double q[3]) {
 
@@ -354,10 +350,6 @@ static int vector_is_between_lat (
 
    double temp = b_0 - (b_1 * a_0) / a_1;
 
-   /*YAC_ASSERT(
-      (fabs(temp) > tol),
-      "ERROR(vector_is_between_lat): "
-      "routine does not support zero length edges")*/
    // if a and b are nearly identical
    if (fabs(temp) < tol)
      return (fabs(a_0 - p_0) < tol) && (fabs(a_1 - p_1) < tol);
@@ -511,9 +503,6 @@ static void compute_norm_vector(
   norm_vector[2] *= scale;
 }
 
-/** \example test_gcxgc.c
- * This contains examples on how to use \ref yac_gcxgc_vec
- */
 /**
  * computes the intersection points of two great circles \n
  * based on http://www.geoclub.de/viewtopic.php?f=54&t=29689
@@ -550,9 +539,6 @@ static int yac_gcxgc_vec(
   };
 }
 
-/** \example test_latcxlatc.c
- * This contains examples on \ref yac_latcxlatc_vec
- */
 /** \brief compute the intersection point two circles of latitude
  *
  * compute the intersection points of two circle of latitude
@@ -596,9 +582,6 @@ static void compute_lon_norm_vector(
   norm_vector[1] *= scale;
 }
 
-/** \example test_loncxlonc.c
- * This contains examples on \ref yac_loncxlonc_vec
- */
 /** \brief compute the intersection point two circles of longitude
  *
  * compute the intersection points of two circle of longitude
@@ -646,9 +629,6 @@ static int yac_check_pq_gcxlatc(
     (vector_is_between_lat(c, d, q)             << 3);
 }
 
-/** \example test_loncxlatc.c
- * This contains examples on \ref yac_loncxlatc_vec
- */
 /** \brief compute the intersection point of a meridian and a parallel
  *
  * compute the intersection points of a circle of longitude (defined by a and b)
@@ -676,9 +656,6 @@ static int yac_loncxlatc_vec (
   return yac_check_pq_gcxlatc(a, b, c, d, p, q);
 }
 
-/** \example test_gcxlatc.c
- * This contains examples on gcxlatc_vec.
- */
 /** \brief compute the intersection of a great circle with the parallel
  *
  * compute the intersection points of a great circle (defined by a and b)

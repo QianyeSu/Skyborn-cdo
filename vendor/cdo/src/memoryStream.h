@@ -7,7 +7,7 @@
 class MemoryStream : public FileStream
 {
 public:
-  int ncid;
+  int ncid{};
   // Constructors
   MemoryStream(int p_ncid);
   MemoryStream(int p_ncid, int cdi_id);
@@ -56,7 +56,7 @@ protected:
   static bool TimerEnabled;
 
 private:
-  void *ptr;
+  void *ptr{};
   MemoryStream() = delete;
   std::string m_filename;
 };

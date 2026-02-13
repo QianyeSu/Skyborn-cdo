@@ -11,9 +11,6 @@
 
 // YAC PUBLIC HEADER START
 
-/** \example test_basic_grid.c
- */
-
 struct yac_interp_field {
   enum yac_location location;
   size_t coordinates_idx;
@@ -91,17 +88,51 @@ struct yac_basic_grid * yac_basic_grid_unstruct_ll_deg_new(
   int *num_vertices_per_cell, double *x_vertices, double *y_vertices,
   int *cell_to_vertex);
 
+struct yac_basic_grid * yac_basic_grid_unstruct_edge_new(
+  char const * name, size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
+struct yac_basic_grid * yac_basic_grid_unstruct_edge_deg_new(
+  char const * name, size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
+struct yac_basic_grid * yac_basic_grid_unstruct_edge_ll_new(
+  char const * name, size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
+struct yac_basic_grid * yac_basic_grid_unstruct_edge_ll_deg_new(
+  char const * name, size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
 struct yac_basic_grid * yac_basic_grid_cloud_new(
   char const * name, size_t nbr_points, double *x_points, double *y_points);
 
 struct yac_basic_grid * yac_basic_grid_cloud_deg_new(
   char const * name, size_t nbr_points, double *x_points, double *y_points);
+
+struct yac_basic_grid * yac_basic_grid_reg_2d_rot_new(
+  char const * name, size_t nbr_vertices[2], int cyclic[2],
+  double *lon_vertices, double *lat_vertices,
+  double north_pole_lon, double north_pole_lat);
+
+struct yac_basic_grid * yac_basic_grid_reg_2d_rot_deg_new(
+  char const * name, size_t nbr_vertices[2], int cyclic[2],
+  double *lon_vertices, double *lat_vertices,
+  double north_pole_lon, double north_pole_lat);
 /*
 void yac_basic_grid_to_file_parallel(
   struct yac_basic_grid * grid, char const * filename, MPI_Comm comm);
 */
 void yac_basic_grid_compute_cell_areas(
   struct yac_basic_grid * grid, double * cell_areas);
+
+void yac_rotate_coordinates(
+  yac_coordinate_pointer coordinates, size_t num_coordinates,
+  double north_pole[3]);
 
 // YAC PUBLIC HEADER STOP
 

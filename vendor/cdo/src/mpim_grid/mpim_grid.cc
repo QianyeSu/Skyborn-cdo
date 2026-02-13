@@ -209,7 +209,10 @@ gridToZonal(int gridID1)
     gridDefXvals(gridID2, &xval);
     gridDefYvals(gridID2, latitudes.data());
   }
-  else { cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType)); }
+  else
+  {
+    cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType));
+  }
 
   return gridID2;
 }
@@ -236,7 +239,10 @@ gridToMeridional(int gridID1)
     double yval = 0.0;
     gridDefYvals(gridID2, &yval);
   }
-  else { cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType)); }
+  else
+  {
+    cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType));
+  }
 
   return gridID2;
 }
@@ -951,8 +957,8 @@ gridToUnstructuredRegular(int gridID1, int gridID2, size_t gridsize, int withBou
   auto nx = gridInqXsize(gridID1);
   auto ny = gridInqYsize(gridID1);
 
-  double xscale = 1.0;
-  double yscale = 1.0;
+  constexpr double xscale = 1.0;
+  constexpr double yscale = 1.0;
 
   gridDefXsize(gridID2, gridsize);
   gridDefYsize(gridID2, gridsize);
@@ -1052,7 +1058,10 @@ gridToUnstructuredGaussianReduced(int gridID1, int gridID2, size_t gridsize, int
 
     gridDefYvals(gridID2, yvals2D.data());
   }
-  else { cdo_abort("%s: latitude coordinates missing!", gridNamePtr(gridInqType(gridID1))); }
+  else
+  {
+    cdo_abort("%s: latitude coordinates missing!", gridNamePtr(gridInqType(gridID1)));
+  }
 
   std::vector<double> xvals(gridsize);
 
@@ -1200,7 +1209,10 @@ gridToUnstructured(int gridID1, NeedCorners needCorners)
       isProjRLL = true;
     }
     else if (projType == CDI_PROJ_HEALPIX) { isProjHealpix = true; }
-    else { cdo_abort("Projection unsupported!"); }
+    else
+    {
+      cdo_abort("Projection unsupported!");
+    }
   }
 
   switch (gridType)
@@ -1424,7 +1436,10 @@ gridcell_weights(int gridID, Varray<double> &gridCellWeights)
       if (areaStatus != 0 && (gridType == GRID_LONLAT || gridType == GRID_GAUSSIAN))
         areaStatus = gridGenAreaReg2Dweights(gridID, gridCellArea);
     }
-    else { areaStatus = 1; }
+    else
+    {
+      areaStatus = 1;
+    }
   }
 
   if (areaStatus == 0) { weightStatus = compute_gridcell_weights(gridID, gridCellArea, gridCellWeights); }

@@ -144,7 +144,7 @@ grid_pointsearch_nearest(GridPointsearch &gps, PointLonLat const &pointLL, size_
   auto numIndices = gps.unstruct.search_nearest(pointLL, index, dist);
   if (numIndices > 0)
   {
-    auto &params = gps.params;
+    auto const &params = gps.params;
     auto indexResult = *index;
     if (!params.extrapolation && params.isCurve)
       indexResult = llindex_in_quad(params.dims[0], params.dims[1], *index, pointLL, gps.plons, gps.plats, params.isCyclic);
@@ -161,7 +161,7 @@ select_points_in_cell(GridPointsearch &gps, PointLonLat const &pointLL, size_t *
   numIndices = 0;
   for (size_t i = 0; i < maxIndices; ++i)
   {
-    auto &params = gps.params;
+    auto const &params = gps.params;
     auto index = llindex_in_quad(params.dims[0], params.dims[1], indices[i], pointLL, gps.plons, gps.plats, params.isCyclic);
     if (index != GPS_NOT_FOUND)
     {
@@ -177,7 +177,7 @@ grid_pointsearch_qnearest(GridPointsearch &gps, PointLonLat const &pointLL, size
 {
   auto numIndices = gps.unstruct.search_qnearest(pointLL, nnn, indices, dist);
 
-  auto &params = gps.params;
+  auto const &params = gps.params;
   if (!params.extrapolation && params.isCurve) select_points_in_cell(gps, pointLL, indices, dist, numIndices);
 
   return numIndices;

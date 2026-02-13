@@ -9,7 +9,7 @@
 #include "config.h"
 #endif
 
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef HAVE_LIBPTHREAD
 
@@ -24,11 +24,11 @@ static void
 pout2(const char *caller, const char *sval, int ival, const char *sval1, int oval1, const char *sval2, int oval2)
 {
   if (ival == oval1)
-    fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval1);
+    std::fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval1);
   else if (ival == oval2)
-    fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval2);
+    std::fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval2);
   else
-    fprintf(stderr, "%-18s :  %-14s = %d\n", caller, sval, ival);
+    std::fprintf(stderr, "%-18s :  %-14s = %d\n", caller, sval, ival);
 }
 
 static void
@@ -36,13 +36,13 @@ pout3(const char *caller, const char *sval, int ival, const char *sval1, int ova
       int oval3)
 {
   if (ival == oval1)
-    fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval1);
+    std::fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval1);
   else if (ival == oval2)
-    fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval2);
+    std::fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval2);
   else if (ival == oval3)
-    fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval3);
+    std::fprintf(stderr, "%-18s :  %-14s = %s\n", caller, sval, sval3);
   else
-    fprintf(stderr, "%-18s :  %-14s = %d\n", caller, sval, ival);
+    std::fprintf(stderr, "%-18s :  %-14s = %d\n", caller, sval, ival);
 }
 
 void
@@ -60,7 +60,7 @@ print_pthread_attr(const char *caller, pthread_attr_t *attr)
   POUT3(caller, policy, SCHED_FIFO, SCHED_RR, SCHED_OTHER);
   pthread_attr_getschedparam(attr, &param);
   priority = param.sched_priority;
-  fprintf(stderr, "%-18s :  %-14s = %d\n", caller, "priority", priority);
+  std::fprintf(stderr, "%-18s :  %-14s = %d\n", caller, "priority", priority);
 #endif
 
 #ifdef PTHREAD_INHERIT_SCHED
@@ -72,7 +72,7 @@ print_pthread_attr(const char *caller, pthread_attr_t *attr)
   POUT2(caller, scope, PTHREAD_SCOPE_SYSTEM, PTHREAD_SCOPE_PROCESS);
 
   pthread_attr_getstacksize(attr, &stacksize);
-  fprintf(stderr, "%-18s :  %-14s = %ld\n", caller, "stacksize", (long) stacksize);
+  std::fprintf(stderr, "%-18s :  %-14s = %ld\n", caller, "stacksize", (long) stacksize);
 }
 
 int

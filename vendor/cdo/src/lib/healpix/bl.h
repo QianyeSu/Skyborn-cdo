@@ -18,6 +18,8 @@
 
 #ifdef _MSC_VER
 #define strcasecmp _stricmp
+#else
+#include <strings.h>
 #endif
 
 #ifdef _MSC_VER

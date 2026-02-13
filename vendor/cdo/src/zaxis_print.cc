@@ -16,7 +16,8 @@
 constexpr int MaxLen = 120;
 
 static void
-printDblsPrefixAutoBrk(FILE *fp, int dig, std::string const &prefix, size_t n, std::vector<double> const &vals, size_t extbreak)
+printDblsPrefixAutoBrk(std::FILE *fp, int dig, std::string const &prefix, size_t n, std::vector<double> const &vals,
+                       size_t extbreak)
 {
   int nbyte0 = (int) prefix.size();
   fputs(prefix.c_str(), fp);
@@ -25,16 +26,16 @@ printDblsPrefixAutoBrk(FILE *fp, int dig, std::string const &prefix, size_t n, s
   {
     if (nbyte > MaxLen || (i && i == extbreak))
     {
-      fprintf(fp, "\n%*s", nbyte0, "");
+      std::fprintf(fp, "\n%*s", nbyte0, "");
       nbyte = nbyte0;
     }
-    nbyte += fprintf(fp, "%.*g ", dig, vals[i]);
+    nbyte += std::fprintf(fp, "%.*g ", dig, vals[i]);
   }
   fputs("\n", fp);
 }
 
 static void
-zaxis_print_kernel(int zaxisID, FILE *fp)
+zaxis_print_kernel(int zaxisID, std::FILE *fp)
 {
   auto type = zaxisInqType(zaxisID);
   auto nlevels = zaxisInqSize(zaxisID);
@@ -44,22 +45,22 @@ zaxis_print_kernel(int zaxisID, FILE *fp)
 
   auto dig = (datatype == CDI_DATATYPE_FLT64) ? Options::CDO_dbl_digits : Options::CDO_flt_digits;
 
-  fprintf(fp, "zaxistype = %s\n", zaxisNamePtr(type));
-  fprintf(fp, "size      = %d\n", nlevels);
+  std::fprintf(fp, "zaxistype = %s\n", zaxisNamePtr(type));
+  std::fprintf(fp, "size      = %d\n", nlevels);
   // clang-format off
-  if      (datatype == CDI_DATATYPE_FLT32) fprintf(fp, "datatype  = float\n");
-  else if (datatype == CDI_DATATYPE_INT32) fprintf(fp, "datatype  = int\n");
-  else if (datatype == CDI_DATATYPE_INT16) fprintf(fp, "datatype  = short\n");
+  if      (datatype == CDI_DATATYPE_FLT32) std::fprintf(fp, "datatype  = float\n");
+  else if (datatype == CDI_DATATYPE_INT32) std::fprintf(fp, "datatype  = int\n");
+  else if (datatype == CDI_DATATYPE_INT16) std::fprintf(fp, "datatype  = short\n");
   // clang-format on
 
-  if (nlevels == 1 && zaxisInqScalar(zaxisID)) fprintf(fp, "scalar    = true\n");
+  if (nlevels == 1 && zaxisInqScalar(zaxisID)) std::fprintf(fp, "scalar    = true\n");
 
   auto zname = cdo::inq_key_string(zaxisID, CDI_GLOBAL, CDI_KEY_NAME);
   auto zlongname = cdo::inq_key_string(zaxisID, CDI_GLOBAL, CDI_KEY_LONGNAME);
   auto zunits = cdo::inq_key_string(zaxisID, CDI_GLOBAL, CDI_KEY_UNITS);
-  if (zname.size()) fprintf(fp, "name      = %s\n", zname.c_str());
-  if (zlongname.size()) fprintf(fp, "longname  = \"%s\"\n", zlongname.c_str());
-  if (zunits.size()) fprintf(fp, "units     = \"%s\"\n", zunits.c_str());
+  if (zname.size()) std::fprintf(fp, "name      = %s\n", zname.c_str());
+  if (zlongname.size()) std::fprintf(fp, "longname  = \"%s\"\n", zlongname.c_str());
+  if (zunits.size()) std::fprintf(fp, "units     = \"%s\"\n", zunits.c_str());
 
   std::vector<double> vals;
   if (nvals) vals.resize(nvals);
@@ -74,10 +75,10 @@ zaxis_print_kernel(int zaxisID, FILE *fp)
     auto clen = zaxisInqCLen(zaxisID);
     char **cvals = nullptr;
     zaxisInqCVals(zaxisID, &cvals);
-    fprintf(fp, "levels    = \n");
+    std::fprintf(fp, "levels    = \n");
     for (int i = 0; i < nlevels; ++i)
     {
-      fprintf(fp, "     [%2d] = %.*s\n", i, clen, cvals[i]);
+      std::fprintf(fp, "     [%2d] = %.*s\n", i, clen, cvals[i]);
       std::free(cvals[i]);
     }
     if (cvals) std::free(cvals);
@@ -97,7 +98,7 @@ zaxis_print_kernel(int zaxisID, FILE *fp)
     auto vctsize = zaxisInqVctSize(zaxisID);
     if (vctsize)
     {
-      fprintf(fp, "vctsize   = %d\n", vctsize);
+      std::fprintf(fp, "vctsize   = %d\n", vctsize);
       std::vector<double> vct(vctsize);
       zaxisInqVct(zaxisID, vct.data());
       printDblsPrefixAutoBrk(fp, dig, "vct       = ", vctsize, vct, vctsize / 2);
@@ -112,7 +113,7 @@ zaxis_print_kernel(int zaxisID, FILE *fp)
     if (!cdiUUIDIsNull(uuid))
     {
       char uuidStr[uuidNumHexChars + 1] = { 0 };
-      if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) fprintf(fp, "uuid      = %s\n", uuidStr);
+      if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars) std::fprintf(fp, "uuid      = %s\n", uuidStr);
     }
   }
 

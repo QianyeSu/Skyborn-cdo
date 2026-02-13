@@ -296,6 +296,12 @@ typedef struct  {
 #define  CALENDAR_366DAYS         5
 #define  CALENDAR_NONE            6
 
+#define  CDI_HAS_CGRIBEX          1
+#define  CDI_NC_HAS_FILTER        2
+#define  CDI_NC_HAS_DAP           3
+#define  CDI_NC_HAS_S3            4
+#define  CDI_NC_HAS_HDF5          5
+
 // number of unsigned char needed to store UUID
 #define  CDI_UUID_SIZE           16
 
@@ -318,7 +324,9 @@ void    cdiDebug(int debug);
 const char *cdiLibraryVersion(void);
 void    cdiPrintVersion(void);
 
-int     cdiHaveFiletype(int filetype);
+int     cdiHaveFiletype(int fileType);
+int     cdiGetConfig(int confType);
+
 
 void    cdiDefMissval(double missval);
 double  cdiInqMissval(void);
@@ -1451,12 +1459,8 @@ extern int (*proj_lcc_to_lonlat_func)(struct CDI_GridProjParams gpp, double, dou
 extern int (*proj_lonlat_to_stere_func)(struct CDI_GridProjParams gpp, size_t, double*, double*);
 extern int (*proj_stere_to_lonlat_func)(struct CDI_GridProjParams gpp, double, double, size_t, double*, double*);
 
-// Used on CDO remap_scrip_io.cc
+// Used in CDO remap_scrip_io.cc
 void cdf_def_var_filter(int ncid, int ncvarID, const char *filterSpec);
-
-int cdi_has_ncfilter(void);
-int cdi_has_ncdap(void);
-int cdi_has_cgribex(void);
 
 #ifdef __cplusplus
 }

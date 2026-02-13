@@ -4,6 +4,7 @@
 #include "vector3d.h"
 #include "varray.h"
 #include <cstdio>
+#include <cstdlib>
 #include <cstdint>
 
 #include <utility>
@@ -112,8 +113,8 @@ gen_icosphere_coords(int subdivisions, bool withBounds, Varray<double> &xvals, V
   size_t numTriangles = std::pow(4, subdivisions) * 20;
   if (numTriangles > (size_t) std::numeric_limits<Index>::max())
   {
-    fprintf(stderr, "Too many grid cells:%zu (limit=%zu)!\n", numTriangles, (size_t) std::numeric_limits<Index>::max());
-    exit(EXIT_FAILURE);
+    std::fprintf(stderr, "Too many grid cells:%zu (limit=%zu)!\n", numTriangles, (size_t) std::numeric_limits<Index>::max());
+    std::exit(EXIT_FAILURE);
   }
 
   size_t numVerticies = std::pow(4, subdivisions) * 10 + 2;

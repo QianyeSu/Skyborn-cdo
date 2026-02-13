@@ -8,6 +8,8 @@
 #include <assert.h>
 #include "stdnametable.h"
 
+namespace
+{
 struct stdnametable_t
 {
   int varid;
@@ -16,6 +18,7 @@ struct stdnametable_t
   const char *stdname;  // Standard name
   const char *units;    // Units
 };
+}  // namespace
 
 static constexpr stdnametable_t stdnametable[] = {
   // clang-format off

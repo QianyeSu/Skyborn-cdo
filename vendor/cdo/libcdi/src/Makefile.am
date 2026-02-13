@@ -112,6 +112,7 @@ libcdi_la_SOURCES = \
   cdi_error.c \
   cdi_fdb.c \
   cdi_fdb.h \
+  cdi_get_config.c \
   cdi_int.c \
   cdi_int.h \
   cdi_key.c \

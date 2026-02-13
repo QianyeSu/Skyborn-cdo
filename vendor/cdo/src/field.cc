@@ -80,8 +80,8 @@ Field::empty() const
 void
 Field::check_gridsize() const
 {
-  if (size == 0) fprintf(stderr, "Internal problem, size of field not set!\n");
-  if (size > m_count) fprintf(stderr, "Internal problem, size of field is greater than allocated size of field!\n");
+  if (size == 0) std::fprintf(stderr, "Internal problem, size of field not set!\n");
+  if (size > m_count) std::fprintf(stderr, "Internal problem, size of field is greater than allocated size of field!\n");
 }
 
 void

@@ -4,7 +4,8 @@ INPUTDATA = ts_1d_5years ts_ym_5years ts_mm_5years ts_mm_1year ts_mm_1991 ts_6h_
             grib_testfile01.grb grib_testfile02.grb grib_testfile03.grb netcdf_testfile01.nc netcdf_testfile02.nc netcdf_testfile03.nc testfile01c.nc \
             datar.nc datac.nc datau.nc datag.nc arith1.srv expr1.srv arithmask.srv psl_DJF_anom.grb tsurf_spain.grb spain.grid \
             topo_eu5.grb vars_data.grb math_data tsurf_1d_1year tsurf_runpctl_1d_1year mpiom_tho_sao.srv topo5.srv \
-            ensdata_F32.srv ensdata_F64.srv splitdata.srv \
+            ensdata_F32.srv ensdata_F64.srv splitdata.srv distgriddata.nc \
+            seldata1.grb seldata2.grb seldata3.grb seldata4.grb \
             temp_gme32.grb temp_gme16.grb temp_hp32_nest.nc temp_hp16_nest.nc temp_global_2.nc temp_global_2.grb tsurf_5steps.nc tsurf_5steps_land.nc
 
 FILE         = file_F32_srv_ref
@@ -99,8 +100,8 @@ REMAP3       = topo_eu5_bic_def_ref   topo_eu5_bic_off_ref   topo_eu5_bic_on_ref
                topo_eu5_con_def_ref   topo_eu5_con_off_ref   topo_eu5_con_on_ref
 REMAP4       = remapbil_reg1_rotated_ref remapbic_reg1_rotated_ref remapnn_reg1_rotated_ref remapcon_reg1_rotated_ref \
                remapbil_reg2_rotated_ref remapbic_reg2_rotated_ref remapnn_reg2_rotated_ref remapcon_reg2_rotated_ref
-SELECT       = select1_ref select2_ref select3_ref select4_ref select5_ref
-DETREND      = detrend_ref regres_ref
+SELECT       = select1_ref select2_ref select3_ref select4_ref select5_ref select6_ref select7_ref select8_ref
+DETREND      = detrend_ref regres_ref timcumsum_ref
 EXPR         = expr1_ref aexpr1_ref expr2_ref aexpr2_ref expr3_ref aexpr3_ref temp_and_hum.srv heat_index.srv
 THREAD       = thread1_ref tsformat1_ref
 GRADSDES     = pl_data.ctl pl_data.gmp

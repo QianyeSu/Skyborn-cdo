@@ -16,7 +16,7 @@
 #include "cdo_default_values.h"
 #include "cdo_history.h"
 #include "cdo_query.h"
-#include "cdo_process.h"
+#include "process.h"
 
 #include "commandline.h"
 

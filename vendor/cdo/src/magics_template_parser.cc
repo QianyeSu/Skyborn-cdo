@@ -36,7 +36,7 @@ magics_template_parser(void *node)
   if (a_node == nullptr) return 0;
 
 #if 0
-    fprintf( stdout,"Parsing the magics Node \n");
+    std::fprintf( stdout,"Parsing the magics Node \n");
 #endif
 
   if (cdo_cmpstr((const char *) a_node->name, "magics"))
@@ -63,7 +63,7 @@ magics_template_parser(void *node)
       if (DBG) printf("Node Name: %s \n", cur_node->name);
 
 #if 0
-            fprintf( stdout,"Node Name: %s \n", cur_node->name );
+            std::fprintf( stdout,"Node Name: %s \n", cur_node->name );
 #endif
 
       if (cur_node->properties == nullptr)
@@ -134,10 +134,10 @@ _set_magics_parameter_value(const char *, const char *, const char *)
 #endif
         if (!unsetenv("MAGPLUS_QUIET"))
         {
-          if (DBG) fprintf(stderr, "Quiet Option %s is un-set successfully!!! \n", param_value);
+          if (DBG) std::fprintf(stderr, "Quiet Option %s is un-set successfully!!! \n", param_value);
         }
         else
-          fprintf(stderr, "Quiet Option %s COULDN'T be UNSET!!!\n", param_value);
+          std::fprintf(stderr, "Quiet Option %s COULDN'T be UNSET!!!\n", param_value);
       }
 
       if (cdo_cmpstr(param_value, "on") || cdo_cmpstr(param_value, "ON"))
@@ -147,10 +147,10 @@ _set_magics_parameter_value(const char *, const char *, const char *)
 #endif
         if (!setenv("MAGPLUS_QUIET", "1", 1))
         {
-          if (DBG) fprintf(stderr, "Quiet Option %s is set successfully!!! \n", param_value);
+          if (DBG) std::fprintf(stderr, "Quiet Option %s is set successfully!!! \n", param_value);
         }
         else
-          fprintf(stderr, "Quiet Option %s COULDN'T be SET!!!\n", param_value);
+          std::fprintf(stderr, "Quiet Option %s COULDN'T be SET!!!\n", param_value);
       }
     }
   }
@@ -163,7 +163,7 @@ _set_magics_parameter_value(const char *, const char *, const char *)
   {
 
 #if 0
-      fprintf(stderr, "param_name : %s\tparam_value: %s\n", param_name, param_value);
+      std::fprintf(stderr, "param_name : %s\tparam_value: %s\n", param_name, param_value);
 #endif
     if (std::strchr(param_value, ';')) sep_char = ';';
     const auto splitStrings = split_string(param_value, sep_char);
@@ -173,7 +173,7 @@ _set_magics_parameter_value(const char *, const char *, const char *)
       for (int i = 0, n = splitStrings.size(); i < n; ++i)
       {
 #if 0
-	      fprintf(stderr, "%d %d %s\n", i, (int)splitStrings.size(), splitStrings[i].c_str());
+	      std::fprintf(stderr, "%d %d %s\n", i, (int)splitStrings.size(), splitStrings[i].c_str());
 #endif
         float_param_list[i] = std::stod(splitStrings[i]);
       }
@@ -203,14 +203,14 @@ _set_magics_parameter_value(const char *, const char *, const char *)
   // MAGICS++ STRINGARRAY  TYPE    PARAMETERS
   else if (cdo_cmpstr(param_type, "stringarray"))
   {
-    if (DBG) fprintf(stderr, "Input strarr is %s  Sep char is %s Search char is %c\n", param_value, sep_char.c_str(), search_char);
+    if (DBG) std::fprintf(stderr, "Input strarr is %s  Sep char is %s Search char is %c\n", param_value, sep_char.c_str(), search_char);
     if (std::strstr(param_value, ";")) sep_char = ';';
 
-    if (DBG) fprintf(stderr, "Input strarr is %s  Sep char is %s\n", param_value, sep_char.c_str());
+    if (DBG) std::fprintf(stderr, "Input strarr is %s  Sep char is %s\n", param_value, sep_char.c_str());
     const auto splitStrings = split_string(param_value, sep_char);
 
     if (DBG)
-      fprintf(stderr, "Input strarr is %s split str count is %d Sep char is %s\n", param_value, (int) splitStrings.size(),
+      std::fprintf(stderr, "Input strarr is %s split str count is %d Sep char is %s\n", param_value, (int) splitStrings.size(),
               sep_char.c_str());
 
     const char **split_str = (const char **) std::malloc(splitStrings.size() * sizeof(char *));
@@ -221,7 +221,7 @@ _set_magics_parameter_value(const char *, const char *, const char *)
   else
   {
     ret_flag = 3;
-    fprintf(stderr, "Unknown Parameter Type\n");
+    std::fprintf(stderr, "Unknown Parameter Type\n");
   }
 #endif
 

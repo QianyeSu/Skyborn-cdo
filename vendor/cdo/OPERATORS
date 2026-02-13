@@ -13,8 +13,8 @@ Operator catalog:
    Info          map             Dataset information and simple map
    Sinfo         sinfo           Short information listed by parameter identifier
    Sinfo         sinfon          Short information listed by parameter name
-   XSinfo        xsinfo          Extra short information listed by parameter name
-   XSinfo        xsinfop         Extra short information listed by parameter identifier
+   Xsinfo        xsinfo          Extra short information listed by parameter name
+   Xsinfo        xsinfop         Extra short information listed by parameter identifier
    Diff          diff            Compare two datasets listed by parameter id
    Diff          diffn           Compare two datasets listed by parameter name
    Ninfo         npar            Number of parameters
@@ -130,7 +130,7 @@ Operator catalog:
    Cond2         ifthenelse      If then else
    Condc         ifthenc         If then constant
    Condc         ifnotthenc      If not then constant
-   MapReduce     reducegrid      Reduce input file variables to locations, where mask is non-zero.
+   Mapreduce     reducegrid      Reduce input file variables to locations, where mask is non-zero.
 -------------------------------------------------------------
    Comparison
 -------------------------------------------------------------
@@ -222,10 +222,10 @@ Operator catalog:
 -------------------------------------------------------------
    Arithmetic
 -------------------------------------------------------------
-   Exprf         expr            Evaluate expressions
-   Exprf         exprf           Evaluate expressions script
-   Exprf         aexpr           Evaluate expressions and append results
-   Exprf         aexprf          Evaluate expression script and append results
+   Expr          expr            Evaluate expressions
+   Expr          exprf           Evaluate expressions script
+   Expr          aexpr           Evaluate expressions and append results
+   Expr          aexprf          Evaluate expression script and append results
    Math          abs             Absolute value
    Math          int             Integer value
    Math          nint            Nearest integer value
@@ -588,12 +588,12 @@ Operator catalog:
    Trendarith    addtrend        Add trend
    Trendarith    subtrend        Subtract trend
 -------------------------------------------------------------
-   EOFs
+   Eof
 -------------------------------------------------------------
-   EOFs          eof             Calculate EOFs in spatial or time space
-   EOFs          eoftime         Calculate EOFs in time space
-   EOFs          eofspatial      Calculate EOFs in spatial space
-   EOFs          eof3d           Calculate 3-Dimensional EOFs in time space
+   Eof           eof             Calculate EOFs in spatial or time space
+   Eof           eoftime         Calculate EOFs in time space
+   Eof           eofspatial      Calculate EOFs in spatial space
+   Eof           eof3d           Calculate 3-Dimensional EOFs in time space
    Eofcoeff      eofcoeff        Calculate principal coefficients of EOFs
 -------------------------------------------------------------
    Interpolation
@@ -637,7 +637,6 @@ Operator catalog:
 -------------------------------------------------------------
    Importbinary  import_binary   Import binary data sets
    Importcmsaf   import_cmsaf    Import CM-SAF HDF5 files
-   Importamsr    import_amsr     Import AMSR binary files
    Input         input           ASCII input
    Input         inputsrv        SERVICE ASCII input
    Input         inputext        EXTRA ASCII input
@@ -671,9 +670,9 @@ Operator catalog:
    Vargen        seq             Create a time series
    Vargen        stdatm          Create values for pressure and temperature for hydrostatic atmosphere
    Timsort       timsort         Sort over the time
-   WindTrans     uvDestag        Destaggering of u/v wind components
-   WindTrans     rotuvNorth      Rotate u/v wind to North pole.
-   WindTrans     projuvLatLon    Cylindrical Equidistant projection
+   Windtrans     uvDestag        Destaggering of u/v wind components
+   Windtrans     rotuvNorth      Rotate u/v wind to North pole.
+   Windtrans     projuvLatLon    Cylindrical Equidistant projection
    Rotuv         rotuvb          Backward rotation
    Mrotuvb       mrotuvb         Backward rotation of MPIOM data
    Mastrfu       mastrfu         Mass stream function
@@ -698,7 +697,7 @@ Operator catalog:
    Strbre        strbre          Strong breeze days index per time period
    Strgal        strgal          Strong gale days index per time period
    Hurr          hurr            Hurricane days index per time period
-   CMORlite      cmorlite        CMOR lite
+   Cmorlite      cmorlite        CMOR lite
    Verifygrid    verifygrid      Verify grid coordinates
    Healpix       hpdegrade       Degrade healpix
    Healpix       hpupgrade       Upgrade healpix
@@ -708,7 +707,7 @@ Operator catalog:
    NCL_wind      uv2vr_cfd       U and V wind to relative vorticity
    NCL_wind      uv2dv_cfd       U and V wind to divergence
 -------------------------------------------------------------
-   CMOR
+   Cmor
 -------------------------------------------------------------
    CMOR          cmor            Climate Model Output Rewriting
 -------------------------------------------------------------
@@ -722,56 +721,56 @@ Operator catalog:
 -------------------------------------------------------------
    Climate indices
 -------------------------------------------------------------
-   EcaCdd        eca_cdd         Consecutive dry days index per time period
-   EcaCdd        etccdi_cdd      Consecutive dry days index per time period
-   EcaCfd        eca_cfd         Consecutive frost days index per time period
-   EcaCsu        eca_csu         Consecutive summer days index per time period
-   EcaCwd        eca_cwd         Consecutive wet days index per time period
-   EcaCwd        etccdi_cwd      Consecutive wet days index per time period
-   EcaCwdi       eca_cwdi        Cold wave duration index wrt mean of reference period
-   EcaCwfi       eca_cwfi        Cold-spell days index wrt 10th percentile of reference period
-   EcaCwfi       etccdi_csdi     Cold-spell duration index
-   EcaEtr        eca_etr         Intra-period extreme temperature range
-   EcaFd         eca_fd          Frost days index per time period
-   EcaFd         etccdi_fd       Frost days index per time period
-   EcaGsl        eca_gsl         Growing season length index
-   EcaHd         eca_hd          Heating degree days per time period
-   EcaHwdi       eca_hwdi        Heat wave duration index wrt mean of reference period
-   EcaHwfi       eca_hwfi        Warm spell days index wrt 90th percentile of reference period
-   EcaHwfi       etccdi_wsdi     Warm Spell Duration Index
-   EcaId         eca_id          Ice days index per time period
-   EcaId         etccdi_id       Ice days index per time period
-   EcaR75p       eca_r75p        Moderate wet days wrt 75th percentile of reference period
-   EcaR75ptot    eca_r75ptot     Precipitation percent due to R75p days
-   EcaR90p       eca_r90p        Wet days wrt 90th percentile of reference period
-   EcaR90ptot    eca_r90ptot     Precipitation percent due to R90p days
-   EcaR95p       eca_r95p        Very wet days wrt 95th percentile of reference period
-   EcaR95ptot    eca_r95ptot     Precipitation percent due to R95p days
-   EcaR99p       eca_r99p        Extremely wet days wrt 99th percentile of reference period
-   EcaR99ptot    eca_r99ptot     Precipitation percent due to R99p days
-   EcaPd         eca_pd          Precipitation days index per time period
-   EcaPd         eca_r10mm       Heavy precipitation days index per time period
-   EcaPd         eca_r20mm       Very heavy precipitation days index per time period
-   EcaPd         etccdi_r1mm     Precipitation days index per time period
-   EcaRr1        eca_rr1         Wet days index per time period
-   EcaRx1day     eca_rx1day      Highest one day precipitation amount per time period
-   EcaRx1day     etccdi_rx1day   Maximum 1-day Precipitation
-   EcaRx5day     eca_rx5day      Highest five-day precipitation amount per time period
-   EcaRx5day     etccdi_rx5day   Highest five-day precipitation amount per time period
-   EcaSdii       eca_sdii        Simple daily intensity index per time period
-   EcaSu         eca_su          Summer days index per time period
-   EcaSu         etccdi_su       Summer days index per time period
-   EcaTg10p      eca_tg10p       Cold days percent wrt 10th percentile of reference period
-   EcaTg90p      eca_tg90p       Warm days percent wrt 90th percentile of reference period
-   EcaTn10p      eca_tn10p       Cold nights percent wrt 10th percentile of reference period
-   EcaTn90p      eca_tn90p       Warm nights percent wrt 90th percentile of reference period
-   EcaTr         eca_tr          Tropical nights index per time period
-   EcaTr         etccdi_tr       Tropical nights index per time period
-   EcaTx10p      eca_tx10p       Very cold days percent wrt 10th percentile of reference period
-   EcaTx90p      eca_tx90p       Very warm days percent wrt 90th percentile of reference period
-   EcaEtccdi     etccdi_tx90p    Percentage of Days when Daily Maximum Temperature is Above the 90th Percentile
-   EcaEtccdi     etccdi_tx10p    Percentage of Days when Daily Maximum Temperature is Below the 10th Percentile
-   EcaEtccdi     etccdi_tn90p    Percentage of Days when Daily Minimum Temperature is Above the 90th Percentile
-   EcaEtccdi     etccdi_tn10p    Percentage of Days when Daily Minimum Temperature is Below the 10th Percentile
-   EcaEtccdi     etccdi_r95p     Annual Total Precipitation when Daily Precipitation Exceeds the 95th Percentile of Wet Day Precipitation
-   EcaEtccdi     etccdi_r99p     Annual Total Precipitation when Daily Precipitation Exceeds the 99th Percentile of Wet Day Precipitation
+   Eca_cdd       eca_cdd         Consecutive dry days index per time period
+   Eca_cdd       etccdi_cdd      Consecutive dry days index per time period
+   Eca_cfd       eca_cfd         Consecutive frost days index per time period
+   Eca_csu       eca_csu         Consecutive summer days index per time period
+   Eca_cwd       eca_cwd         Consecutive wet days index per time period
+   Eca_cwd       etccdi_cwd      Consecutive wet days index per time period
+   Eca_cwdi      eca_cwdi        Cold wave duration index wrt mean of reference period
+   Eca_cwfi      eca_cwfi        Cold-spell days index wrt 10th percentile of reference period
+   Eca_cwfi      etccdi_csdi     Cold-spell duration index
+   Eca_etr       eca_etr         Intra-period extreme temperature range
+   Eca_fd        eca_fd          Frost days index per time period
+   Eca_fd        etccdi_fd       Frost days index per time period
+   Eca_gsl       eca_gsl         Growing season length index
+   Eca_hd        eca_hd          Heating degree days per time period
+   Eca_hwdi      eca_hwdi        Heat wave duration index wrt mean of reference period
+   Eca_hwfi      eca_hwfi        Warm spell days index wrt 90th percentile of reference period
+   Eca_hwfi      etccdi_wsdi     Warm Spell Duration Index
+   Eca_id        eca_id          Ice days index per time period
+   Eca_id        etccdi_id       Ice days index per time period
+   Eca_r75p      eca_r75p        Moderate wet days wrt 75th percentile of reference period
+   Eca_r75ptot   eca_r75ptot     Precipitation percent due to R75p days
+   Eca_r90p      eca_r90p        Wet days wrt 90th percentile of reference period
+   Eca_r90ptot   eca_r90ptot     Precipitation percent due to R90p days
+   Eca_r95p      eca_r95p        Very wet days wrt 95th percentile of reference period
+   Eca_r95ptot   eca_r95ptot     Precipitation percent due to R95p days
+   Eca_r99p      eca_r99p        Extremely wet days wrt 99th percentile of reference period
+   Eca_r99ptot   eca_r99ptot     Precipitation percent due to R99p days
+   Eca_pd        eca_pd          Precipitation days index per time period
+   Eca_pd        eca_r10mm       Heavy precipitation days index per time period
+   Eca_pd        eca_r20mm       Very heavy precipitation days index per time period
+   Eca_pd        etccdi_r1mm     Precipitation days index per time period
+   Eca_rr1       eca_rr1         Wet days index per time period
+   Eca_rx1day    eca_rx1day      Highest one day precipitation amount per time period
+   Eca_rx1day    etccdi_rx1day   Maximum 1-day Precipitation
+   Eca_rx5day    eca_rx5day      Highest five-day precipitation amount per time period
+   Eca_rx5day    etccdi_rx5day   Highest five-day precipitation amount per time period
+   Eca_sdii      eca_sdii        Simple daily intensity index per time period
+   Eca_su        eca_su          Summer days index per time period
+   Eca_su        etccdi_su       Summer days index per time period
+   Eca_tg10p     eca_tg10p       Cold days percent wrt 10th percentile of reference period
+   Eca_tg90p     eca_tg90p       Warm days percent wrt 90th percentile of reference period
+   Eca_tn10p     eca_tn10p       Cold nights percent wrt 10th percentile of reference period
+   Eca_tn90p     eca_tn90p       Warm nights percent wrt 90th percentile of reference period
+   Eca_tr        eca_tr          Tropical nights index per time period
+   Eca_tr        etccdi_tr       Tropical nights index per time period
+   Eca_tx10p     eca_tx10p       Very cold days percent wrt 10th percentile of reference period
+   Eca_tx90p     eca_tx90p       Very warm days percent wrt 90th percentile of reference period
+   Eca_etccdi    etccdi_tx90p    Percentage of Days when Daily Maximum Temperature is Above the 90th Percentile
+   Eca_etccdi    etccdi_tx10p    Percentage of Days when Daily Maximum Temperature is Below the 10th Percentile
+   Eca_etccdi    etccdi_tn90p    Percentage of Days when Daily Minimum Temperature is Above the 90th Percentile
+   Eca_etccdi    etccdi_tn10p    Percentage of Days when Daily Minimum Temperature is Below the 10th Percentile
+   Eca_etccdi    etccdi_r95p     Annual Total Precipitation when Daily Precipitation Exceeds the 95th Percentile of Wet Day Precipitation
+   Eca_etccdi    etccdi_r99p     Annual Total Precipitation when Daily Precipitation Exceeds the 99th Percentile of Wet Day Precipitation

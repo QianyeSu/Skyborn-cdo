@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdlib>
 
 #include "cdi.h"
 
@@ -108,7 +109,10 @@ AddVector(double *dest, const double *src, size_t len, size_t *numMissVals, doub
     *numMissVals = array_num_mv(len, dest, missval);
     if (*numMissVals == 0) *numMissVals = 1;
   }
-  else { array_add_array(len, dest, src); }
+  else
+  {
+    array_add_array(len, dest, src);
+  }
 }
 
 static void
@@ -162,8 +166,8 @@ after_gp2sp(const AfterControl &globs, struct Variable *vars, int ccode)
   {
     if (var->hybrid == nullptr)
     {
-      fprintf(stderr, "%d.hybrid not found\n", ccode);
-      exit(99);
+      std::fprintf(stderr, "%d.hybrid not found\n", ccode);
+      std::exit(99);
     }
 
     if (var->fourier == nullptr)
@@ -189,7 +193,7 @@ after_GP2FC(double *gp, double *fc, long nlat, long nlon, long nlev, long nfc)
     if (trig) std::free(trig);
     trig = (double *) std::malloc(nlon * sizeof(double));
     int status = fft_set(trig, ifax, nlon);
-    if (status < 0) exit(1);
+    if (status < 0) std::exit(1);
   }
 
   gp2fc(trig, ifax, gp, fc, nlat, nlon, nlev, nfc);
@@ -206,7 +210,7 @@ after_FC2GP(double *fc, double *gp, long nlat, long nlon, long nlev, long nfc)
     if (trig) std::free(trig);
     trig = (double *) std::malloc(nlon * sizeof(double));
     int status = fft_set(trig, ifax, nlon);
-    if (status < 0) exit(1);
+    if (status < 0) std::exit(1);
   }
 
   fc2gp(trig, ifax, fc, gp, nlat, nlon, nlev, nfc);
@@ -410,7 +414,7 @@ after_processPL(AfterControl &globs, struct Variable *vars)
 
   if (globs.MeanCount == 1)
   {
-    if (globs.Debug) fprintf(stderr, "CheckAnalyses: %d %d\n", globs.TermCount, globs.MeanCount);
+    if (globs.Debug) std::fprintf(stderr, "CheckAnalyses: %d %d\n", globs.TermCount, globs.MeanCount);
     CheckAnalyses(vars);
     globs.StartDate = globs.OldDate;
   }
@@ -1634,7 +1638,10 @@ after_processML(AfterControl &globs, struct Variable *vars)
         cdo_warning("log surface pressure (code 152) not found - using surface pressure (code 134)!");
         array_copy(globs.DimGP, vars[PS].hybrid, vars[PS_PROG].hybrid);
       }
-      else { afterAbort("surface pressure not found!"); }
+      else
+      {
+        afterAbort("surface pressure not found!");
+      }
     }
     vars[LNPS].needed = vars[LNPS].selected;
 
@@ -1753,7 +1760,10 @@ after_processML(AfterControl &globs, struct Variable *vars)
       height_to_pressure(globs.LevelRequest, globs.p_of_height.data(), globs.NumLevelRequest);
       pressureLevel = globs.p_of_height.data();
     }
-    else { pressureLevel = globs.LevelRequest; }
+    else
+    {
+      pressureLevel = globs.LevelRequest;
+    }
 
     gen_vert_index(globs.vertIndex.data(), pressureLevel, vars[FULL_PRESS].hybrid, globs.DimGP, globs.NumLevelRequest,
                    globs.NumLevel);
@@ -2372,7 +2382,7 @@ MakeDependencies(struct Variable *vars, int varcode, int depcode)
     vars[depcode].needed = true;
     vars[varcode].comp = true;
 
-    if (afterDebug) fprintf(stderr, "Needed code %d to compute code %d\n", depcode, varcode);
+    if (afterDebug) std::fprintf(stderr, "Needed code %d to compute code %d\n", depcode, varcode);
 
     if (vars[depcode].ivarID == -1)
     {

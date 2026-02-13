@@ -15,7 +15,7 @@
 
 #include "cdo_module.h"
 #include "cdo_output.h"
-#include "cdo_process.h"
+#include "process.h"
 
 namespace Factory
 {
@@ -40,7 +40,7 @@ std::string err_msg_oper_not_found(std::string const &operatorname);
 
 std::string find_similar_operators(std::string const &operatorName);
 
-std::vector<std::string> get_module_operator_names(std::string const &module_name);
+const CdoHelp get_module_help(std::string const &module_name);
 
 std::string get_original(std::string const &operatorName);
 
@@ -83,10 +83,10 @@ struct RegisterEntry
   }
 
 public:
-  explicit RegisterEntry(const CdoModule &module, ArgumentHandler arghandler = ArgumentHandler())
+  explicit RegisterEntry(ArgumentHandler arghandler = ArgumentHandler())
   {
-    for (auto &oper : module.operators) { register_operator(module, oper.name, arghandler); }
-    for (auto &alias : module.aliases) { register_operator(module, alias.alias, arghandler); }
+    for (auto &oper : T::module.operators) { register_operator(T::module, oper.name,arghandler); }
+    for (auto &alias : T::module.aliases) { register_operator(T::module, alias.alias,arghandler); }
   };
 };
 #endif

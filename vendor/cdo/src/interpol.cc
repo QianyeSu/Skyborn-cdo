@@ -247,7 +247,7 @@ intlinarr2(double mv, int lonIsCircular, size_t nxm, size_t nym, Varray<T1> cons
 }
 
 void
-intlinarr(long nxm, double *ym, double *xm, int nx, double *y, double *x)
+intlinarr(long nxm, double const *ym, double const *xm, int nx, double *y, double const *x)
 {
   /*
     intlinarr - lineare interpolation over 1D array

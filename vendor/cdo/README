@@ -2,7 +2,7 @@
 CDO - Climate Data Operators
 ----------------------------
 
-     This package contains the source code for CDO. This program was developed at the 
+     This package contains the source code for CDO. This program was developed at the
      Max-Planck-Institute for Meteorology.
      CDO is a collection of Operators to manipulate and analyse Climate model Data.
      Supported data formats are GRIB, netCDF, SERVICE, EXTRA and IEG.
@@ -17,11 +17,11 @@ CDO - Climate Data Operators
      express or implied, and the absence of any legal or actual defects, whether discoverable or not.
      The use of the Software and the Results is at your own risk.
 
-     Specifically, and not to limit the foregoing, MPI-M makes no representations or warranties 
+     Specifically, and not to limit the foregoing, MPI-M makes no representations or warranties
        (i) regarding the fitness for a particular purpose of the Software and the Results,
-      (ii) that the use of the Software and the Results will not infringe any patents or other 
-           intellectual property rights of any third party, and 
-     (iii) that the use of the Software and the Results will not cause any damages of any kind 
+      (ii) that the use of the Software and the Results will not infringe any patents or other
+           intellectual property rights of any third party, and
+     (iii) that the use of the Software and the Results will not cause any damages of any kind
            to you or to any third party.
 
 Operators:
@@ -45,10 +45,10 @@ Building and installing it:
           --with-netcdf=<directory> to enable netCDF support.
 
         The netCDF-4 configuration depends on the netCDF-4 and HDF5 installation!
-	You have to define the location of the HDF5 installation if netCDF-4 was 
+	You have to define the location of the HDF5 installation if netCDF-4 was
         build with HDF5 support:
- 
-          --with-netcdf=<netCDF-4 root directory> --with-hdf5=<HDF5 root directory> 
+
+          --with-netcdf=<netCDF-4 root directory> --with-hdf5=<HDF5 root directory>
 
         You have to specify also the location of the SZLIB if HDF5 was build
         with SZLIB support. If only the linking is required, you can directly
@@ -67,8 +67,8 @@ Building and installing it:
 Porting:
 
      This package was designed for maximum portability. It is written entirely
-     in ISO C++17 and C11, and will compile on most UNIX platforms.
-     
+     in ISO C++20 and C11, and will compile on most UNIX platforms.
+
 Contact:
 
      Send questions, comments and bug reports to <https://mpimet.mpg.de/cdo>

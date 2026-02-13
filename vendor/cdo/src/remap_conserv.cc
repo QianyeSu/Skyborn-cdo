@@ -324,12 +324,12 @@ scale_cellfrac(size_t numCells, Varray<double> &cellFrac, Varray<double> const &
 }
 
 static void
-vec_index_weights(Varray<double> &vec, size_t numWeights, Varray<double> const &weights, Varray<size_t> const &indices)
+vec_index_weights(Varray<double> &vec, size_t numWeights, Varray<size_t> const &indices, Varray<double> const &weights)
 {
   for (size_t i = 0; i < numWeights; ++i)
   {
-    auto weight = weights[i];
     auto index = indices[i];
+    auto weight = weights[i];
 #ifndef __PGI
 #ifdef _OPENMP
 #pragma omp atomic
@@ -340,15 +340,15 @@ vec_index_weights(Varray<double> &vec, size_t numWeights, Varray<double> const &
 }
 
 static size_t
-remove_invalid_areas(size_t numSearchCells, Varray<double> &areas, Varray<size_t> &indices)
+remove_invalid_areas(size_t numSearchCells, Varray<size_t> &indices, Varray<double> &areas)
 {
   size_t n = 0;
   for (size_t i = 0; i < numSearchCells; ++i)
   {
     if (areas[i] > 0.0)
     {
-      areas[n] = areas[i];
       indices[n] = indices[i];
+      areas[n] = areas[i];
       n++;
     }
   }
@@ -357,7 +357,7 @@ remove_invalid_areas(size_t numSearchCells, Varray<double> &areas, Varray<size_t
 }
 
 static size_t
-remove_invalid_weights(size_t gridSize, size_t numWeights, Varray<double> &weights, Varray<size_t> &indices)
+remove_invalid_weights(size_t gridSize, size_t numWeights, Varray<size_t> &indices, Varray<double> &weights)
 {
   size_t n = 0;
   for (size_t i = 0; i < numWeights; ++i)
@@ -365,8 +365,8 @@ remove_invalid_weights(size_t gridSize, size_t numWeights, Varray<double> &weigh
     auto index = (weights[i] > 0.0) ? indices[i] : gridSize;
     if (index != gridSize)
     {
-      weights[n] = weights[i];
       indices[n] = index;
+      weights[n] = weights[i];
       n++;
     }
   }
@@ -375,7 +375,7 @@ remove_invalid_weights(size_t gridSize, size_t numWeights, Varray<double> &weigh
 }
 
 static size_t
-remove_unmask_weights(Vmask const &gridMask, size_t numWeights, Varray<double> &weights, Varray<size_t> &indices)
+remove_unmask_weights(Vmask const &gridMask, size_t numWeights, Varray<size_t> &indices, Varray<double> &weights)
 {
   size_t n = 0;
   for (size_t i = 0; i < numWeights; ++i)
@@ -388,8 +388,8 @@ remove_unmask_weights(Vmask const &gridMask, size_t numWeights, Varray<double> &
     */
     if (gridMask[index])
     {
-      weights[n] = weights[i];
       indices[n] = index;
+      weights[n] = weights[i];
       n++;
     }
   }
@@ -532,20 +532,20 @@ remap_conserv_weights(RemapSearch &remapSearch, RemapVars &rv)
 
     auto &partialWeights = cellSearch.partialAreas;
 
-    auto numWeights = remove_invalid_areas(numSearchCells, partialWeights, indices);
+    auto numWeights = remove_invalid_areas(numSearchCells, indices, partialWeights);
 
     auto tgtCellArea = gridcell_area(tgtGridCell.yacGridCell);
     tgtGrid->cellArea[tgtCellIndex] = tgtCellArea;
 
     if (rv.normOpt == NormOpt::FRACAREA) correct_weights(tgtCellArea, numWeights, partialWeights);
 
-    numWeights = remove_invalid_weights(srcGridSize, numWeights, partialWeights, indices);
+    numWeights = remove_invalid_weights(srcGridSize, numWeights, indices, partialWeights);
 
-    vec_index_weights(srcGrid->cellArea, numWeights, partialWeights, indices);
+    vec_index_weights(srcGrid->cellArea, numWeights, indices, partialWeights);
 
-    numWeights = remove_unmask_weights(srcGrid->mask, numWeights, partialWeights, indices);
+    numWeights = remove_unmask_weights(srcGrid->mask, numWeights, indices, partialWeights);
 
-    vec_index_weights(srcGrid->cellFrac, numWeights, partialWeights, indices);
+    vec_index_weights(srcGrid->cellFrac, numWeights, indices, partialWeights);
 
     tgtGrid->cellFrac[tgtCellIndex] = varray_sum(numWeights, partialWeights);
 
@@ -727,15 +727,15 @@ remap_conserv(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissva
 
     auto &partialWeights = cellSearch.partialAreas;
 
-    auto numWeights = remove_invalid_areas(numSearchCells, partialWeights, indices);
+    auto numWeights = remove_invalid_areas(numSearchCells, indices, partialWeights);
 
     auto tgtCellArea = gridcell_area(tgtGridCell.yacGridCell);
     tgtGrid->cellArea[tgtCellIndex] = tgtCellArea;
 
     if (normOpt == NormOpt::FRACAREA) correct_weights(tgtCellArea, numWeights, partialWeights);
 
-    numWeights = remove_invalid_weights(srcGridSize, numWeights, partialWeights, indices);
-    if (srcGridMask.size() > 0) numWeights = remove_unmask_weights(srcGridMask, numWeights, partialWeights, indices);
+    numWeights = remove_invalid_weights(srcGridSize, numWeights, indices, partialWeights);
+    if (srcGridMask.size() > 0) numWeights = remove_unmask_weights(srcGridMask, numWeights, indices, partialWeights);
 
     tgtGrid->cellFrac[tgtCellIndex] = varray_sum(numWeights, partialWeights);
 
@@ -933,12 +933,12 @@ remap_weights_zonal_mean(int gridID1, int gridID2, Varray2D<size_t> &remapIndice
     // Get the partial areas for the overlapping regions
     for (size_t i = 0; i < numSearchCells; ++i) { partialWeights[i] = gridcell_area(overlapCells[i]); }
 
-    auto numWeights = remove_invalid_areas(numSearchCells, partialWeights, remapIndices[i2]);
+    auto numWeights = remove_invalid_areas(numSearchCells, remapIndices[i2], partialWeights);
     // printf("numWeights: %zu %zu\n", numSearchCells, numWeights);
 
     if (normOpt == NormOpt::FRACAREA) correct_weights(tgtCellArea, numWeights, partialWeights);
 
-    numWeights = remove_invalid_weights(gridsize1, numWeights, partialWeights, remapIndices[i2]);
+    numWeights = remove_invalid_weights(gridsize1, numWeights, remapIndices[i2], partialWeights);
 
     remapWeights[i2].resize(numWeights);
     for (size_t i = 0; i < numWeights; ++i) remapWeights[i2][i] = partialWeights[i];

@@ -2,10 +2,6 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-/** \example test_interval_tree.c
- * This contains a test of the interval_tree.
- */
-
 #ifndef INTERVAL_TREE_H
 #define INTERVAL_TREE_H
 

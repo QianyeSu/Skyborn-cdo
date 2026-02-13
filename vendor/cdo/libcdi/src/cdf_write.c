@@ -765,7 +765,7 @@ cdfDefineDimsAndChunks(const stream_t *streamptr, int varID, int xid, int yid, i
   bool isReg2dGrid = (yid != CDI_UNDEFID && xid != CDI_UNDEFID);
   if (chunkType == CDI_CHUNK_GRID && gridsize > ChunkSizeLim && isReg2dGrid)
   {
-    if (CDI_Debug) fprintf(stderr, "gridsize > %u, changed chunkType to CDI_CHUNK_AUTO!\n", ChunkSizeLim);
+    if (CDI_Debug) fprintf(stderr, "gridsize > %d, changed chunkType to CDI_CHUNK_AUTO!\n", ChunkSizeLim);
     chunkType = CDI_CHUNK_AUTO;
   }
 
@@ -864,7 +864,8 @@ cdfCheckVarname(int fileID, char name[CDI_MAX_NAME])
     char *varname2 = varname + len;
     unsigned iz = 0;
 
-    do {
+    do
+    {
       if (iz) snprintf(varname2, sizeof(varname) - len, "_%u", iz + 1);
 
       if (nc_inq_varid(fileID, varname, &ncvarID) != NC_NOERR) break;
@@ -900,7 +901,8 @@ cdfGenVarname(int fileID, char name[CDI_MAX_NAME], int pnum, int pcat, int *pdis
   int ncvarID;
   unsigned iz = 0;
 
-  do {
+  do
+  {
     if (iz) snprintf(varname2, sizeof(varname) - len, "_%u", iz + 1);
 
     if (nc_inq_varid(fileID, varname, &ncvarID) != NC_NOERR) break;

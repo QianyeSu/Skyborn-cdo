@@ -337,7 +337,7 @@ check_time_increment(int tsID, int calendar, CdiDateTime const &vDateTime, Check
 
     /*
     if (Options::cdoVerbose)
-      fprintf(stdout, "Timestep: %d  increment: %3ld %s%s\n",
+      std::fprintf(stdout, "Timestep: %d  increment: %3ld %s%s\n",
               tsID+1, (long) incrPeriod, tunits[(int)incrUnits], (std::abs(incrPeriod) != 1) ? "s" : "");
     */
   }

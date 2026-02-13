@@ -1,3 +1,51 @@
+2025-11-20  Uwe Schulzweida
+
+	* Using YAC version 3.7.1
+	* Using CDI library version 2.5.4
+	* Version 2.5.4 release
+
+2025-10-15 Uwe Schulzweida
+
+	* hpdegrade: add support for async read
+	* hpdegrade: add OpenMP support
+
+2025-10-15 Uwe Schulzweida
+
+	* Healpix: add zoom parameter
+
+2025-10-14 Uwe Schulzweida
+
+	* Add support for NetCDF CF-conform HEALPix grids
+
+2025-10-02 Uwe Schulzweida
+
+	* selgridcell: add support for generic grids
+
+2025-09-30 Uwe Schulzweida
+
+	* added support for blanks in filenames
+
+2025-09-28 Uwe Schulzweida
+
+	* distgrid/collgrid: added support for datasets with multiple different grids
+
+2025-09-26 Uwe Schulzweida
+
+	* statistic.cc: include of cstdlib missing (compiler error with clang-21)
+
+2025-09-16  Rostislav Kouznetsov
+
+	* expr: added function trimrel(x,kb) and trimabs(x,err)
+
+2025-08-29  Uwe Schulzweida
+
+	* strcasecmp not defined [Bug #12250]
+
+2025-08-25  Uwe Schulzweida
+
+	* Removed operator import_amsr
+	* pointsearch_reg2d.cc: replaced double_t by double (bug fix)
+
 2025-07-24  Uwe Schulzweida
 
 	* Using CDI library version 2.5.3

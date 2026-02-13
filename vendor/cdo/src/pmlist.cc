@@ -16,15 +16,15 @@
 #include "util_string.h"
 
 static void
-keyValuesPrint(FILE *fp, const KeyValues &keyValues)
+keyValuesPrint(std::FILE *fp, const KeyValues &keyValues)
 {
-  fprintf(fp, "  %s =", keyValues.key.c_str());
-  for (int i = 0; i < keyValues.nvalues; ++i) fprintf(fp, " '%s'", keyValues.values[i].c_str());
-  fprintf(fp, "\n");
+  std::fprintf(fp, "  %s =", keyValues.key.c_str());
+  for (int i = 0; i < keyValues.nvalues; ++i) std::fprintf(fp, " '%s'", keyValues.values[i].c_str());
+  std::fprintf(fp, "\n");
 }
 
 void
-KVList::print(FILE *fp) const
+KVList::print(std::FILE *fp) const
 {
   for (auto const &keyValues : *this) keyValuesPrint(fp, keyValues);
 }
@@ -39,7 +39,7 @@ KVList::parse_arguments(std::vector<std::string> const &argv)
   size_t equalPos = argv[0].find('=');
   if (equalPos == std::string::npos)
   {
-    fprintf(stderr, "missing '=' in key/value string: >%s<\n", argv[0].c_str());
+    std::fprintf(stderr, "missing '=' in key/value string: >%s<\n", argv[0].c_str());
     return -1;
   }
 
@@ -275,7 +275,7 @@ parse_namelist(PMList &pmlist, NamelistParser &parser, char *buf, bool cdocmor)
 }
 
 int
-parse_list_buffer(NamelistParser &p, ListBuffer &listBuffer)
+parse_list_buffer(NamelistParser &p, ListBuffer const &listBuffer)
 {
   const char *errMsg = "Namelist error";
   const auto name = listBuffer.name.c_str();
@@ -286,15 +286,19 @@ parse_list_buffer(NamelistParser &p, ListBuffer &listBuffer)
     switch (status)
     {
       case NamelistError::INVAL:
-        fprintf(stderr, "%s: Invalid character in %s (line=%lu character='%c' dec=%u)!\n", errMsg, name, p.lineno,
-                listBuffer.buffer[p.pos], (unsigned char) listBuffer.buffer[p.pos]);
+        std::fprintf(stderr, "%s: Invalid character in %s (line=%lu character='%c' dec=%u)!\n", errMsg, name, p.lineno,
+                     listBuffer.buffer[p.pos], (unsigned char) listBuffer.buffer[p.pos]);
         break;
-      case NamelistError::PART: fprintf(stderr, "%s: End of string not found in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
-      case NamelistError::INKEY: fprintf(stderr, "%s: Invalid keyword in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
-      case NamelistError::INTYP: fprintf(stderr, "%s: Invalid keyword type in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
-      case NamelistError::INOBJ: fprintf(stderr, "%s: Invalid object in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
-      case NamelistError::EMKEY: fprintf(stderr, "%s: Empty key name in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
-      default: fprintf(stderr, "%s in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
+      case NamelistError::PART:
+        std::fprintf(stderr, "%s: End of string not found in %s (line=%lu)!\n", errMsg, name, p.lineno);
+        break;
+      case NamelistError::INKEY: std::fprintf(stderr, "%s: Invalid keyword in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
+      case NamelistError::INTYP:
+        std::fprintf(stderr, "%s: Invalid keyword type in %s (line=%lu)!\n", errMsg, name, p.lineno);
+        break;
+      case NamelistError::INOBJ: std::fprintf(stderr, "%s: Invalid object in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
+      case NamelistError::EMKEY: std::fprintf(stderr, "%s: Empty key name in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
+      default: std::fprintf(stderr, "%s in %s (line=%lu)!\n", errMsg, name, p.lineno); break;
     }
     cdo_abort("%s!", errMsg);
   }
@@ -302,7 +306,7 @@ parse_list_buffer(NamelistParser &p, ListBuffer &listBuffer)
   // p.dump(listBuffer.buffer.data());
   if (p.verify())
   {
-    fprintf(stderr, "%s: Invalid contents in %s!\n", errMsg, name);
+    std::fprintf(stderr, "%s: Invalid contents in %s!\n", errMsg, name);
     cdo_abort("Namelist error!");
   }
 
@@ -310,10 +314,10 @@ parse_list_buffer(NamelistParser &p, ListBuffer &listBuffer)
 }
 
 void
-PMList::read_namelist(FILE *fp, const char *name)
+PMList::read_namelist(std::FILE *fp, std::string_view name)
 {
   ListBuffer listBuffer;
-  if (listBuffer.read(fp, name)) cdo_abort("Read error on namelist %s!", name);
+  if (listBuffer.read(fp, name.data())) cdo_abort("Read error on namelist %s!", name);
 
   NamelistParser p;
   auto status = parse_list_buffer(p, listBuffer);
@@ -323,11 +327,11 @@ PMList::read_namelist(FILE *fp, const char *name)
 }
 
 void
-PMList::print(FILE *fp)
+PMList::print(std::FILE *fp)
 {
   for (auto const &kvlist : *this)
   {
-    fprintf(fp, "\nFound %s list with %zu key/values: \n", kvlist.name.c_str(), kvlist.size());
+    std::fprintf(fp, "\nFound %s list with %zu key/values: \n", kvlist.name.c_str(), kvlist.size());
     kvlist.print(fp);
   }
 }

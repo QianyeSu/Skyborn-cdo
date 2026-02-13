@@ -29,7 +29,7 @@ std::string param_to_string(int param);
 
 /* time/date/season converisons */
 /* =================================================================================== */
-void season_to_months(std::string const &season, int *imonths);
+void season_to_months(std::string const &season, int (&imonths)[13]);
 double datestr_to_double(std::string const &datestr, int opt);
 
 /* argv conversions */

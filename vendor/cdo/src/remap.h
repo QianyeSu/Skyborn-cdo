@@ -20,8 +20,11 @@ constexpr double PIH = (0.5 * PI);
 
 constexpr double TINY = 1.e-14;
 
-#define REMAP_GRID_BASIS_SRC 1
-#define REMAP_GRID_BASIS_TGT 2
+enum struct RemapOption
+{
+  WriteWeights,
+  GenerateWeights,
+};
 
 // clang-format off
 struct  // RemapSearch
@@ -56,13 +59,9 @@ RemapType
   RemapSearch search{};
 };
 
-#define REMAP_WRITE_REMAP 2
-#define REMAP_MAX_ITER 3
-#define REMAP_GENWEIGHTS 5
-
 int remap_check_mask_indices(const size_t (&indices)[4], Vmask const &mask);
 
-void remap_set_int(int remapvar, int value);
+void remap_set_option(RemapOption remapOption, int value);
 
 void remap_init_grids(RemapMethod mapType, bool doExtrapolate, int gridID1, RemapGrid &srcGrid, int gridID2, RemapGrid &tgtGrid);
 
@@ -105,8 +104,6 @@ int grid_search_square_reg2d_NN(size_t nx, size_t ny, size_t *nbrIndices, double
 int grid_search_square_reg2d(RemapGrid *srcGrid, SquareCorners &squareCorners, double plat, double plon);
 
 std::pair<double, double> remap_find_weights(PointLonLat const &pointLL, SquareCorners const &squareCorners);
-
-PointLonLat remapgrid_get_lonlat(const RemapGrid *grid, size_t index);
 
 void remap_check_area(size_t grid_size, Varray<double> const &cell_area, const char *name);
 

@@ -10,9 +10,6 @@
 
 // YAC PUBLIC HEADER START
 
-/** \example test_basic_grid_data.c
- */
-
 struct yac_basic_grid_data {
   yac_coordinate_pointer vertex_coordinates;
   yac_int * cell_ids;
@@ -71,11 +68,41 @@ struct yac_basic_grid_data yac_generate_basic_grid_data_unstruct_ll_deg(
   size_t nbr_vertices, size_t nbr_cells, int *num_vertices_per_cell,
   double *x_vertices, double *y_vertices, int *cell_to_vertex);
 
+struct yac_basic_grid_data yac_generate_basic_grid_data_unstruct_edge(
+  size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
+struct yac_basic_grid_data yac_generate_basic_grid_data_unstruct_edge_deg(
+  size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
+struct yac_basic_grid_data yac_generate_basic_grid_data_unstruct_edge_ll(
+  size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
+struct yac_basic_grid_data yac_generate_basic_grid_data_unstruct_edge_ll_deg(
+  size_t nbr_vertices, size_t nbr_cells, size_t nbr_edges,
+  int *num_edges_per_cell, double *x_vertices, double *y_vertices,
+  int *cell_to_edge, int *edge_to_vertex);
+
 struct yac_basic_grid_data yac_generate_basic_grid_data_cloud(
   size_t nbr_points, double * x_points, double * y_points);
 
 struct yac_basic_grid_data yac_generate_basic_grid_data_cloud_deg(
   size_t nbr_points, double * x_points, double * y_points);
+
+struct yac_basic_grid_data yac_generate_basic_grid_data_reg_2d_rot(
+  size_t nbr_vertices[2], int cyclic[2],
+  double *lon_vertices, double *lat_vertices,
+  double north_pole_lon, double north_pole_lat);
+
+struct yac_basic_grid_data yac_generate_basic_grid_data_reg_2d_rot_deg(
+  size_t nbr_vertices[2], int cyclic[2],
+  double *lon_vertices, double *lat_vertices,
+  double north_pole_lon, double north_pole_lat);
 
 void yac_basic_grid_data_compute_cell_areas(
   struct yac_basic_grid_data grid, double * cell_areas);

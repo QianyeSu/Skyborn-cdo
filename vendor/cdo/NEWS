@@ -1,7 +1,21 @@
 CDO NEWS
 --------
 
-Improvement
+Version 2.6.0 (20 Feb 2026):
+
+   New features:
+     * option --async_read <true|false> to read input data asynchronously.
+       Available for the operators: diff, info, trend, detrend, Timstat
+
+Version 2.5.4 (20 Nov 2025):
+
+   New features:
+     * expr: added function trimrel(x,kb) and trimabs(x,err)
+     * distgrid/collgrid: added support for datasets with multiple different grids
+     * added support for blanks in filenames
+     * added support for NetCDF CF-conform HEALPix grids
+   Fixed bugs:
+     * include of cstdlib missing (compiler error with clang-21)
 
 Version 2.5.3 (16 Jul 2025):
 

@@ -94,12 +94,12 @@ remap_get_params()
     if (envString.size())
     {
       // clang-format off
-      if      (envString == "ON"  || envString == "on")  Options::REMAP_genweights = true;
-      else if (envString == "OFF" || envString == "off") Options::REMAP_genweights = false;
+      if      (envString == "ON"  || envString == "on")  Options::RemapGenerateWeights = true;
+      else if (envString == "OFF" || envString == "off") Options::RemapGenerateWeights = false;
       else cdo_warning("Environment variable CDO_REMAP_GENWEIGHTS has wrong value!");
       // clang-format on
 
-      if (Options::cdoVerbose) cdo_print("Generation of weights %s!", Options::REMAP_genweights ? "enabled" : "disabled");
+      if (Options::cdoVerbose) cdo_print("Generation of weights %s!", Options::RemapGenerateWeights ? "enabled" : "disabled");
     }
   }
 
@@ -126,19 +126,6 @@ remap_get_params()
   }
 
   if (Options::cdoVerbose) cdo_print("Point search radius = %g deg", cdo_get_search_radius());
-
-  {
-    auto envString = getenv_string("REMAP_MAX_ITER");
-    if (envString.size())
-    {
-      auto ival = std::stoi(envString);
-      if (ival > 0)
-      {
-        remap_set_int(REMAP_MAX_ITER, ival);
-        if (Options::cdoVerbose) cdo_print("Set REMAP_MAX_ITER to %d", ival);
-      }
-    }
-  }
 
   {
     auto envString = getenv_string("REMAP_AREA_MIN");
@@ -285,7 +272,7 @@ remap_set_grids(int vlistID, VarList const &varList, bool findOnlyfirst)
       remapGrids[index] = true;
       if (findOnlyfirst) break;
     }
-    else if (!(gridtype == GRID_GENERIC && gridInqSize(gridID) <= 2))
+    else if (!(gridtype == GRID_GENERIC && gridInqSize(gridID) <= 20))
     {
       for (auto const &var : varList.vars)
         if (gridID == var.gridID)

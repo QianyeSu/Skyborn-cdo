@@ -2006,7 +2006,7 @@ int CDO_parser_errorno = 0;
 
 void yyerror(const ParseParamType &parseArg, void *scanner, const char *errstr)
 {
-  fprintf(stderr, "%s!\n", errstr);
+  std::fprintf(stderr, "%s!\n", errstr);
   CDO_parser_errorno = -1;
 }
 

@@ -27,11 +27,11 @@ init_strtime()
 {
   auto tp = time(nullptr);
   if (tp != -1)
-    {
-      auto const *ltime = localtime(&tp);
-      (void) strftime(strtime, sizeof(strtime), "%a %b %d %H:%M:%S %Y: ", ltime);
-      (void) strftime(datetimestr, sizeof(datetimestr), "%Y-%m-%dT%H:%M:%SZ", ltime);
-    }
+  {
+    auto const *ltime = localtime(&tp);
+    (void) strftime(strtime, sizeof(strtime), "%a %b %d %H:%M:%S %Y: ", ltime);
+    (void) strftime(datetimestr, sizeof(datetimestr), "%Y-%m-%dT%H:%M:%SZ", ltime);
+  }
 }
 
 static const char *
@@ -47,20 +47,22 @@ cdo_inq_history(int vlistID)
 {
   static const char *historyAttrName = "history";
 
+  std::string ret_val = {};
   std::vector<char> ghistory;
   auto atttype = cdiInqAttType(vlistID, CDI_GLOBAL, historyAttrName);
   if (atttype == CDI_DATATYPE_TXT)
+  {
+    auto ghistorysize = cdiInqAttLen(vlistID, CDI_GLOBAL, historyAttrName);
+    if (ghistorysize > 0)
     {
-      auto ghistorysize = cdiInqAttLen(vlistID, CDI_GLOBAL, historyAttrName);
-      if (ghistorysize > 0)
-        {
-          ghistory.resize(ghistorysize + 1);
-          cdiInqAttTxt(vlistID, CDI_GLOBAL, historyAttrName, ghistorysize, ghistory.data());
-          ghistory[ghistorysize] = 0;
-        }
+      ghistory.resize(ghistorysize + 1);
+      cdiInqAttTxt(vlistID, CDI_GLOBAL, historyAttrName, ghistorysize, ghistory.data());
+      ghistory[ghistorysize] = 0;
+      ret_val = std::string(ghistory.data());
     }
+  }
 
-  return ghistory.data();
+  return ret_val;
 }
 
 void
@@ -80,26 +82,26 @@ cdo_append_history(int vlistID, const char *histstring)
   std::vector<char> ghistory;
   const auto atttype = cdiInqAttType(vlistID, CDI_GLOBAL, historyAttrName);
   if (atttype == CDI_DATATYPE_TXT)
+  {
+    auto ghistorysize = cdiInqAttLen(vlistID, CDI_GLOBAL, historyAttrName);
+    if (ghistorysize < 0) ghistorysize = 0;
+    if (ghistorysize > 0)
     {
-      auto ghistorysize = cdiInqAttLen(vlistID, CDI_GLOBAL, historyAttrName);
-      if (ghistorysize < 0) ghistorysize = 0;
-      if (ghistorysize > 0)
-        {
-          ghistory.resize(ghistorysize + 1);
-          cdiInqAttTxt(vlistID, CDI_GLOBAL, historyAttrName, ghistorysize, ghistory.data());
-          ghistory[ghistorysize] = 0;
-        }
+      ghistory.resize(ghistorysize + 1);
+      cdiInqAttTxt(vlistID, CDI_GLOBAL, historyAttrName, ghistorysize, ghistory.data());
+      ghistory[ghistorysize] = 0;
     }
+  }
   else if (atttype != -1) { return; }
 
   std::string history = get_strtimeptr();
   history += histstring;
 
   if (!ghistory.empty())
-    {
-      history += "\n";
-      history += ghistory.data();
-    }
+  {
+    history += "\n";
+    history += ghistory.data();
+  }
 
   cdiDefAttTxt(vlistID, CDI_GLOBAL, historyAttrName, history.size(), history.c_str());
 }

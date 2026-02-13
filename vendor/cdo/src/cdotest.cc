@@ -8,7 +8,7 @@
 */
 
 #include <assert.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/stat.h>
 
 #include <cdi.h>
@@ -44,8 +44,8 @@ read_file(const char path[], Varray2D<double> &vars, int numVars, int numSteps)
   auto streamID = streamOpenRead(path);
   if (streamID < 0)
   {
-    fprintf(stderr, "%s\n", cdiStringError(streamID));
-    exit(EXIT_FAILURE);
+    std::fprintf(stderr, "%s\n", cdiStringError(streamID));
+    std::exit(EXIT_FAILURE);
   }
 
   auto vlistID = streamInqVlist(streamID);
@@ -97,8 +97,8 @@ write_file(const char path[], const double array[], int length)
   auto streamID = streamOpenWrite(path, CDI_FILETYPE_SRV);
   if (streamID < 0)
   {
-    fprintf(stderr, "%s\n", cdiStringError(streamID));
-    exit(EXIT_FAILURE);
+    std::fprintf(stderr, "%s\n", cdiStringError(streamID));
+    std::exit(EXIT_FAILURE);
   }
 
   streamDefVlist(streamID, vlistID);
@@ -132,14 +132,12 @@ get_cdo_path()
   if (cdoPath == nullptr)
   {
     struct stat filestat;
-    int status;
-    status = stat("$HOME/bin/cdo", &filestat);
-    if (status == 0)
-      return "$HOME/bin/cdo";
+    auto status = stat("$HOME/bin/cdo", &filestat);
+    if (status == 0) { return "$HOME/bin/cdo"; }
     else
     {
-      fprintf(stderr, "cdo binary not found! Use CDO_PATH to set the path to cdo.\n");
-      exit(-1);
+      std::fprintf(stderr, "cdo binary not found! Use CDO_PATH to set the path to cdo.\n");
+      std::exit(-1);
     }
   }
 

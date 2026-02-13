@@ -13,6 +13,7 @@
 #ifdef HAVE_LIBPTHREAD
 #include <pthread.h>
 #endif
+#include <cstdlib>
 #include <string>
 #include <limits>
 #include <bitset>
@@ -73,31 +74,34 @@ void
 parse_debug_arguments(std::vector<std::string> const &tokens, unsigned &cdoDebugLevel, unsigned &cdiDebugLevel)
 {
   for (auto const &t : tokens)
+  {
+    if (t.substr(0, 4).compare("ext=") == 0)
     {
-      if (t.substr(0, 4).compare("ext=") == 0)
-        {
-          cdoDebugExt = std::stoul(t.substr(5));
-          continue;
-        }
-      unsigned int_token = std::stoul(t);
-      switch (int_token)
-        {
-        case 0:
-          cdoDebugLevel = 0;
-          cdiDebugLevel = 0;
-          break;
-        case 1:
-          cdoDebugLevel = std::numeric_limits<unsigned>::max();
-          cdiDebugLevel = std::numeric_limits<unsigned>::max();
-          break;
-        case 2: cdiDebugLevel = std::numeric_limits<unsigned>::max(); break;
-        case 6: cdoDebugLevel = std::numeric_limits<unsigned>::max(); break;
+      cdoDebugExt = std::stoul(t.substr(5));
+      continue;
+    }
+    unsigned int_token = std::stoul(t);
+    switch (int_token)
+    {
+      case 0:
+        cdoDebugLevel = 0;
+        cdiDebugLevel = 0;
+        break;
+      case 1:
+        cdoDebugLevel = std::numeric_limits<unsigned>::max();
+        cdiDebugLevel = std::numeric_limits<unsigned>::max();
+        break;
+      case 2: cdiDebugLevel = std::numeric_limits<unsigned>::max(); break;
+      case 6: cdoDebugLevel = std::numeric_limits<unsigned>::max(); break;
 
-        default:
-          if (int_token > 6) { cdoDebugLevel = (cdoDebugLevel | (1 << (int_token))); }
-          else { cdiDebugLevel = (cdiDebugLevel | (1 << (int_token - 1))); }
+      default:
+        if (int_token > 6) { cdoDebugLevel = (cdoDebugLevel | (1 << (int_token))); }
+        else
+        {
+          cdiDebugLevel = (cdiDebugLevel | (1 << (int_token - 1)));
         }
     }
+  }
 }
 
 // unused, only for debug reasons
@@ -167,7 +171,7 @@ void
 default_exit(std::string msg = "")
 {
   (void) msg;
-  exit(EXIT_FAILURE);
+  std::exit(EXIT_FAILURE);
 }
 
 const char *
@@ -222,13 +226,13 @@ checkForMissingLib(int filetype)
   std::string errStr;
 
   switch (filetype)
-    {
+  {
     case CDI_FILETYPE_GRB: break;
     case CDI_FILETYPE_GRB2:
-      {
-        errStr = getGRB2ErrStr();
-        break;
-      }
+    {
+      errStr = getGRB2ErrStr();
+      break;
+    }
     case CDI_FILETYPE_SRV: break;
     case CDI_FILETYPE_EXT: break;
     case CDI_FILETYPE_IEG: break;
@@ -238,12 +242,12 @@ checkForMissingLib(int filetype)
     case CDI_FILETYPE_NC4C:
     case CDI_FILETYPE_NC5:
     case CDI_FILETYPE_NCZARR:
-      {
-        errStr = getNCErrString(filetype);
-        break;
-      }
-    default: break;
+    {
+      errStr = getNCErrString(filetype);
+      break;
     }
+    default: break;
+  }
 
   return errStr;
 }
@@ -256,12 +260,12 @@ cdi_open_error(int cdiErrno, std::string const &format, const char *path)
                   cdiStringError(cdiErrno));
 
   if (cdiErrno == CDI_ELIBNAVAIL)
-    {
-      int byteorder;
-      auto filetype = cdiGetFiletype(path, &byteorder);
-      auto errStr = checkForMissingLib(filetype);
-      if (errStr.size()) { MpMO::PrintCerr("%s\n", errStr); }
-    }
+  {
+    int byteorder;
+    auto filetype = cdiGetFiletype(path, &byteorder);
+    auto errStr = checkForMissingLib(filetype);
+    if (errStr.size()) { MpMO::PrintCerr("%s\n", errStr); }
+  }
 
   if (MpMO::exitOnError) cdo::exitProgram("cdi_open_error");
 }
@@ -282,40 +286,39 @@ query_user_exit(std::string const &argument)
   usr_rpl[1] = '\0';
 
   while (!(usr_rpl_lng == 1 && (*usr_rpl == 'o' || *usr_rpl == 'O' || *usr_rpl == 'e' || *usr_rpl == 'E')))
+  {
+    if (nbr_itr++ > USR_RPL_MAX_NBR)
     {
-      if (nbr_itr++ > USR_RPL_MAX_NBR)
-        {
-          (void) fprintf(stderr, "\n%s: ERROR %d failed attempts to obtain valid interactive input.\n", cdo::getContext(),
-                         nbr_itr - 1);
-          exit(EXIT_FAILURE);
-        }
-
-      if (nbr_itr > 1) (void) fprintf(stdout, "%s: ERROR Invalid response.\n", cdo::getContext());
-      (void) fprintf(stdout, "%s: %s exists ---`e'xit, or `o'verwrite (delete existing file) (e/o)? ", cdo::getContext(),
-                     argument.c_str());
-      (void) fflush(stdout);
-      if (fgets(usr_rpl, USR_RPL_MAX_LNG, stdin) == nullptr) continue;
-
-      // Ensure last character in input string is \n and replace that with \0
-      usr_rpl_lng = std::strlen(usr_rpl);
-      if (usr_rpl_lng >= 1)
-        if (usr_rpl[usr_rpl_lng - 1] == '\n')
-          {
-            usr_rpl[usr_rpl_lng - 1] = '\0';
-            usr_rpl_lng--;
-          }
+      (void) std::fprintf(stderr, "\n%s: ERROR %d failed attempts to obtain valid interactive input.\n", cdo::getContext(), nbr_itr - 1);
+      std::exit(EXIT_FAILURE);
     }
+
+    if (nbr_itr > 1) (void) std::fprintf(stdout, "%s: ERROR Invalid response.\n", cdo::getContext());
+    (void) std::fprintf(stdout, "%s: %s exists ---`e'xit, or `o'verwrite (delete existing file) (e/o)? ", cdo::getContext(),
+                   argument.c_str());
+    (void) fflush(stdout);
+    if (fgets(usr_rpl, USR_RPL_MAX_LNG, stdin) == nullptr) continue;
+
+    // Ensure last character in input string is \n and replace that with \0
+    usr_rpl_lng = std::strlen(usr_rpl);
+    if (usr_rpl_lng >= 1)
+      if (usr_rpl[usr_rpl_lng - 1] == '\n')
+      {
+        usr_rpl[usr_rpl_lng - 1] = '\0';
+        usr_rpl_lng--;
+      }
+  }
 
   // Ensure one case statement for each exit condition in preceding while loop
   usr_rpl_int = (int) usr_rpl[0];
   switch (usr_rpl_int)
-    {
+  {
     case 'E':
-    case 'e': exit(EXIT_SUCCESS); break;
+    case 'e': std::exit(EXIT_SUCCESS); break;
     case 'O':
     case 'o': break;
-    default: exit(EXIT_FAILURE); break;
-    }
+    default: std::exit(EXIT_FAILURE); break;
+  }
 }
 
 std::string
