@@ -21,12 +21,12 @@ mkdir -p "$BUILD_DIR" "$PREFIX"
 
 cd "$CDO_SRC"
 
-# Apply Windows compatibility patch (same as CI build_cdo_windows.sh)
-PATCH_FILE="${PROJECT_DIR}/patches/windows-compat.patch"
-if [[ -f "${PATCH_FILE}" ]]; then
-    echo ""
-    echo "=== Applying Windows compatibility patch ==="
-    patch -p1 --forward < "${PATCH_FILE}" || true
+# Apply Windows compatibility patches using intelligent Python script
+echo ""
+echo "=== Applying Windows compatibility patches ==="
+python "${PROJECT_DIR}/scripts/patch_cdo_windows.py" apply --cdo-src "$CDO_SRC"
+if [ $? -ne 0 ]; then
+    echo "Warning: Some patches failed to apply"
 fi
 
 # Check if configure exists (pre-generated)
@@ -72,10 +72,6 @@ echo "=== Testing CDO ==="
 "$PREFIX/bin/cdo.exe" --version || true
 
 # Restore vendor directory to clean state (undo patch modifications)
-cd "$CDO_SRC"
-if [[ -f "${PATCH_FILE}" ]]; then
-    echo ""
-    echo "=== Restoring vendor directory (reverting patch) ==="
-    patch -p1 -R < "${PATCH_FILE}" || true
-    echo "Vendor directory restored to original state"
-fi
+echo ""
+echo "=== Restoring vendor directory ==="
+python "${PROJECT_DIR}/scripts/patch_cdo_windows.py" restore --cdo-src "$CDO_SRC"
