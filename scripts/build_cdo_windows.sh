@@ -31,11 +31,11 @@ echo "============================================"
 
 cd "${CDO_SOURCE}"
 
-# Apply Windows compatibility patch
-PATCH_FILE="${PROJECT_DIR}/patches/windows-compat.patch"
-if [[ -f "${PATCH_FILE}" ]]; then
-    echo "[skyborn-cdo] Applying Windows compatibility patch..."
-    patch -p1 --forward < "${PATCH_FILE}" || true
+# Apply Windows compatibility patches using intelligent Python script
+echo "[skyborn-cdo] Applying Windows compatibility patches..."
+python "${PROJECT_DIR}/scripts/patch_cdo_windows.py" apply --cdo-src "${CDO_SOURCE}"
+if [ $? -ne 0 ]; then
+    echo "[skyborn-cdo] Warning: Some patches failed to apply, continuing anyway..."
 fi
 
 # Prevent make from trying to regenerate autotools files.
