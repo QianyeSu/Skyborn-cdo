@@ -51,6 +51,7 @@ echo "=== Configuring CDO ==="
     --with-threads=yes \
     CFLAGS="-O2 -I/mingw64/include" \
     CXXFLAGS="-O2 -std=c++20 -I/mingw64/include" \
+    CPPFLAGS="-I/mingw64/include -D_POSIX_C_SOURCE=200112L" \
     LDFLAGS="-L/mingw64/lib" \
     LIBS="-lws2_32"
 
