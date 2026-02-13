@@ -1,111 +1,111 @@
-# Windows 兼容性补丁系统
+# Windows Compatibility Patch System
 
-## 📖 概述
+## 📖 Overview
 
-本项目使用**智能代码匹配**系统（而非传统的行号式 patch 文件）对 CDO 源码进行 Windows 编译适配。这种方式**显著降低维护成本**，CDO 版本更新后大概率无需修改补丁逻辑。
+This project uses a **smart code pattern matching system** (rather than traditional line-number-based patch files) to adapt CDO source code for Windows compilation. This approach **significantly reduces maintenance costs** and is likely to work without modification even after CDO version updates.
 
 ---
 
-## 🔧 补丁脚本：`scripts/patch_cdo_windows.py`
+## 🔧 Patch Script: `scripts/patch_cdo_windows.py`
 
-### 工作原理
+### How it Works
 
-- **基于代码特征匹配**：使用正则表达式和字符串模式查找需要修改的代码
-- **自动容错**：如果某个模式未找到会给出警告，而非直接失败
-- **版本适应性强**：CDO 代码结构小幅变化时仍能正常工作
+- **Code pattern matching**: Uses regular expressions and string patterns to find code that needs modification
+- **Automatic error handling**: Issues warnings if a pattern is not found instead of failing outright
+- **Version resilience**: Works reliably even with minor CDO code structure changes
 
-### 使用方法
+### Usage
 
 ```bash
-# 1. 验证补丁（不修改文件，检查所有补丁点是否存在）
+# 1. Verify patches (don't modify files, check if all patch points exist)
 python scripts/patch_cdo_windows.py verify
 
-# 2. 应用补丁（修改源码）
+# 2. Apply patches (modify source code)
 python scripts/patch_cdo_windows.py apply
 
-# 3. 恢复原始代码（撤销所有修改）
+# 3. Restore original code (undo all modifications)
 python scripts/patch_cdo_windows.py restore
 
-# 可选：指定 CDO 源码目录
+# Optional: specify CDO source directory
 python scripts/patch_cdo_windows.py apply --cdo-src /path/to/cdo
 ```
 
 ---
 
-## 📝 补丁内容说明
+## 📝 Patch Details
 
-| 文件 | 修改内容 | 原因 |
+| File | Modification | Reason |
 |------|---------|------|
-| **src/cdo.cc** | 添加 `io.h` / `windows.h` 头文件 | Windows 需要 `_isatty` / `_fileno` |
-| | 修改 `cdo_init_is_tty()` 为 Windows 实现 | fstat/S_ISCHR 在 MinGW 中不稳定 |
-| | 在 `clear_processes()` 前添加 `fflush(stdout)` | 避免 Windows CI 退出时输出丢失 |
-| **src/cdo_getopt.cc** | 屏蔽 `sys/ioctl.h` | Windows 不支持 |
-| | 屏蔽 `unistd.h` | 使用 Windows API 替代 |
-| **其他 6 个文件** | 统一屏蔽 `unistd.h` | MinGW 需条件编译 |
+| **src/cdo.cc** | Add `io.h` / `windows.h` headers | Windows requires `_isatty` / `_fileno` |
+| | Modify `cdo_init_is_tty()` to Windows implementation | fstat/S_ISCHR unreliable in MinGW |
+| | Add `fflush(stdout)` before `clear_processes()` | Prevent output loss on Windows CI exit |
+| **src/cdo_getopt.cc** | Guard `sys/ioctl.h` | Not available on Windows |
+| | Guard `unistd.h` | Replaced with Windows API |
+| **Other 6 files** | Guard `unistd.h` consistently | Needs conditional compilation for MinGW |
 
 ---
 
-## 🚀 构建流程中的集成
+## 🚀 Integration with Build Process
 
-### CI 构建 (``.github/workflows/build.yml`)
+### CI Build (``.github/workflows/build.yml`)
 
 ```bash
-# scripts/build_cdo_windows.sh 中自动调用
+# Automatically called in scripts/build_cdo_windows.sh
 python scripts/patch_cdo_windows.py apply --cdo-src vendor/cdo
 # ... configure && make ...
-# 构建完成后 vendor/ 目录自动被 Git 清除，无需手动恢复
+# vendor/ directory is automatically cleaned by Git after build, no manual restore needed
 ```
 
-### 本地构建 (`scripts/build_local_windows.sh`)
+### Local Build (`scripts/build_local_windows.sh`)
 
 ```bash
-# 应用补丁 → 编译 → 自动恢复
+# Apply patches → Compile → Auto-restore
 python scripts/patch_cdo_windows.py apply
 # ... compile ...
-python scripts/patch_cdo_windows.py restore  # 保持 Git 仓库干净
+python scripts/patch_cdo_windows.py restore  # Keep Git repository clean
 ```
 
 ---
 
-## ✨ 相比传统 patch 文件的优势
+## ✨ Advantages Over Traditional Patch Files
 
-| 传统 .patch 文件 | 智能 Python 脚本 |
+| Traditional .patch File | Smart Python Script |
 |----------------|----------------|
-| ❌ 依赖固定行号 | ✅ 基于代码特征匹配 |
-| ❌ CDO 更新后必定失败 | ✅ 小幅变化仍可工作 |
-| ❌ 错误信息模糊 | ✅ 明确显示每个修改点状态 |
-| ❌ 修改逻辑隐藏在 diff 格式中 | ✅ 代码清晰可读 |
-| ❌ 难以调试 | ✅ 易于修改和扩展 |
+| ❌ Depends on fixed line numbers | ✅ Based on code pattern matching |
+| ❌ Breaks after any CDO update | ✅ Still works with minor code changes |
+| ❌ Cryptic error messages | ✅ Clear status for each patch point |
+| ❌ Logic hidden in diff format | ✅ Code is clear and readable |
+| ❌ Difficult to debug | ✅ Easy to modify and extend |
 
 ---
 
-## 🔄 CDO 版本升级时的处理流程
+## 🔄 CDO Version Upgrade Workflow
 
-### 典型场景：CDO 2.5.4 → 2.5.5
+### Typical scenario: CDO 2.5.4 → 2.5.5
 
-1. **更新 vendor/cdo 源码**
+1. **Update vendor/cdo source**
    ```bash
    cd vendor/cdo
-   # ... 同步上游代码或解压新版本 ...
+   # ... synchronize upstream code or extract new version ...
    ```
 
-2. **验证补丁是否仍然有效**
+2. **Verify if patches still work**
    ```bash
    python scripts/patch_cdo_windows.py verify
    ```
 
-3. **根据验证结果采取行动**
+3. **Act based on verification results**
 
-   - **情况 A：所有补丁点均找到** → ✅ 无需修改
-   - **情况 B：部分补丁点未找到** → ⚠️ 需调整正则表达式
-   - **情况 C：CDO 已自行修复 Windows 兼容性** → 🎉 删除对应补丁逻辑
+   - **Case A: All patch points found** → ✅ No modification needed
+   - **Case B: Some patch points not found** → ⚠️ Adjust regex patterns
+   - **Case C: CDO already fixed Windows compatibility** → 🎉 Remove corresponding patch logic
 
-4. **如需调整，编辑 `patch_cdo_windows.py`**
-   - 打开脚本，找到 `patches = [...]` 部分
-   - 修改对应的正则表达式或替换文本
-   - 重新验证
+4. **If adjustment needed, edit `patch_cdo_windows.py`**
+   - Open the script and find the `patches = [...]` section
+   - Modify the corresponding regex patterns or replacement text
+   - Re-verify
 
-5. **提交更新**
+5. **Commit the update**
    ```bash
    git add scripts/patch_cdo_windows.py
    git commit -m "chore: update Windows patches for CDO 2.5.5"
@@ -113,32 +113,32 @@ python scripts/patch_cdo_windows.py restore  # 保持 Git 仓库干净
 
 ---
 
-## 🛠️ 添加新的补丁逻辑
+## 🛠️ Adding New Patch Logic
 
-如果发现新的 Windows 兼容性问题，在 `patch_cdo_windows.py` 中添加：
+If you discover a new Windows compatibility issue, add it to `patch_cdo_windows.py`:
 
 ```python
 patches = [
-    # 现有补丁...
+    # Existing patches...
     
     ("src/new_file.cc", [
-        ("描述这个补丁的作用",
-         re.compile(r'原始代码的正则表达式'),
-         r'替换后的代码'),
+        ("Description of what this patch does",
+         re.compile(r'regex pattern for original code'),
+         r'replacement code'),
     ]),
 ]
 ```
 
 ---
 
-## 📚 参考信息
+## 📚 Reference Information
 
-- **补丁脚本**：`scripts/patch_cdo_windows.py`
-- **CI 构建脚本**：`scripts/build_cdo_windows.sh`
-- **本地构建脚本**：`scripts/build_local_windows.sh`
-- **历史 patch 文件（已弃用）**：`patches/windows-compat.patch`
+- **Patch script**: `scripts/patch_cdo_windows.py`
+- **CI build script**: `scripts/build_cdo_windows.sh`
+- **Local build script**: `scripts/build_local_windows.sh`
+- **Legacy patch file (deprecated)**: `patches/windows-compat.patch`
 
 ---
 
-**最后更新**：2026-02-13  
-**适用 CDO 版本**：2.5.4
+**Last Updated**: 2026-02-13  
+**Compatible with CDO**: 2.5.4
