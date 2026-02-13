@@ -64,15 +64,15 @@ class WindowsPatcher:
                 else:
                     print(f"   [ ] Not found: {desc}")
 
-        # 写入修改
+        # Write modifications
         if content != original and not dry_run:
-            # 备份原文件
+            # Backup original file
             backup_path = self.backup_dir / \
                 rel_path.replace('/', '_').replace('\\', '_')
             backup_path.parent.mkdir(parents=True, exist_ok=True)
             backup_path.write_text(original, encoding='utf-8', newline='\n')
 
-            # 写入修改后的内容
+            # Write modified content
             file_path.write_text(content, encoding='utf-8', newline='\n')
 
         return applied_count > 0, applied_count
