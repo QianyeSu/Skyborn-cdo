@@ -53,22 +53,6 @@ if ! grep -q 'std::to_string' "${CDO_SOURCE}/src/mpmo_color.h"; then
 fi
 echo "[skyborn-cdo] Patches verified OK"
 
-# Create GCC 15 workaround header: ensure pthread and locale are complete
-# before any standard library template processing.
-# GCC 15.2.0 issues:
-#   1. <sstream> needs std::locale to be complete (not just forward-declared)
-#   2. <mutex> (pulled by <locale>) needs pthread functions via gthr-posix.h
-# Solution: Force-include pthread.h AND locale at the start of every .cc file.
-GCC15_FIX="${CDO_SOURCE}/src/gcc15_fix.h"
-cat > "${GCC15_FIX}" << 'FIXEOF'
-/* GCC 15 + MinGW workaround: include pthread and locale FIRST */
-#ifdef __cplusplus
-#include <pthread.h>  /* Must be first: gthr-posix.h depends on this */
-#include <locale>     /* Ensure complete before <sstream> processing */
-#endif
-FIXEOF
-echo "[skyborn-cdo] Created GCC 15 workaround header: ${GCC15_FIX}"
-
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
 # but git checkout sets all timestamps to the same time, which can cause make
@@ -121,7 +105,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     --disable-custom-modules \
     --enable-cgribex \
     CFLAGS="-O2 -I${DEPS_PREFIX}/include" \
-    CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -Wno-template-body -include ${GCC15_FIX} -I${DEPS_PREFIX}/include" \
+    CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -Wno-template-body -I${DEPS_PREFIX}/include" \
     CPPFLAGS="-I${DEPS_PREFIX}/include" \
     LDFLAGS="-L${DEPS_PREFIX}/lib" \
     LIBS="-lz -lm -lws2_32 -lrpcrt4"
