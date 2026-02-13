@@ -160,7 +160,7 @@ class WindowsPatcher:
             # MinGW's unistd.h includes "process.h" (for Windows process mgmt),
             # which gets resolved to CDO's src/process.h due to -I../../../../src.
             # CDO's process.h is C++ only. Guard it to avoid pulling in <vector>.
-            # Also add pthread.h include for pthread_t type used in the class.
+            # Also add pthread.h include EARLY for pthread_t type used in the class.
             ("src/process.h", [
                 ("Guard C++ content from C compiler",
                  re.compile(
@@ -170,9 +170,9 @@ class WindowsPatcher:
                  ),
                  r'\1\n#ifdef __cplusplus\n'),
 
-                ("Add pthread.h for pthread_t type",
+                ("Add pthread.h FIRST for pthread_t type",
                  re.compile(
-                     r'(#include <string>\s*\n)',
+                     r'(#ifdef __cplusplus\s*\n)',
                      re.MULTILINE
                  ),
                  r'\1#include <pthread.h>\n'),
@@ -246,6 +246,56 @@ class WindowsPatcher:
                      '  return s;\n'
                      '}'
                  )),
+            ]),
+
+            # --- GCC 15 sstream workaround: add <locale> before <sstream> ---
+            # GCC 15.2.0 bug: std::stringstream needs std::locale complete, not just
+            # forward-declared. Add #include <locale> before #include <sstream> in
+            # files that use stringstream.
+
+            ("src/util_string.h", [
+                ("Add locale before sstream for GCC 15",
+                 re.compile(
+                     r'(#include <sstream>)',
+                     re.MULTILINE
+                 ),
+                 r'#include <locale>\n\1'),
+            ]),
+
+            ("src/util_string.cc", [
+                ("Add locale before sstream for GCC 15",
+                 re.compile(
+                     r'(#include <sstream>)',
+                     re.MULTILINE
+                 ),
+                 r'#include <locale>\n\1'),
+            ]),
+
+            ("src/process.cc", [
+                ("Add locale before sstream for GCC 15",
+                 re.compile(
+                     r'(#include <sstream>)',
+                     re.MULTILINE
+                 ),
+                 r'#include <locale>\n\1'),
+            ]),
+
+            ("src/cdo_getopt.cc", [
+                ("Add locale before sstream for GCC 15",
+                 re.compile(
+                     r'(#include <sstream>)',
+                     re.MULTILINE
+                 ),
+                 r'#include <locale>\n\1'),
+            ]),
+
+            ("src/operators/Smooth.cc", [
+                ("Add locale before sstream for GCC 15",
+                 re.compile(
+                     r'(#include <sstream>)',
+                     re.MULTILINE
+                 ),
+                 r'#include <locale>\n\1'),
             ]),
 
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
