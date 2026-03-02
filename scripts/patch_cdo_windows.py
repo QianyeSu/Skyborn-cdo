@@ -449,7 +449,8 @@ class WindowsPatcher:
 
             ("src/operators/Filter.cc", [
                 ("Add mutex include for std::scoped_lock",
-                 re.compile(r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
+                 re.compile(
+                     r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
                  r'\1#include <mutex>\n'),
             ]),
 
