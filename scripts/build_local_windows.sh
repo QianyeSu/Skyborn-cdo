@@ -58,7 +58,7 @@ echo "=== Configuring CDO ==="
 # GCC 15 + MinGW: prevent local src/process.h from shadowing system <process.h>
 # during libstdc++ gthread includes.
 if [ -f "$BUILD_DIR/src/Makefile" ]; then
-    sed -i 's|^DEFAULT_INCLUDES = .*|DEFAULT_INCLUDES = -iquote $(srcdir)|' "$BUILD_DIR/src/Makefile"
+    sed -i 's|^DEFAULT_INCLUDES = .*|DEFAULT_INCLUDES = -iquote $(srcdir) -idirafter $(srcdir)|' "$BUILD_DIR/src/Makefile"
 fi
 
 echo ""

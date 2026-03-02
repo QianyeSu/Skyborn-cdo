@@ -120,7 +120,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
 # Force quote-only include search for src headers to prevent this collision.
 if [[ -f src/Makefile ]]; then
     echo "[skyborn-cdo] Patching src/Makefile include search to avoid process.h collision..."
-    sed -i 's|^DEFAULT_INCLUDES = .*|DEFAULT_INCLUDES = -iquote $(srcdir)|' src/Makefile
+    sed -i 's|^DEFAULT_INCLUDES = .*|DEFAULT_INCLUDES = -iquote $(srcdir) -idirafter $(srcdir)|' src/Makefile
 fi
 
 echo "[skyborn-cdo] Building CDO..."

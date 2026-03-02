@@ -160,6 +160,13 @@ class WindowsPatcher:
                  r'#ifndef _WIN32\n\1\n#endif'),
             ]),
 
+            # --- src/dcw_reader.cc: Windows access()/R_OK compatibility ---
+            ("src/dcw_reader.cc", [
+                ("Add io.h/access fallback on Windows",
+                 re.compile(r'^(#include\s+<cstring>)$', re.MULTILINE),
+                 r'\1\n#ifdef _WIN32\n#include <io.h>\n#ifndef R_OK\n#define R_OK 4\n#endif\n#ifndef access\n#define access _access\n#endif\n#endif'),
+            ]),
+
             # --- src/process.h: guard C++ content and pthread usage ---
             # 1. Guard C++ content from C compiler: MinGW's unistd.h includes
             #    "process.h" (Windows process API), which resolves to CDO's
@@ -445,18 +452,8 @@ static int unsetenv(const char *name) {
 \2'''),
             ]),
 
-            # --- Other files: guard unistd.h ---
-            *[(f, [("Guard unistd.h",
-                   re.compile(r'^(#include\s+<unistd\.h>)$', re.MULTILINE),
-                   r'#ifndef _WIN32\n\1\n#endif')])
-              for f in [
-                  "src/cdo_zaxis.cc",
-                  "src/dcw_reader.cc",
-                  "src/expr_lex.cc",
-                  "src/griddes.cc",
-                  "src/merge_axis.cc",
-                  "src/operators/CMOR.cc",
-            ]],
+            # Keep unistd.h includes on MinGW: it is available and required by
+            # multiple files for POSIX-like APIs (access, R_OK, etc.).
         ]
 
         # Apply all patches
