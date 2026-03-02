@@ -147,6 +147,10 @@ class WindowsPatcher:
 
             # --- src/cdo_getopt.cc ---
             ("src/cdo_getopt.cc", [
+                ("Add windows.h for console API on Windows",
+                 re.compile(r'^(#include\s+<map>)$', re.MULTILINE),
+                 r'\1\n\n#ifdef _WIN32\n#include <windows.h>\n#endif'),
+
                 ("Guard sys/ioctl.h (not available on Windows)",
                  re.compile(r'^(#include\s+<sys/ioctl\.h>)$', re.MULTILINE),
                  r'#ifndef _WIN32\n\1\n#endif'),
