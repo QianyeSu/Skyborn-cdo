@@ -183,8 +183,6 @@ jobs:
             mingw-w64-x86_64-libtool
             mingw-w64-x86_64-autotools
             mingw-w64-x86_64-python
-            mingw-w64-x86_64-winpthreads-git
-            mingw-w64-x86_64-libwinpthread-git
             make
             autoconf
             automake
@@ -193,19 +191,15 @@ jobs:
             wget
             patch
 
-      - name: Verify threading support
+      - name: Verify compiler
         shell: msys2 {0}
         run: |
           echo "=== GCC version and threading model ==="
           gcc -v 2>&1 | tail -5
           echo ""
-          echo "=== Check pthread.h availability ==="
-          echo '#include <pthread.h>' | gcc -xc -E - > /dev/null 2>&1 && echo "pthread.h: OK" || echo "pthread.h: NOT FOUND"
+          echo "=== C++20 standard library sanity check ==="
           echo '#include <iostream>' | g++ -xc++ -std=c++20 -E - > /dev/null 2>&1 && echo "iostream: OK" || echo "iostream: BROKEN"
-          echo ""
-          echo "=== gthr-default.h ==="
-          find /mingw64/include/c++/ -name 'gthr-default.h' -exec ls -la {} \;
-          find /mingw64/include/c++/ -name 'gthr-default.h' -exec head -30 {} \;
+          echo '#include <vector>' | g++ -xc++ -std=c++20 -E - > /dev/null 2>&1 && echo "vector: OK" || echo "vector: BROKEN"
 
       - uses: actions/setup-python@v5
         with:

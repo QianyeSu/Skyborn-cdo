@@ -156,13 +156,18 @@ class WindowsPatcher:
                  r'#ifndef _WIN32\n\1\n#endif'),
             ]),
 
-            # --- src/process.h: add pthread.h and guard C++ content ---
-            # On MSYS2 GCC 15+ with MCF threading model, <pthread.h> is NOT
-            # transitively included by <string> or <vector> (unlike Linux GCC
-            # which pulls it in via <bits/gthr-posix.h>). We must include it
-            # explicitly wherever pthread_t is used.
-            # Also guard C++ content from C compiler (MinGW's unistd.h includes
-            # "process.h" which resolves to CDO's src/process.h via -I src).
+            # --- src/process.h: guard C++ content and pthread usage ---
+            # 1. Guard C++ content from C compiler: MinGW's unistd.h includes
+            #    "process.h" (Windows process API), which resolves to CDO's
+            #    src/process.h via -I src. CDO's process.h is C++ only.
+            # 2. Guard pthread_t start_thread() with HAVE_LIBPTHREAD.
+            #
+            # IMPORTANT: Do NOT #include <pthread.h> here.
+            # On MSYS2 GCC 15 with MCF threading model, winpthreads' <pthread.h>
+            # redefines __gthread_* macros and prevents MCF's gthr-mcf.h from
+            # loading properly, breaking <iostream>, <mutex>, etc. in libstdc++.
+            # With --with-threads=no, HAVE_LIBPTHREAD is never defined, so
+            # pthread_t code paths are guarded out entirely.
             ("src/process.h", [
                 ("Guard C++ content from C compiler",
                  re.compile(
@@ -171,13 +176,6 @@ class WindowsPatcher:
                      re.MULTILINE
                  ),
                  r'\1\n#ifdef __cplusplus\n'),
-
-                ("Add pthread.h after standard includes for pthread_t",
-                 re.compile(
-                     r'^(#include <vector>\s*\n#include <string>)\s*\n',
-                     re.MULTILINE
-                 ),
-                 r'\1\n#ifdef HAVE_LIBPTHREAD\n#include <pthread.h>\n#endif\n'),
 
                 ("Guard pthread_t start_thread() with HAVE_LIBPTHREAD",
                  re.compile(

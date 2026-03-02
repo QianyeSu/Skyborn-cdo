@@ -102,7 +102,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     --with-proj="${DEPS_PREFIX}" \
     --with-udunits2="${DEPS_PREFIX}" \
     --with-szlib="${DEPS_PREFIX}" \
-    --with-threads=yes \
+    --with-threads=no \
     --disable-fortran \
     --disable-across \
     --disable-custom-modules \
@@ -111,7 +111,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -Wno-template-body -I${DEPS_PREFIX}/include" \
     CPPFLAGS="-I${DEPS_PREFIX}/include" \
     LDFLAGS="-L${DEPS_PREFIX}/lib" \
-    LIBS="-lz -lm -lws2_32 -lrpcrt4 -lpthread"
+    LIBS="-lz -lm -lws2_32 -lrpcrt4"
 
 echo "[skyborn-cdo] Building CDO..."
 # Disable libcdi tests that use POSIX-only functions (srand48, lrand48, etc.)
