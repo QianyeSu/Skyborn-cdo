@@ -55,6 +55,12 @@ echo "=== Configuring CDO ==="
     LDFLAGS="-L/mingw64/lib" \
     LIBS="-lws2_32"
 
+# GCC 15 + MinGW: prevent local src/process.h from shadowing system <process.h>
+# during libstdc++ gthread includes.
+if [ -f "$BUILD_DIR/src/Makefile" ]; then
+    sed -i 's|^DEFAULT_INCLUDES = .*|DEFAULT_INCLUDES = -iquote $(srcdir)|' "$BUILD_DIR/src/Makefile"
+fi
+
 echo ""
 echo "=== Building CDO ==="
 make -j$(nproc)

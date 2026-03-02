@@ -113,6 +113,16 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     LDFLAGS="-L${DEPS_PREFIX}/lib" \
     LIBS="-lz -lm -lws2_32 -lrpcrt4"
 
+# GCC 15 + MinGW: avoid header shadowing of system <process.h> by
+# local src/process.h (same basename). In the generated src/Makefile,
+# DEFAULT_INCLUDES typically contains -I. and -I$(srcdir), which lets
+# <process.h> resolve to CDO's C++ header during libstdc++ gthread include.
+# Force quote-only include search for src headers to prevent this collision.
+if [[ -f src/Makefile ]]; then
+    echo "[skyborn-cdo] Patching src/Makefile include search to avoid process.h collision..."
+    sed -i 's|^DEFAULT_INCLUDES = .*|DEFAULT_INCLUDES = -iquote $(srcdir)|' src/Makefile
+fi
+
 echo "[skyborn-cdo] Building CDO..."
 # Disable libcdi tests that use POSIX-only functions (srand48, lrand48, etc.)
 # not available on MinGW/Windows
