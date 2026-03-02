@@ -380,6 +380,73 @@ class WindowsPatcher:
                  r'#include <locale>\n\1'),
             ]),
 
+            # --- Missing <sstream> includes for files using std::stringstream ---
+            ("src/process_int.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <cassert>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/processManager.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <mutex>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Bitrounding.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <cdi\.h>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/CMOR.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <iomanip>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Command.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <iterator>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Expr.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <cassert>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Getgridcell.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <cdi\.h>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Info.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <numbers>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Pack.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <fstream>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Remapgrid.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <algorithm>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
+            ("src/operators/Remapweights.cc", [
+                ("Add sstream include for std::stringstream",
+                 re.compile(r'^(#include <thread>)$', re.MULTILINE),
+                 r'\1\n#include <sstream>'),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
