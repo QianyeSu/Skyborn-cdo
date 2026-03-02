@@ -41,8 +41,8 @@ fi
 
 # Verify critical patches were applied
 echo "[skyborn-cdo] Verifying patches..."
-if ! grep -q "#include <pthread.h>" "${CDO_SOURCE}/src/process.h"; then
-    echo "[skyborn-cdo] ERROR: pthread.h patch not applied to process.h!"
+if ! grep -q '#ifdef __cplusplus' "${CDO_SOURCE}/src/process.h"; then
+    echo "[skyborn-cdo] ERROR: __cplusplus guard not applied to process.h!"
     head -25 "${CDO_SOURCE}/src/process.h"
     exit 1
 fi
@@ -50,6 +50,9 @@ if ! grep -q 'std::to_string' "${CDO_SOURCE}/src/mpmo_color.h"; then
     echo "[skyborn-cdo] ERROR: mpmo_color.h rewrite not applied!"
     head -90 "${CDO_SOURCE}/src/mpmo_color.h"
     exit 1
+fi
+if grep -q '#ifdef HAVE_LIBPTHREAD' "${CDO_SOURCE}/src/processManager.h"; then
+    echo "[skyborn-cdo] processManager.h pthread guard: applied"
 fi
 echo "[skyborn-cdo] Patches verified OK"
 
@@ -108,7 +111,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     CXXFLAGS="-D_USE_MATH_DEFINES -O2 -std=c++20 -Wno-template-body -I${DEPS_PREFIX}/include" \
     CPPFLAGS="-I${DEPS_PREFIX}/include" \
     LDFLAGS="-L${DEPS_PREFIX}/lib" \
-    LIBS="-lz -lm -lws2_32 -lrpcrt4"
+    LIBS="-lz -lm -lws2_32 -lrpcrt4 -lpthread"
 
 echo "[skyborn-cdo] Building CDO..."
 # Disable libcdi tests that use POSIX-only functions (srand48, lrand48, etc.)

@@ -156,11 +156,13 @@ class WindowsPatcher:
                  r'#ifndef _WIN32\n\1\n#endif'),
             ]),
 
-            # --- src/process.h: prevent C files from including C++ content ---
-            # MinGW's unistd.h includes "process.h" (for Windows process mgmt),
-            # which gets resolved to CDO's src/process.h due to -I../../../../src.
-            # CDO's process.h is C++ only. Guard it to avoid pulling in <vector>.
-            # Also add pthread.h include EARLY for pthread_t type used in the class.
+            # --- src/process.h: add pthread.h and guard C++ content ---
+            # On MSYS2 GCC 15+ with MCF threading model, <pthread.h> is NOT
+            # transitively included by <string> or <vector> (unlike Linux GCC
+            # which pulls it in via <bits/gthr-posix.h>). We must include it
+            # explicitly wherever pthread_t is used.
+            # Also guard C++ content from C compiler (MinGW's unistd.h includes
+            # "process.h" which resolves to CDO's src/process.h via -I src).
             ("src/process.h", [
                 ("Guard C++ content from C compiler",
                  re.compile(
@@ -170,16 +172,87 @@ class WindowsPatcher:
                  ),
                  r'\1\n#ifdef __cplusplus\n'),
 
-                ("Add pthread.h FIRST for pthread_t type",
+                ("Add pthread.h after standard includes for pthread_t",
                  re.compile(
-                     r'(#ifdef __cplusplus\s*\n)',
+                     r'^(#include <vector>\s*\n#include <string>)\s*\n',
                      re.MULTILINE
                  ),
-                 r'\1#include <pthread.h>\n'),
+                 r'\1\n#ifdef HAVE_LIBPTHREAD\n#include <pthread.h>\n#endif\n'),
+
+                ("Guard pthread_t start_thread() with HAVE_LIBPTHREAD",
+                 re.compile(
+                     r'^(\s+)(pthread_t start_thread\(\);)$',
+                     re.MULTILINE
+                 ),
+                 r'#ifdef HAVE_LIBPTHREAD\n\1\2\n#endif'),
 
                 ("Close C++ guard at end",
                  "#endif /* PROCESS_H */",
                  "#endif /* __cplusplus */\n#endif /* PROCESS_H */"),
+            ]),
+
+            # --- src/processManager.h: guard pthread includes ---
+            # processManager.h unconditionally includes <pthread.h>. Guard it
+            # so compilation doesn't fail when pthreads headers are unavailable.
+            ("src/processManager.h", [
+                ("Guard pthread.h include with HAVE_LIBPTHREAD",
+                 re.compile(r'^(#include <pthread\.h>)$', re.MULTILINE),
+                 r'#ifdef HAVE_LIBPTHREAD\n\1\n#endif'),
+
+                ("Guard m_threadIDs vector",
+                 re.compile(
+                     r'^(\s+)(std::vector<pthread_t> m_threadIDs;)$',
+                     re.MULTILINE
+                 ),
+                 r'#ifdef HAVE_LIBPTHREAD\n\1\2\n#endif'),
+            ]),
+
+            # --- src/processManager.cc: guard pthread function calls ---
+            ("src/processManager.cc", [
+                ("Guard start_thread() call in run_processes",
+                 '      m_threadIDs.push_back(idProcessPair.second->start_thread());',
+                 '#ifdef HAVE_LIBPTHREAD\n      m_threadIDs.push_back(idProcessPair.second->start_thread());\n#endif'),
+
+                ("Guard pthread_self() push in run_processes",
+                 '  m_threadIDs.push_back(pthread_self());',
+                 '#ifdef HAVE_LIBPTHREAD\n  m_threadIDs.push_back(pthread_self());\n#endif'),
+
+                ("Guard kill_processes pthread calls",
+                 re.compile(
+                     r'(ProcessManager::kill_processes\(\)\s*\n\{)\s*\n'
+                     r'(  for \(auto threadID.*?)\n(\})',
+                     re.DOTALL
+                 ),
+                 r'\1\n#ifdef HAVE_LIBPTHREAD\n\2\n#endif\n\3'),
+            ]),
+
+            # --- src/process.cc: guard start_thread() implementation ---
+            ("src/process.cc", [
+                ("Guard start_thread() implementation with HAVE_LIBPTHREAD",
+                 re.compile(
+                     r'^(pthread_t\nProcess::start_thread\(\))',
+                     re.MULTILINE
+                 ),
+                 r'#ifdef HAVE_LIBPTHREAD\n\1'),
+
+                ("Close HAVE_LIBPTHREAD guard after start_thread()",
+                 re.compile(
+                     r'(  return thrID;\n\})',
+                     re.MULTILINE
+                 ),
+                 r'\1\n#endif /* HAVE_LIBPTHREAD */'),
+            ]),
+
+            # --- src/varray.h: add missing <iostream> for std::cerr ---
+            # GCC 15 no longer transitively includes <iostream> headers; any
+            # file that writes to std::cerr must include it explicitly.
+            ("src/varray.h", [
+                ("Add iostream include for std::cerr",
+                 re.compile(
+                     r'^(#include "compare\.h")$',
+                     re.MULTILINE
+                 ),
+                 r'\1\n#include <iostream>'),
             ]),
 
             # --- src/field.h: add missing <stdexcept> for std::runtime_error ---
