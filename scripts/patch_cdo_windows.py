@@ -447,6 +447,12 @@ class WindowsPatcher:
                  r'\1\n#include <sstream>'),
             ]),
 
+            ("src/operators/Filter.cc", [
+                ("Add mutex include for std::scoped_lock",
+                 re.compile(r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
+                 r'\1#include <mutex>\n'),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
