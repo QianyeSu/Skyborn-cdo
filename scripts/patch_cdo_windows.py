@@ -668,6 +668,35 @@ static int unsetenv(const char *name) {
 \2'''),
             ]),
 
+            # --- src/cdo_settings.cc: disable CDI I/O threading on Windows ---
+            # set_cdi_options() unconditionally calls cdiDefGlobal("THREADSAFE", 1)
+            # whenever cdoLockIO == false (the default).  This enables CDI's
+            # internal pthread_mutex protection for file I/O (CDI_IO_Mutex and
+            # lazy-grid loadSerialize mutexes in cdf_lazy_grid.c).
+            #
+            # On Windows (MSYS2/MinGW64 with winpthreads), this causes an
+            # ACCESS VIOLATION (0xC0000005) when reading NetCDF files created
+            # by piped operators (e.g. chname, setname).  The winpthreads
+            # pthread_mutex implementation has compatibility issues with CDI's
+            # lazy-grid initialisation on Windows.
+            #
+            # CDO's *process* threading (pipe chains, parallel operators) is
+            # a separate mechanism controlled by --with-threads=yes and does
+            # NOT depend on CDI_Threadsafe.  Disabling CDI_Threadsafe on
+            # Windows does not affect multi-operator pipelines.
+            ("src/cdo_settings.cc", [
+                ("Guard CDI THREADSAFE enable with #ifndef _WIN32",
+                 "  if (Threading::cdoLockIO == false) cdiDefGlobal(\"THREADSAFE\", 1);",
+                 "#ifndef _WIN32\n"
+                 "  // CDI I/O threading is disabled on Windows: winpthreads\n"
+                 "  // mutexes in CDI's lazy-grid code cause ACCESS VIOLATION\n"
+                 "  // (0xC0000005) when reading files created by pipe operators.\n"
+                 "  // CDO's own process threading (--with-threads=yes) is\n"
+                 "  // unaffected by this setting.\n"
+                 "  if (Threading::cdoLockIO == false) cdiDefGlobal(\"THREADSAFE\", 1);\n"
+                 "#endif"),
+            ]),
+
             # Keep unistd.h includes on MinGW: it is available and required by
             # multiple files for POSIX-like APIs (access, R_OK, etc.).
         ]
