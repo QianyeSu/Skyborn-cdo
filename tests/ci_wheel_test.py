@@ -456,7 +456,6 @@ def main():
         # (GRIB uses parameter codes, variable names are derived from code tables)
         cdo(f"cdo -f nc -chname,{vname},elevation {topo_nc} {chname_nc}", timeout=30)
         assert_file(chname_nc)
-        # Verify the renamed variable.
         # Verify the rename via showname.
         # Defensive fallback: on Windows, older builds without the
         # cdo_settings.cc CDI-threading patch could crash with NTSTATUS
