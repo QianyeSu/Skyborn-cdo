@@ -494,6 +494,24 @@ class WindowsPatcher:
                  "#include <mutex>\nstatic std::mutex fftwMutex;"),
             ]),
 
+            # --- HDF5: unconditionally include hdf5.h ---
+            # griddes_h5.cc and operators/Importcmsaf.cc wrap #include "hdf5.h"
+            # in #ifdef HAVE_LIBHDF5, but their function signatures use hid_t /
+            # herr_t types directly outside the guard.  Our build always links
+            # HDF5 (--with-hdf5 is passed to configure), so the unconditional
+            # include is safe and ensures the types are visible everywhere.
+            ("src/griddes_h5.cc", [
+                ("Unconditionally include hdf5.h",
+                 "#ifdef HAVE_LIBHDF5\n#include \"hdf5.h\"\n#endif",
+                 "#include \"hdf5.h\""),
+            ]),
+
+            ("src/operators/Importcmsaf.cc", [
+                ("Unconditionally include hdf5.h",
+                 "#ifdef HAVE_LIBHDF5\n#include \"hdf5.h\"\n#endif",
+                 "#include \"hdf5.h\""),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
