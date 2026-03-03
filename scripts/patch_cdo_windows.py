@@ -565,6 +565,29 @@ class WindowsPatcher:
                  "#include \"proj.h\""),
             ]),
 
+            # --- libcdi/src/util.c: provide cdiCreateUUID for Windows ---
+            # The entire cdiCreateUUID implementation is wrapped in
+            # `#ifndef _WIN32`, so on Windows the symbol is never defined,
+            # causing an undefined-reference linker error.
+            # The build already links -lrpcrt4, so we can use UuidCreate()
+            # from <rpc.h> to generate a proper UUID v4.
+            ("libcdi/src/util.c", [
+                ("Add Windows cdiCreateUUID implementation using UuidCreate",
+                 "#endif\n}\n#endif\n#endif\n\n/*\n * Local Variables:",
+                 "#endif\n}\n#endif\n#endif\n\n"
+                 "#ifdef _WIN32\n"
+                 "#include <rpc.h>\n"
+                 "void\n"
+                 "cdiCreateUUID(unsigned char *uuid)\n"
+                 "{\n"
+                 "  UUID winUUID;\n"
+                 "  UuidCreate(&winUUID);\n"
+                 "  memcpy(uuid, &winUUID, CDI_UUID_SIZE);\n"
+                 "}\n"
+                 "#endif\n"
+                 "\n/*\n * Local Variables:"),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
