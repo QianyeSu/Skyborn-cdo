@@ -56,57 +56,41 @@ if grep -q '#ifdef HAVE_LIBPTHREAD' "${CDO_SOURCE}/src/processManager.h"; then
 fi
 echo "[skyborn-cdo] Patches verified OK"
 
-# Defensive fix: some CDO snapshots use std::scoped_lock in Filter.cc without
-# stable mutex include/fftwMutex declaration. Normalize before configure/build.
-if [[ -f "${CDO_SOURCE}/src/operators/Filter.cc" ]]; then
-    python - <<'PY'
-from pathlib import Path
-path = Path("src/operators/Filter.cc")
-text = path.read_text(encoding="utf-8", errors="ignore")
-changed = False
-if "std::scoped_lock" in text and "#include <mutex>" not in text:
-    if '#include "field_functions.h"\n' in text:
-        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
-        changed = True
-    elif '#include <fftw3.h>\n' in text:
-        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
-        changed = True
-
-if "std::scoped_lock" in text and "fftwMutex" in text and "static std::mutex fftwMutex;" not in text:
-    anchor = '#include "field_functions.h"\n'
-    if anchor in text:
-        text = text.replace(anchor, anchor + '\nstatic std::mutex fftwMutex;\n', 1)
-        changed = True
-
-if changed:
-    path.write_text(text, encoding="utf-8", newline="\n")
+# Defensive fix: ensure fftw3.h / <mutex> / fftwMutex are included unconditionally
+# in the affected CDO source files.  The patch_cdo_windows.py script handles this
+# via regex, but this inline block acts as a belt-and-suspenders fallback in case
+# the regex doesn't match (e.g. different CDO snapshot with slightly different text).
+for _fftw_file in \
+    "src/operators/Filter.cc" \
+    "src/operators/Fourier.cc" \
+    "src/cdo_fctrans.cc"; do
+  if [[ -f "${CDO_SOURCE}/${_fftw_file}" ]]; then
+    python - "${CDO_SOURCE}/${_fftw_file}" <<'PY'
+import sys, re
+fpath = sys.argv[1]
+text = open(fpath, encoding="utf-8", errors="ignore").read()
+original = text
+# Remove the first #ifdef HAVE_LIBFFTW3 block that contains fftw3.h/mutex/fftwMutex.
+# Replace with unconditional includes so fftw_complex is always visible.
+text = re.sub(
+    r'#ifdef HAVE_LIBFFTW3\s*\n#include <fftw3\.h>\s*\n(?:#include <mutex>\s*\n)?(?:static std::mutex fftwMutex;\s*\n)?#endif',
+    '#include <fftw3.h>\n#include <mutex>\nstatic std::mutex fftwMutex;',
+    text, flags=re.MULTILINE)
+# Also handle the split-block form used in cdo_fctrans.cc:
+# Block 1: just #include <fftw3.h>
+text = re.sub(
+    r'#ifdef HAVE_LIBFFTW3\s*\n(#include <fftw3\.h>)\s*\n#endif',
+    r'\1', text, flags=re.MULTILINE)
+# Block 2: mutex + fftwMutex
+text = re.sub(
+    r'#ifdef HAVE_LIBFFTW3\s*\n(#include <mutex>\s*\nstatic std::mutex fftwMutex;)\s*\n#endif',
+    r'\1', text, flags=re.MULTILINE)
+if text != original:
+    open(fpath, 'w', encoding="utf-8", newline="\n").write(text)
+    print(f"[skyborn-cdo] Defensive fftw3 fix applied: {fpath}")
 PY
-fi
-
-if [[ -f "${CDO_SOURCE}/src/operators/Fourier.cc" ]]; then
-    python - <<'PY'
-from pathlib import Path
-path = Path("src/operators/Fourier.cc")
-text = path.read_text(encoding="utf-8", errors="ignore")
-changed = False
-if "std::scoped_lock" in text and "#include <mutex>" not in text:
-    if '#include "field_functions.h"\n' in text:
-        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
-        changed = True
-    elif '#include <fftw3.h>\n' in text:
-        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
-        changed = True
-
-if "std::scoped_lock" in text and "fftwMutex" in text and "static std::mutex fftwMutex;" not in text:
-    anchor = '#include "field_functions.h"\n'
-    if anchor in text:
-        text = text.replace(anchor, anchor + '\nstatic std::mutex fftwMutex;\n', 1)
-        changed = True
-
-if changed:
-    path.write_text(text, encoding="utf-8", newline="\n")
-PY
-fi
+  fi
+done
 
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,

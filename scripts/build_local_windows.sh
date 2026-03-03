@@ -29,57 +29,34 @@ if [ $? -ne 0 ]; then
     echo "Warning: Some patches failed to apply"
 fi
 
-# Defensive fix for snapshots where Filter.cc uses std::scoped_lock without
-# stable mutex include/fftwMutex declaration.
-if [ -f "$CDO_SRC/src/operators/Filter.cc" ]; then
-    python - <<'PY'
-from pathlib import Path
-path = Path('vendor/cdo/src/operators/Filter.cc')
-text = path.read_text(encoding='utf-8', errors='ignore')
-changed = False
-if 'std::scoped_lock' in text and '#include <mutex>' not in text:
-    if '#include "field_functions.h"\n' in text:
-        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
-        changed = True
-    elif '#include <fftw3.h>\n' in text:
-        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
-        changed = True
-
-if 'std::scoped_lock' in text and 'fftwMutex' in text and 'static std::mutex fftwMutex;' not in text:
-    anchor = '#include "field_functions.h"\n'
-    if anchor in text:
-        text = text.replace(anchor, anchor + '\nstatic std::mutex fftwMutex;\n', 1)
-        changed = True
-
-if changed:
-    path.write_text(text, encoding='utf-8', newline='\n')
+# Defensive fix: ensure fftw3.h / <mutex> / fftwMutex are included
+# unconditionally in FFTW-using operator files (belt-and-suspenders fallback).
+for _fftw_file in \
+    "$CDO_SRC/src/operators/Filter.cc" \
+    "$CDO_SRC/src/operators/Fourier.cc" \
+    "$CDO_SRC/src/cdo_fctrans.cc"; do
+  if [ -f "$_fftw_file" ]; then
+    python - "$_fftw_file" <<'PY'
+import sys, re
+fpath = sys.argv[1]
+text = open(fpath, encoding='utf-8', errors='ignore').read()
+original = text
+text = re.sub(
+    r'#ifdef HAVE_LIBFFTW3\s*\n#include <fftw3\.h>\s*\n(?:#include <mutex>\s*\n)?(?:static std::mutex fftwMutex;\s*\n)?#endif',
+    '#include <fftw3.h>\n#include <mutex>\nstatic std::mutex fftwMutex;',
+    text, flags=re.MULTILINE)
+text = re.sub(
+    r'#ifdef HAVE_LIBFFTW3\s*\n(#include <fftw3\.h>)\s*\n#endif',
+    r'\1', text, flags=re.MULTILINE)
+text = re.sub(
+    r'#ifdef HAVE_LIBFFTW3\s*\n(#include <mutex>\s*\nstatic std::mutex fftwMutex;)\s*\n#endif',
+    r'\1', text, flags=re.MULTILINE)
+if text != original:
+    open(fpath, 'w', encoding='utf-8', newline='\n').write(text)
+    print(f'[skyborn-cdo] Defensive fftw3 fix applied: {fpath}')
 PY
-fi
-
-if [ -f "$CDO_SRC/src/operators/Fourier.cc" ]; then
-    python - <<'PY'
-from pathlib import Path
-path = Path('vendor/cdo/src/operators/Fourier.cc')
-text = path.read_text(encoding='utf-8', errors='ignore')
-changed = False
-if 'std::scoped_lock' in text and '#include <mutex>' not in text:
-    if '#include "field_functions.h"\n' in text:
-        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
-        changed = True
-    elif '#include <fftw3.h>\n' in text:
-        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
-        changed = True
-
-if 'std::scoped_lock' in text and 'fftwMutex' in text and 'static std::mutex fftwMutex;' not in text:
-    anchor = '#include "field_functions.h"\n'
-    if anchor in text:
-        text = text.replace(anchor, anchor + '\nstatic std::mutex fftwMutex;\n', 1)
-        changed = True
-
-if changed:
-    path.write_text(text, encoding='utf-8', newline='\n')
-PY
-fi
+  fi
+done
 
 # Check if configure exists (pre-generated)
 if [ ! -f configure ]; then

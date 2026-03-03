@@ -448,41 +448,50 @@ class WindowsPatcher:
             ]),
 
             ("src/operators/Filter.cc", [
-                ("Normalize FFTW/mutex include block",
+                # Move fftw3.h + mutex + fftwMutex OUTSIDE the HAVE_LIBFFTW3 guard.
+                # This ensures fftw_complex/fftw_plan are always defined regardless
+                # of whether configure detects HAVE_LIBFFTW3.  Our build always has
+                # fftw3 available (--with-fftw3 is passed to configure), so the
+                # unconditional include is safe.
+                ("Unconditionally include fftw3.h, mutex and fftwMutex",
                  re.compile(
                      r'#ifdef HAVE_LIBFFTW3\s*\n#include <fftw3\.h>\s*\n(?:#include <mutex>\s*\n)?(?:static std::mutex fftwMutex;\s*\n)?#endif',
                      re.MULTILINE
                  ),
-                 '#ifdef HAVE_LIBFFTW3\n#include <fftw3.h>\n#endif\n#include <mutex>\nstatic std::mutex fftwMutex;'),
-
-                ("Add mutex include for std::scoped_lock",
-                 re.compile(
-                     r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
-                 r'\1#include <mutex>\n'),
-
-                ("Fallback: add mutex include near field_functions include",
-                 re.compile(
-                     r'(#include "field_functions\.h"\n)(?!#include <mutex>)', re.MULTILINE),
-                 r'\1#include <mutex>\n'),
+                 '#include <fftw3.h>\n#include <mutex>\nstatic std::mutex fftwMutex;'),
             ]),
 
             ("src/operators/Fourier.cc", [
-                ("Normalize FFTW/mutex include block",
+                # Same treatment as Filter.cc: unconditionally include fftw3.h,
+                # <mutex> and declare fftwMutex so their types/symbols are always
+                # visible regardless of HAVE_LIBFFTW3.  The struct members and
+                # function bodies that actually use FFTW are still guarded by
+                # their own #ifdef HAVE_LIBFFTW3 blocks and will be compiled only
+                # when the library was detected -- no runtime impact.
+                ("Unconditionally include fftw3.h, mutex and fftwMutex",
                  re.compile(
                      r'#ifdef HAVE_LIBFFTW3\s*\n#include <fftw3\.h>\s*\n(?:#include <mutex>\s*\n)?(?:static std::mutex fftwMutex;\s*\n)?#endif',
                      re.MULTILINE
                  ),
-                 '#ifdef HAVE_LIBFFTW3\n#include <fftw3.h>\n#endif\n#include <mutex>\nstatic std::mutex fftwMutex;'),
+                 '#include <fftw3.h>\n#include <mutex>\nstatic std::mutex fftwMutex;'),
+            ]),
 
-                ("Add mutex include for std::scoped_lock",
-                 re.compile(
-                     r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
-                 r'\1#include <mutex>\n'),
-
-                ("Fallback: add mutex include near field_functions include",
-                 re.compile(
-                     r'(#include "field_functions\.h"\n)(?!#include <mutex>)', re.MULTILINE),
-                 r'\1#include <mutex>\n'),
+            # --- src/cdo_fctrans.cc: fftw3.h and mutex blocks unconditional ---
+            # cdo_fctrans.cc has TWO separate HAVE_LIBFFTW3 guards:
+            #   1) #ifdef HAVE_LIBFFTW3 / #include <fftw3.h> / #endif
+            #   2) #ifdef HAVE_LIBFFTW3 / #include <mutex> / static...fftwMutex / #endif
+            # Struct members (fftw_complex etc.) are inside a THIRD guard.
+            # If configure fails to link fftw3 and HAVE_LIBFFTW3 stays undefined
+            # via config.h we'd be safe (all code skipped), but if some external
+            # HAVE_LIBFFTW3 define fires without the types being available we'd
+            # get compile errors.  Unconditionally include to be bulletproof.
+            ("src/cdo_fctrans.cc", [
+                ("Unconditionally include fftw3.h",
+                 "#ifdef HAVE_LIBFFTW3\n#include <fftw3.h>\n#endif",
+                 "#include <fftw3.h>"),
+                ("Unconditionally include mutex and fftwMutex",
+                 "#ifdef HAVE_LIBFFTW3\n#include <mutex>\nstatic std::mutex fftwMutex;\n#endif",
+                 "#include <mutex>\nstatic std::mutex fftwMutex;"),
             ]),
 
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
