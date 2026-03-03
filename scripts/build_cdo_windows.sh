@@ -182,7 +182,7 @@ echo "[skyborn-cdo] Configuring CDO for Windows..."
     --with-proj="${DEPS_PREFIX}" \
     --with-udunits2="${DEPS_PREFIX}" \
     --with-szlib="${DEPS_PREFIX}" \
-    --with-threads=no \
+    --with-threads=yes \
     --disable-fortran \
     --disable-across \
     --disable-custom-modules \

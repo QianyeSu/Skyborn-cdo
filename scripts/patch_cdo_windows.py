@@ -172,13 +172,9 @@ class WindowsPatcher:
             #    "process.h" (Windows process API), which resolves to CDO's
             #    src/process.h via -I src. CDO's process.h is C++ only.
             # 2. Guard pthread_t start_thread() with HAVE_LIBPTHREAD.
-            #
-            # IMPORTANT: Do NOT #include <pthread.h> here.
-            # On MSYS2 GCC 15 with MCF threading model, winpthreads' <pthread.h>
-            # redefines __gthread_* macros and prevents MCF's gthr-mcf.h from
-            # loading properly, breaking <iostream>, <mutex>, etc. in libstdc++.
-            # With --with-threads=no, HAVE_LIBPTHREAD is never defined, so
-            # pthread_t code paths are guarded out entirely.
+            #    In MSYS2 MINGW64, pthreads is provided by winpthreads (POSIX
+            #    thread model). This guard ensures graceful degradation if
+            #    the build is done on a system without pthreads.
             ("src/process.h", [
                 ("Guard C++ content from C compiler",
                  re.compile(
@@ -201,10 +197,22 @@ class WindowsPatcher:
             ]),
 
             # --- src/processManager.h: guard pthread includes ---
-            # processManager.h unconditionally includes <pthread.h>. Guard it
-            # so compilation doesn't fail when pthreads headers are unavailable.
+            # processManager.h unconditionally includes <pthread.h>.
+            # In MSYS2 MINGW64, POSIX threads (winpthreads) are used -- NOT MCF.
+            # MCF is only the default in UCRT64/CLANG64 environments.
+            # We move <pthread.h> to BEFORE the C++ STL includes as a defensive
+            # measure (belt-and-suspenders), in case the include order matters
+            # for edge cases in future GCC versions.
             ("src/processManager.h", [
-                ("Guard pthread.h include with HAVE_LIBPTHREAD",
+                ("Add pthread.h before C++ STL headers (safer include order)",
+                 "// Stdlib includes\n#include <map>",
+                 "#ifdef HAVE_LIBPTHREAD\n"
+                 "// Must be included before C++ STL to ensure correct threading setup\n"
+                 "#include <pthread.h>\n"
+                 "#endif\n\n"
+                 "// Stdlib includes\n#include <map>"),
+
+                ("Guard existing pthread.h include with HAVE_LIBPTHREAD",
                  re.compile(r'^(#include <pthread\.h>)$', re.MULTILINE),
                  r'#ifdef HAVE_LIBPTHREAD\n\1\n#endif'),
 
