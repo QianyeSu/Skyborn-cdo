@@ -452,6 +452,11 @@ class WindowsPatcher:
                  re.compile(
                      r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
                  r'\1#include <mutex>\n'),
+
+                ("Fallback: add mutex include near field_functions include",
+                 re.compile(
+                     r'(#include "field_functions\.h"\n)(?!#include <mutex>)', re.MULTILINE),
+                 r'\1#include <mutex>\n'),
             ]),
 
             # --- libcdi/configure: bypass POSIX.1-2001 check ---

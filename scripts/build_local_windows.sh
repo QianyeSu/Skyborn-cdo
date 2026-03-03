@@ -29,6 +29,22 @@ if [ $? -ne 0 ]; then
     echo "Warning: Some patches failed to apply"
 fi
 
+# Defensive fix for snapshots where Filter.cc uses std::scoped_lock without
+# including <mutex>.
+if [ -f "$CDO_SRC/src/operators/Filter.cc" ]; then
+    python - <<'PY'
+from pathlib import Path
+path = Path('vendor/cdo/src/operators/Filter.cc')
+text = path.read_text(encoding='utf-8', errors='ignore')
+if 'std::scoped_lock' in text and '#include <mutex>' not in text:
+    if '#include "field_functions.h"\n' in text:
+        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
+    elif '#include <fftw3.h>\n' in text:
+        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
+    path.write_text(text, encoding='utf-8', newline='\n')
+PY
+fi
+
 # Check if configure exists (pre-generated)
 if [ ! -f configure ]; then
     echo "Running autoreconf..."
