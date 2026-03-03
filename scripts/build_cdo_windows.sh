@@ -92,6 +92,34 @@ PY
   fi
 done
 
+# Defensive fix: rename include guards in both table.h files to prevent
+# the TABLE_H guard clash that hides cdo::define_table from Setpartab.cc.
+# patch_cdo_windows.py handles this, but the inline fallback ensures it
+# works even if the patcher pattern doesn't match a slightly different snapshot.
+for _tbl_file in \
+    "src/table.h" \
+    "libcdi/src/table.h"; do
+  if [[ -f "${CDO_SOURCE}/${_tbl_file}" ]]; then
+    python - "${CDO_SOURCE}/${_tbl_file}" "${_tbl_file}" <<'PY'
+import sys
+fpath, rel = sys.argv[1], sys.argv[2]
+text = open(fpath, encoding="utf-8", errors="ignore").read()
+original = text
+if rel == "src/table.h":
+    # CDO's own table.h: use a unique guard so it is never skipped
+    text = text.replace("#ifndef TABLE_H\n#define TABLE_H",
+                        "#ifndef CDO_SRC_TABLE_H\n#define CDO_SRC_TABLE_H")
+else:
+    # libcdi's auto-generated table.h: rename guard to avoid polluting TABLE_H
+    text = text.replace("#ifndef TABLE_H\n#define TABLE_H",
+                        "#ifndef CDI_TABLE_H\n#define CDI_TABLE_H")
+if text != original:
+    open(fpath, 'w', encoding="utf-8", newline="\n").write(text)
+    print(f"[skyborn-cdo] Defensive table.h guard fix applied: {fpath}")
+PY
+  fi
+done
+
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
 # but git checkout sets all timestamps to the same time, which can cause make
