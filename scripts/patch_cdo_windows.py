@@ -553,6 +553,18 @@ class WindowsPatcher:
                  '#include "../table.h"'),
             ]),
 
+            # --- src/mpim_grid/grid_proj.cc: unconditionally include proj.h ---
+            # PJ, proj_create, proj_destroy, proj_errno, proj_errno_string and
+            # PJ_DEFAULT_CTX are used throughout the file but their declarations
+            # are wrapped in #ifdef HAVE_LIBPROJ.  On Windows, PROJ is always
+            # available as a build dependency, so include the header
+            # unconditionally so the types are visible in every code path.
+            ("src/mpim_grid/grid_proj.cc", [
+                ("Unconditionally include proj.h",
+                 "#ifdef HAVE_LIBPROJ\n#include \"proj.h\"\n#endif",
+                 "#include \"proj.h\""),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
