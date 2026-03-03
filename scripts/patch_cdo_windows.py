@@ -512,6 +512,23 @@ class WindowsPatcher:
                  "#include \"hdf5.h\""),
             ]),
 
+            # --- libcdi/src/table.h: fix guard clash and add tablepar.h ---
+            # libcdi/src/table.h uses param_type without including tablepar.h.
+            # It also uses the SAME include guard "TABLE_H" as CDO's src/table.h
+            # which declares cdo::define_table.
+            # When the libcdi version is processed first it sets TABLE_H, making
+            # CDO's src/table.h a no-op -> cdo::define_table unavailable.
+            # Fix: (1) rename guard to CDI_TABLE_H so both files are processed,
+            #      (2) add #include "tablepar.h" so param_type/tableLink are visible.
+            ("libcdi/src/table.h", [
+                ("Rename include guard to avoid clash with src/table.h",
+                 "/* Automatically generated, do not edit! */\n#ifndef TABLE_H\n#define TABLE_H",
+                 "/* Automatically generated, do not edit! */\n#ifndef CDI_TABLE_H\n#define CDI_TABLE_H"),
+                ("Add tablepar.h include to define param_type",
+                 "#ifndef CDI_TABLE_H\n#define CDI_TABLE_H\n\n// clang-format off",
+                 "#ifndef CDI_TABLE_H\n#define CDI_TABLE_H\n\n#include \"tablepar.h\"\n\n// clang-format off"),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
