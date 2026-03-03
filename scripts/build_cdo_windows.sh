@@ -120,6 +120,22 @@ PY
   fi
 done
 
+# Defensive fix: Setpartab.cc is in src/operators/ so `#include "table.h"`
+# resolves via -I../libcdi/src to libcdi's data table (not cdo::define_table).
+# Use a relative path to unambiguously target src/table.h.
+_setpartab="${CDO_SOURCE}/src/operators/Setpartab.cc"
+if [[ -f "${_setpartab}" ]]; then
+  python - "${_setpartab}" <<'PY'
+import sys
+fpath = sys.argv[1]
+text = open(fpath, encoding="utf-8", errors="ignore").read()
+if '#include "table.h"' in text and '#include "../table.h"' not in text:
+    text = text.replace('#include "table.h"', '#include "../table.h"', 1)
+    open(fpath, 'w', encoding="utf-8", newline="\n").write(text)
+    print(f"[skyborn-cdo] Defensive Setpartab.cc table.h path fix applied")
+PY
+fi
+
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
 # but git checkout sets all timestamps to the same time, which can cause make

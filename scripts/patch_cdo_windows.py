@@ -540,6 +540,19 @@ class WindowsPatcher:
                  "#ifndef CDO_SRC_TABLE_H\n#define CDO_SRC_TABLE_H\n\n#include <string>"),
             ]),
 
+            # --- src/operators/Setpartab.cc: fix table.h include resolution ---
+            # The operator is compiled from src/operators/, and the include
+            # search path has -I../libcdi/src listed before -idirafter .
+            # So `#include "table.h"` resolves to libcdi/src/table.h (which
+            # only contains data tables, not cdo::define_table) instead of
+            # src/table.h.  Using the relative path "../table.h" unambiguously
+            # resolves to src/table.h from the operators subdirectory.
+            ("src/operators/Setpartab.cc", [
+                ("Fix table.h include to use relative path to src/table.h",
+                 '#include "table.h"',
+                 '#include "../table.h"'),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
