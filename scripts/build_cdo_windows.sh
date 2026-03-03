@@ -136,6 +136,37 @@ if '#include "table.h"' in text and '#include "../table.h"' not in text:
 PY
 fi
 
+# Defensive fix: disable CDI I/O threading on Windows to prevent ACCESS VIOLATION.
+# cdo_settings.cc calls cdiDefGlobal("THREADSAFE", 1) unconditionally at startup,
+# enabling CDI's internal pthread_mutex locks for file I/O.  On MSYS2/MinGW64 with
+# winpthreads, those mutexes cause a crash (NTSTATUS 0xC0000005) when reading
+# NetCDF files produced by piped CDO operators (chname, setname, etc.).
+# CDO's process threading (--with-threads=yes) is a separate mechanism and is
+# NOT affected by disabling CDI_Threadsafe.
+_cdo_settings="${CDO_SOURCE}/src/cdo_settings.cc"
+if [[ -f "${_cdo_settings}" ]]; then
+  python - "${_cdo_settings}" <<'PY'
+import sys
+fpath = sys.argv[1]
+text = open(fpath, encoding="utf-8", errors="ignore").read()
+original = text
+old = '  if (Threading::cdoLockIO == false) cdiDefGlobal("THREADSAFE", 1);'
+new = (
+    '#ifndef _WIN32\n'
+    '  // CDI I/O threading disabled on Windows: winpthreads + CDI lazy-grid\n'
+    '  // mutexes cause ACCESS VIOLATION (0xC0000005) on NetCDF files from pipes.\n'
+    '  if (Threading::cdoLockIO == false) cdiDefGlobal("THREADSAFE", 1);\n'
+    '#endif'
+)
+if old in text:
+    text = text.replace(old, new, 1)
+    open(fpath, 'w', encoding="utf-8", newline="\n").write(text)
+    print(f"[skyborn-cdo] Disabled CDI_Threadsafe on Windows: {fpath}")
+else:
+    print(f"[skyborn-cdo] WARNING: CDI_Threadsafe pattern not found in {fpath}")
+PY
+fi
+
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
 # but git checkout sets all timestamps to the same time, which can cause make

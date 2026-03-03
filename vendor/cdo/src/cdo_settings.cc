@@ -98,14 +98,7 @@ set_cdi_options()
     std::fprintf(stderr, "\n");
   }
 
-#ifndef _WIN32
-  // CDI I/O threading (CDI_Threadsafe) is disabled on Windows.
-  // winpthreads + CDI lazy-grid mutexes cause ACCESS VIOLATION (0xC0000005)
-  // when reading NetCDF files produced by piped CDO operators (chname, etc.).
-  // CDO process threading (--with-threads=yes) is a separate mechanism and
-  // is NOT affected by this setting.
   if (Threading::cdoLockIO == false) cdiDefGlobal("THREADSAFE", 1);
-#endif
 
   if (Options::CMOR_Mode) cdiDefGlobal("CMOR_MODE", Options::CMOR_Mode);  // TODO maybe reposition into effect of "cmor"
   if (Options::CDO_Reduce_Dim) cdiDefGlobal("REDUCE_DIM", Options::CDO_Reduce_Dim);
