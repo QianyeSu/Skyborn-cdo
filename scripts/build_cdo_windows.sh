@@ -83,6 +83,31 @@ if changed:
 PY
 fi
 
+if [[ -f "${CDO_SOURCE}/src/operators/Fourier.cc" ]]; then
+    python - <<'PY'
+from pathlib import Path
+path = Path("src/operators/Fourier.cc")
+text = path.read_text(encoding="utf-8", errors="ignore")
+changed = False
+if "std::scoped_lock" in text and "#include <mutex>" not in text:
+    if '#include "field_functions.h"\n' in text:
+        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
+        changed = True
+    elif '#include <fftw3.h>\n' in text:
+        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
+        changed = True
+
+if "std::scoped_lock" in text and "fftwMutex" in text and "static std::mutex fftwMutex;" not in text:
+    anchor = '#include "field_functions.h"\n'
+    if anchor in text:
+        text = text.replace(anchor, anchor + '\nstatic std::mutex fftwMutex;\n', 1)
+        changed = True
+
+if changed:
+    path.write_text(text, encoding="utf-8", newline="\n")
+PY
+fi
+
 # Prevent make from trying to regenerate autotools files.
 # The vendored source includes pre-generated configure/Makefile.in/aclocal.m4,
 # but git checkout sets all timestamps to the same time, which can cause make

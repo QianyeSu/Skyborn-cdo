@@ -466,6 +466,25 @@ class WindowsPatcher:
                  r'\1#include <mutex>\n'),
             ]),
 
+            ("src/operators/Fourier.cc", [
+                ("Normalize FFTW/mutex include block",
+                 re.compile(
+                     r'#ifdef HAVE_LIBFFTW3\s*\n#include <fftw3\.h>\s*\n(?:#include <mutex>\s*\n)?(?:static std::mutex fftwMutex;\s*\n)?#endif',
+                     re.MULTILINE
+                 ),
+                 '#ifdef HAVE_LIBFFTW3\n#include <fftw3.h>\n#endif\n#include <mutex>\nstatic std::mutex fftwMutex;'),
+
+                ("Add mutex include for std::scoped_lock",
+                 re.compile(
+                     r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
+                 r'\1#include <mutex>\n'),
+
+                ("Fallback: add mutex include near field_functions include",
+                 re.compile(
+                     r'(#include "field_functions\.h"\n)(?!#include <mutex>)', re.MULTILINE),
+                 r'\1#include <mutex>\n'),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".

@@ -56,6 +56,31 @@ if changed:
 PY
 fi
 
+if [ -f "$CDO_SRC/src/operators/Fourier.cc" ]; then
+    python - <<'PY'
+from pathlib import Path
+path = Path('vendor/cdo/src/operators/Fourier.cc')
+text = path.read_text(encoding='utf-8', errors='ignore')
+changed = False
+if 'std::scoped_lock' in text and '#include <mutex>' not in text:
+    if '#include "field_functions.h"\n' in text:
+        text = text.replace('#include "field_functions.h"\n', '#include "field_functions.h"\n#include <mutex>\n', 1)
+        changed = True
+    elif '#include <fftw3.h>\n' in text:
+        text = text.replace('#include <fftw3.h>\n', '#include <fftw3.h>\n#include <mutex>\n', 1)
+        changed = True
+
+if 'std::scoped_lock' in text and 'fftwMutex' in text and 'static std::mutex fftwMutex;' not in text:
+    anchor = '#include "field_functions.h"\n'
+    if anchor in text:
+        text = text.replace(anchor, anchor + '\nstatic std::mutex fftwMutex;\n', 1)
+        changed = True
+
+if changed:
+    path.write_text(text, encoding='utf-8', newline='\n')
+PY
+fi
+
 # Check if configure exists (pre-generated)
 if [ ! -f configure ]; then
     echo "Running autoreconf..."
