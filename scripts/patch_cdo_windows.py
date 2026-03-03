@@ -448,6 +448,13 @@ class WindowsPatcher:
             ]),
 
             ("src/operators/Filter.cc", [
+                ("Normalize FFTW/mutex include block",
+                 re.compile(
+                     r'#ifdef HAVE_LIBFFTW3\s*\n#include <fftw3\.h>\s*\n(?:#include <mutex>\s*\n)?(?:static std::mutex fftwMutex;\s*\n)?#endif',
+                     re.MULTILINE
+                 ),
+                 '#ifdef HAVE_LIBFFTW3\n#include <fftw3.h>\n#endif\n#include <mutex>\nstatic std::mutex fftwMutex;'),
+
                 ("Add mutex include for std::scoped_lock",
                  re.compile(
                      r'(#include <fftw3\.h>\n)(?!#include <mutex>)', re.MULTILINE),
