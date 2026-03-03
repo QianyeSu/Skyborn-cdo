@@ -529,6 +529,17 @@ class WindowsPatcher:
                  "#ifndef CDI_TABLE_H\n#define CDI_TABLE_H\n\n#include \"tablepar.h\"\n\n// clang-format off"),
             ]),
 
+            # --- src/table.h: rename include guard to CDO_SRC_TABLE_H ---
+            # Belt-and-suspenders: even if something outside our control sets
+            # TABLE_H (e.g. a system-installed CDI header), CDO's own table.h
+            # must still be processed so that cdo::define_table is declared.
+            # Using a unique guard name ensures it is always included.
+            ("src/table.h", [
+                ("Rename include guard to CDO_SRC_TABLE_H",
+                 "#ifndef TABLE_H\n#define TABLE_H\n\n#include <string>",
+                 "#ifndef CDO_SRC_TABLE_H\n#define CDO_SRC_TABLE_H\n\n#include <string>"),
+            ]),
+
             # --- libcdi/configure: bypass POSIX.1-2001 check ---
             # MinGW does not define _POSIX_VERSION in <unistd.h>, but libcdi
             # is still buildable.  Force the check result to "yes".
