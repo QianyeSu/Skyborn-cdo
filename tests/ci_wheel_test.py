@@ -456,38 +456,12 @@ def main():
         # (GRIB uses parameter codes, variable names are derived from code tables)
         cdo(f"cdo -f nc -chname,{vname},elevation {topo_nc} {chname_nc}", timeout=30)
         assert_file(chname_nc)
-        # Verify the rename via showname.
-        # Defensive fallback: on Windows, older builds without the
-        # cdo_settings.cc CDI-threading patch could crash with NTSTATUS
-        # 0xC0000005 (ACCESS VIOLATION) when reading files created by
-        # piped operators.  The assert_file() above already proves the
-        # operation succeeded, so we skip only on that specific failure.
-        try:
-            new_raw = str(cdo.showname(input=chname_nc)).strip()
-            if "elevation" not in new_raw:
-                raise AssertionError(
-                    f"chname: expected 'elevation' in showname output, "
-                    f"got '{new_raw}' (original var: '{vname}')")
-        except CdoError as e:
-            # Only skip on Windows NTSTATUS error codes (0xC0000000+) or
-            # timeout — these indicate a CDI threading crash that is fixed
-            # by the cdo_settings.cc patch but may appear in older wheels.
-            _skip = ("timed out" in str(e).lower()) or (
-                os.name == 'nt'
-                and isinstance(e.returncode, int)
-                and e.returncode >= 0xC0000000)
-            if _skip:
-                print(
-                    f"    (showname verification skipped — CDI threading "
-                    f"issue (old wheel without fix): {e})")
-            else:
-                raise
-        except Exception as e:
-            if "timed out" in str(e).lower():
-                print(
-                    f"    (showname verification skipped — CDO exit hang: {e})")
-            else:
-                raise
+        # Verify the rename: showname must report 'elevation'
+        new_raw = str(cdo.showname(input=chname_nc)).strip()
+        if "elevation" not in new_raw:
+            raise AssertionError(
+                f"chname: expected 'elevation' in showname output, "
+                f"got '{new_raw}' (original var: '{vname}')") 
     run_test("chname", _chname_test)
 
     run_test("showyear", lambda: str(cdo.showyear(input=monthly_nc)))
