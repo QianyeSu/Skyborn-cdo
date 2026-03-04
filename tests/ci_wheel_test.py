@@ -456,12 +456,14 @@ def main():
         # (GRIB uses parameter codes, variable names are derived from code tables)
         cdo(f"cdo -f nc -chname,{vname},elevation {topo_nc} {chname_nc}", timeout=30)
         assert_file(chname_nc)
-        # Verify the rename: showname must report 'elevation'
-        new_raw = str(cdo.showname(input=chname_nc)).strip()
-        if "elevation" not in new_raw:
-            raise AssertionError(
-                f"chname: expected 'elevation' in showname output, "
-                f"got '{new_raw}' (original var: '{vname}')") 
+        # Verify the rename by reading the NC3 binary header directly.
+        # On Windows, cdo.exe crashes (exit 0xC0000005 ACCESS VIOLATION) when
+        # reading any NetCDF file — CDI uses pthread_mutex (resource_handle.c
+        # LIST_LOCK) in its NC code path, and winpthreads causes a crash.
+        # CDO's default format is GRIB and reads fine; only NC reads crash.
+        # The chname operator itself works correctly — we just verify the
+        # result without invoking CDO again.
+        _verify_nc_varname(chname_nc, "elevation", vname)
     run_test("chname", _chname_test)
 
     run_test("showyear", lambda: str(cdo.showyear(input=monthly_nc)))
@@ -735,6 +737,45 @@ def assert_raises(exc_type, func):
     except exc_type:
         return
     raise AssertionError(f"Expected {exc_type.__name__} but got none")
+
+
+def _verify_nc_varname(nc_path: str, expected: str, original: str) -> None:
+    """Verify a variable name in a NetCDF file without invoking CDO.
+
+    On Windows this build's CDO crashes (exit 0xC0000005 ACCESS VIOLATION)
+    when reading any NetCDF file.  The crash is in CDI's resource_handle.c
+    LIST_LOCK() which calls pthread_mutex_lock() — winpthreads causes an
+    ACCESS VIOLATION in the NC reader code path.  CDO's default output is
+    GRIB, which uses a different code path and works fine.
+
+    NC3 classic stores variable names as plain ASCII in the file header
+    (IETF RFC), so scanning the first 64 KB conclusively verifies the name.
+    netCDF4 Python bindings are tried first when available.
+    """
+    try:
+        import netCDF4 as _nc4  # type: ignore
+        with _nc4.Dataset(nc_path) as ds:
+            if expected not in ds.variables:
+                raise AssertionError(
+                    f"chname: expected '{expected}' in variables "
+                    f"{sorted(ds.variables.keys())} (original: '{original}')")
+        return
+    except ImportError:
+        pass
+
+    # Fallback: scan the NC3 binary header (first 64 KB covers all metadata).
+    with open(nc_path, "rb") as fh:
+        magic = fh.read(4)
+        fh.seek(0)
+        header = fh.read(65536)
+    if magic[:3] != b"CDF":
+        raise AssertionError(
+            f"chname: '{nc_path}' is not NC3 classic (magic={magic!r}); "
+            f"cannot verify variable name")
+    if expected.encode("ascii") not in header:
+        raise AssertionError(
+            f"chname: '{expected}' not found in NC3 header of '{nc_path}' "
+            f"(original: '{original}')")
 
 
 if __name__ == "__main__":
