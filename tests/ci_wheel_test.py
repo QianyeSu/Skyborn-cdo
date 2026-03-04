@@ -5,23 +5,27 @@ CI Wheel Comprehensive Stress Test — verifies CDO binary functionality.
 Executed by cibuildwheel after each wheel is installed.
 Tests as many CDO operations as possible within CI time constraints (~5 min).
 
-Test Coverage (~115 tests):
+Test Coverage (~144 tests):
   • Basic: version, operators, help
   • Synthetic data: topo, random, for, stdatm, const
   • Info queries: sinfo, griddes, showname, ntime, filedes, showformat
-  • Selection: sellonlatbox, selindexbox, sellevel, selmon
+  • Selection: sellonlatbox, selindexbox, sellevel, selmon, selname, selcode, selseason
   • Statistics: fldmean/std/min/max/sum, zonmean, timmean/std/min/max/sum
+  • Running stats: runmean, runstd, runmin, runmax (ntime verification)
+  • Grid box stats: gridboxmean, gridboxmax, gridboxmin, gridboxstd
   • Arithmetic: mulc, addc, subc, divc, abs, sqrt, sqr, expr, add/sub/mul/div
-  • Grid ops: remapbil, remapcon, remapnn, gridarea, gridweights, setgridtype
+  • Grid ops: remapbil, remapcon, remapnn, remapbic, remaplaf, gridarea, gridweights
   • Spectral: gp2sp, sp2gpl, sp2gp (CRITICAL)
   • Format: NetCDF4/4c/2, GRIB1, GRIB2
-  • Time: mergetime, settaxis, selmon, monmean, seasmean, yearmean/min/max
+  • Time: mergetime, settaxis, selmon, monmean, seasmean/std/min/max, yearmean/min/max
   • Vertical: intlevel, vertmean/sum/min/max, invertlev
   • Masking: setmissval, setrtomiss, setmisstoc, ifthen, masklonlatbox
   • Ensemble: ensmean, ensmin, ensmax, ensstd
   • Trend: trend, detrend
-  • File ops: cat, duplicate, invertlat, sortname
-  • Metadata: chname, setstdname, showlevel, showcode, showunit
+  • File ops: cat, duplicate, invertlat, sortname, splitvar, splitmon
+  • Metadata: chname, setstdname, setname, setunit, setcode, showlevel, showcode
+  • Correlation: timcor, fldcor, timcovar
+  • Z-axis: zaxisdes, npar
   • Date/Time: showdate, showtime, showtimestamp, shifttime
   • Chained: complex multi-operator pipes
   • Error handling: invalid inputs
@@ -693,6 +697,162 @@ def main():
         CdoError, lambda: cdo.info(input="/nonexistent.nc")))
     run_test("invalid params", lambda: assert_raises(CdoError, lambda: cdo.sellonlatbox(
         "abc,def", input=topo_nc, output=os.path.join(tmpdir, "err.nc"))))
+
+    # Variable / Parameter Selection
+    print("\n=== 33. Variable / Parameter Selection ===")
+    selname_nc = os.path.join(tmpdir, "selname.nc")
+
+    def _selname_test():
+        raw = str(cdo.showname(input=topo_nc)).strip().split()
+        vname = raw[0] if raw else "var1"
+        vname = ''.join(c for c in vname if c.isprintable() and c != ' ')
+        cdo.selname(vname, input=topo_nc, output=selname_nc)
+        assert_file(selname_nc)
+    run_test("selname", _selname_test)
+
+    selcode_nc = os.path.join(tmpdir, "selcode.nc")
+
+    def _selcode_test():
+        # Dynamically detect the parameter code so we're not hardcoding 129
+        raw = str(cdo.showcode(input=topo_nc)).strip().split()
+        code = raw[0] if raw else "1"
+        # Strip any non-digit characters except leading minus
+        code = code.lstrip('-').strip()
+        if not code.isdigit():
+            code = "1"
+        cdo.selcode(code, input=topo_nc, output=selcode_nc)
+        assert_file(selcode_nc)
+    run_test("selcode", _selcode_test)
+
+    selseason_nc = os.path.join(tmpdir, "selseason.nc")
+    run_test("selseason JJA", lambda: cdo(
+        f"cdo selseason,JJA {monthly_nc} {selseason_nc}", timeout=20) or assert_file(selseason_nc))
+
+    # Running Statistics
+    print("\n=== 34. Running Statistics ===")
+    runmean_nc = os.path.join(tmpdir, "runmean.nc")
+    run_test("runmean", lambda: cdo.runmean("3", input=monthly_nc,
+             output=runmean_nc) or assert_file(runmean_nc))
+
+    runstd_nc = os.path.join(tmpdir, "runstd.nc")
+    run_test("runstd", lambda: cdo.runstd("3", input=monthly_nc,
+             output=runstd_nc) or assert_file(runstd_nc))
+
+    runmin_nc = os.path.join(tmpdir, "runmin.nc")
+    run_test("runmin", lambda: cdo.runmin("3", input=monthly_nc,
+             output=runmin_nc) or assert_file(runmin_nc))
+
+    runmax_nc = os.path.join(tmpdir, "runmax.nc")
+    run_test("runmax", lambda: cdo.runmax("3", input=monthly_nc,
+             output=runmax_nc) or assert_file(runmax_nc))
+
+    # Verify runmean output timestep count: 12 - (3-1) = 10
+    run_test("runmean ntime=10", lambda: assert_true(
+        os.path.exists(runmean_nc) and
+        int(str(cdo.ntime(input=runmean_nc)).strip()) == 10))
+
+    # Grid Box Statistics
+    print("\n=== 35. Grid Box Statistics ===")
+    gridboxmean_nc = os.path.join(tmpdir, "gridboxmean.nc")
+    run_test("gridboxmean", lambda: cdo.gridboxmean("4,4", input=topo_nc,
+             output=gridboxmean_nc) or assert_file(gridboxmean_nc))
+
+    gridboxmax_nc = os.path.join(tmpdir, "gridboxmax.nc")
+    run_test("gridboxmax", lambda: cdo.gridboxmax("4,4", input=topo_nc,
+             output=gridboxmax_nc) or assert_file(gridboxmax_nc))
+
+    gridboxmin_nc = os.path.join(tmpdir, "gridboxmin.nc")
+    run_test("gridboxmin", lambda: cdo.gridboxmin("4,4", input=topo_nc,
+             output=gridboxmin_nc) or assert_file(gridboxmin_nc))
+
+    gridboxstd_nc = os.path.join(tmpdir, "gridboxstd.nc")
+    run_test("gridboxstd", lambda: cdo.gridboxstd("4,4", input=topo_nc,
+             output=gridboxstd_nc) or assert_file(gridboxstd_nc))
+
+    # Set / Rename Operators
+    print("\n=== 36. Set / Rename Operators ===")
+    setname_nc = os.path.join(tmpdir, "setname.nc")
+    run_test("setname", lambda: cdo.setname("newvar", input=topo_nc,
+             output=setname_nc) or assert_file(setname_nc))
+
+    setunit_nc = os.path.join(tmpdir, "setunit.nc")
+    run_test("setunit", lambda: cdo.setunit("K", input=topo_nc,
+             output=setunit_nc) or assert_file(setunit_nc))
+
+    setcode_nc2 = os.path.join(tmpdir, "setcode2.nc")
+    run_test("setcode", lambda: cdo.setcode("200", input=topo_nc,
+             output=setcode_nc2) or assert_file(setcode_nc2))
+
+    # More Interpolation Methods
+    print("\n=== 37. More Interpolation ===")
+    remapbic_nc = os.path.join(tmpdir, "remapbic.nc")
+    run_test("remapbic", lambda: cdo.remapbic("r36x18", input=topo_nc,
+             output=remapbic_nc) or assert_file(remapbic_nc))
+
+    remaplaf_nc = os.path.join(tmpdir, "remaplaf.nc")
+    run_test("remaplaf", lambda: cdo.remaplaf("r36x18", input=topo_nc,
+             output=remaplaf_nc) or assert_file(remaplaf_nc))
+
+    # Splitting Operations
+    print("\n=== 38. Splitting ===")
+    splitvar_pfx = os.path.join(tmpdir, "splitvar_")
+
+    def _splitvar_test():
+        cdo.splitvar(input=topo_nc, output=splitvar_pfx, timeout=20)
+        split_files = [f for f in os.listdir(
+            tmpdir) if f.startswith("splitvar_")]
+        assert_true(len(split_files) >= 1)
+    run_test("splitvar", _splitvar_test)
+
+    splitmon_pfx = os.path.join(tmpdir, "splitmon_")
+
+    def _splitmon_test():
+        cdo.splitmon(input=monthly_nc, output=splitmon_pfx, timeout=30)
+        split_files = [f for f in os.listdir(
+            tmpdir) if f.startswith("splitmon_")]
+        assert_true(len(split_files) == 12)
+    run_test("splitmon (12 files)", _splitmon_test)
+
+    # Correlation / Covariance
+    print("\n=== 39. Correlation / Covariance ===")
+    timcor_nc = os.path.join(tmpdir, "timcor.nc")
+    run_test("timcor (self)", lambda: cdo.timcor(
+        input=f"{monthly_nc} {monthly_nc}", output=timcor_nc) or assert_file(timcor_nc))
+
+    fldcor_nc = os.path.join(tmpdir, "fldcor.nc")
+    run_test("fldcor (self)", lambda: cdo.fldcor(
+        input=f"{topo_nc} {topo_nc}", output=fldcor_nc) or assert_file(fldcor_nc))
+
+    timcovar_nc = os.path.join(tmpdir, "timcovar.nc")
+    run_test("timcovar (self)", lambda: cdo.timcovar(
+        input=f"{monthly_nc} {monthly_nc}", output=timcovar_nc) or assert_file(timcovar_nc))
+
+    # More Seasonal Statistics
+    print("\n=== 40. More Seasonal Stats ===")
+    seasstd_nc = os.path.join(tmpdir, "seasstd.nc")
+    run_test("seasstd", lambda: cdo.seasstd(input=monthly_nc,
+             output=seasstd_nc) or assert_file(seasstd_nc))
+
+    seasmin_nc = os.path.join(tmpdir, "seasmin.nc")
+    run_test("seasmin", lambda: cdo.seasmin(input=monthly_nc,
+             output=seasmin_nc) or assert_file(seasmin_nc))
+
+    seasmax_nc = os.path.join(tmpdir, "seasmax.nc")
+    run_test("seasmax", lambda: cdo.seasmax(input=monthly_nc,
+             output=seasmax_nc) or assert_file(seasmax_nc))
+
+    # Z-axis / Misc
+    print("\n=== 41. Z-axis / Misc ===")
+    run_test("zaxisdes", lambda: assert_true(
+        len(str(cdo.zaxisdes(input=stdatm_nc))) > 5))
+
+    run_test("npar", lambda: assert_true(
+        int(str(cdo.npar(input=topo_nc)).strip()) >= 1))
+
+    # Verify gridboxmean reduces the grid size
+    run_test("gridboxmean grid smaller", lambda: assert_true(
+        os.path.exists(gridboxmean_nc) and
+        os.path.getsize(gridboxmean_nc) < os.path.getsize(topo_nc)))
 
     # ---- Summary ----
     elapsed = time.time() - t_start
