@@ -78,6 +78,19 @@ timeunits_factor(int timeUnits1, int timeUnits2)
       case TUNIT_DAY: return 1.0 / 24;
     }
   }
+  else if (timeUnits2 == TUNIT_MINUTE)
+  {
+    switch (timeUnits1)
+    {
+      case TUNIT_SECOND: return 60;
+      case TUNIT_MINUTE: return 1;
+      case TUNIT_HOUR: return 1.0 / 60;
+      case TUNIT_3HOURS: return 1.0 / (3 * 60);
+      case TUNIT_6HOURS: return 1.0 / (6 * 60);
+      case TUNIT_12HOURS: return 1.0 / (12 * 60);
+      case TUNIT_DAY: return 1.0 / (24 * 60);
+    }
+  }
 
   return 1;
 }
@@ -756,7 +769,7 @@ gribapiAddRecord(stream_t *streamptr, int param, grib_handle *gh, size_t recsize
 
   // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  CdiQuery *query = streamptr->query;
+  struct CdiQuery *query = streamptr->query;
   if (query && cdiQueryName(query, varname) < 0)
   {
     recinfo->used = false;
@@ -770,14 +783,16 @@ gribapiAddRecord(stream_t *streamptr, int param, grib_handle *gh, size_t recsize
 
   struct addIfNewRes gridAdded = cdiVlistAddGridIfNew(vlistID, gridptr, 0);
   int gridID = gridAdded.Id;
-  // clang-format off
-  if (!gridAdded.isNew) { grid_free(gridptr); Free(gridptr); }
-  else if (gridptr->projtype == CDI_PROJ_RLL)     gribapiInqProjRLL(gh, gridID);
-  else if (gridptr->projtype == CDI_PROJ_LCC)     gribapiInqProjLCC(gh, gridID);
-  else if (gridptr->projtype == CDI_PROJ_STERE)   gribapiInqProjSTERE(gh, gridID);
-  else if (gridptr->projtype == CDI_PROJ_HEALPIX) gribapiInqProjHEALPIX(gh, gridID);
-  else if (gridptr->type == GRID_HEALPIX)         gribapiInqGridHEALPIX(gh, gridID);
-  // clang-format on
+  if (!gridAdded.isNew)
+  {
+    grid_free(gridptr);
+    Free(gridptr);
+  }
+  else if (gridptr->projtype == CDI_PROJ_RLL) { gribapiInqProjRLL(gh, gridID); }
+  else if (gridptr->projtype == CDI_PROJ_LCC) { gribapiInqProjLCC(gh, gridID); }
+  else if (gridptr->projtype == CDI_PROJ_STERE) { gribapiInqProjSTERE(gh, gridID); }
+  else if (gridptr->projtype == CDI_PROJ_HEALPIX) { gribapiInqProjHEALPIX(gh, gridID); }
+  else if (gridptr->type == GRID_HEALPIX) { gribapiInqGridHEALPIX(gh, gridID); }
 
   int zaxistype = gribapi_get_zaxis_type(gribEditionNumber(gh), leveltype1);
 
@@ -841,13 +856,45 @@ gribapiAddRecord(stream_t *streamptr, int param, grib_handle *gh, size_t recsize
   {
     long lval;
     double dval;
+
+    // Handle individual long and double keys
     for (int i = 0; i < cdiNAdditionalGRIBKeys; i++)
     {
-      // note: if the key is not defined, we do not throw an error!
+      // Handling individual integer values
       if (grib_get_long(gh, cdiAdditionalGRIBKeys[i], &lval) == 0)
         varDefOptGribInt(varID, tile_index, lval, cdiAdditionalGRIBKeys[i]);
+
+      // Handling individual double values
       if (grib_get_double(gh, cdiAdditionalGRIBKeys[i], &dval) == 0)
         varDefOptGribDbl(varID, tile_index, dval, cdiAdditionalGRIBKeys[i]);
+
+      // Handling long arrays
+      long *larr = NULL;
+      size_t arr_len = 0;
+      if (grib_get_long_array(gh, cdiAdditionalGRIBKeys[i], NULL, &arr_len) == 0)
+      {
+        // Now that we know the array length, allocate memory
+        larr = (long *) Malloc(arr_len * sizeof(long));
+        if (grib_get_long_array(gh, cdiAdditionalGRIBKeys[i], larr, &arr_len) == 0)
+        {
+          varDefOptGribIntArr(varID, tile_index, larr, arr_len, cdiAdditionalGRIBKeys[i]);
+        }
+        Free(larr);  // Free the long array after use
+      }
+
+      // Handling double arrays
+      double *darr = NULL;
+      size_t darr_len = 0;
+      if (grib_get_double_array(gh, cdiAdditionalGRIBKeys[i], NULL, &darr_len) == 0)
+      {
+        // Allocate memory for the double array
+        darr = (double *) Malloc(darr_len * sizeof(double));
+        if (grib_get_double_array(gh, cdiAdditionalGRIBKeys[i], darr, &darr_len) == 0)
+        {
+          varDefOptGribDblArr(varID, tile_index, darr, darr_len, cdiAdditionalGRIBKeys[i]);
+        }
+        Free(darr);  // Free the double array after use
+      }
     }
   }
 
@@ -2741,7 +2788,7 @@ gribapiDefLevel(int editionNumber, grib_handle *gh, int zaxisID, int levelID, in
   }
   long grib_ltype2 = (ltype != ltype2 && ltype2 != -1) ? ltype2 : grib_ltype;
 
-  void (*defLevel)(grib_handle *gh, int gcinit, long leveltype1, long leveltype2, bool hasBounds, double level, double dlevel1,
+  void (*defLevel)(grib_handle * gh, int gcinit, long leveltype1, long leveltype2, bool hasBounds, double level, double dlevel1,
                    double dlevel2)
       = (editionNumber <= 1) ? grib1DefLevel : grib2DefLevel;
 
@@ -2769,10 +2816,21 @@ gribapiDefLevel(int editionNumber, grib_handle *gh, int zaxisID, int levelID, in
          horizontal layer at a point in time for simulate
          (synthetic) satellite data"
 
+        GRIB2: PRODUCT DEFINITION TEMPLATE NUMBER 101/102:
+
+         "Analysis or forecast at a horizontal level or in a
+         horizontal layer at a point in time for wave 2D spectra
+         with frequencies and directions defined by formulae"
+
+         Similar for ensemble template 102.
+
          The key/value pairs that are set in "grib2DefLevel" do not
-         exist for this template. */
-      if (editionNumber <= 1 || proddef_template_num != 32)
+         exist for this template.
+      */
+      if (editionNumber <= 1 || (proddef_template_num != 32 && proddef_template_num != 101 && proddef_template_num != 102))
+      {
         defLevel(gh, gcinit, grib_ltype, grib_ltype2, hasBounds, level, dlevel1, dlevel2);
+      }
 
       break;
     }
@@ -3158,7 +3216,7 @@ convertDataScanningMode(int scanModeIN, int scanModeOUT, double *data, size_t gr
         // printf(".\n");
       }
     }  // end if (scanModeOUT==96)
-  }  // end if (scanModeIN==64)
+  }    // end if (scanModeIN==64)
 
   if (scanModeIN
       == 00)  // Scanning Mode (00 dec)  +i, -j; i direction consecutive (row-major    order West->East   & South->North )
@@ -3188,7 +3246,7 @@ convertDataScanningMode(int scanModeIN, int scanModeOUT, double *data, size_t gr
         for (size_t i = 0; i < iDim; i++) data[j + i * jDim] = dataCopy[i + jInv * iDim];  // source data has -j
       }
     }  // end if (scanModeOUT==96)
-  }  // end if (scanModeIN==00)
+  }    // end if (scanModeIN==00)
 
   if (scanModeIN
       == 96)  // Scanning Mode (00 dec)  +i, -j; i direction consecutive (row-major    order West->East   & South->North )
@@ -3221,7 +3279,7 @@ convertDataScanningMode(int scanModeIN, int scanModeOUT, double *data, size_t gr
           data[i + jXiDim] = dataCopy[jInv + i * jDim];  // target data has -j
       }
     }  // end if (scanModeOUT==00)
-  }  // end if (scanModeIN==96)
+  }    // end if (scanModeIN==96)
 
   if (cdiDebugExt >= 100)
   {
@@ -3439,8 +3497,6 @@ gribapiEncode(int memType, int varID, int levelID, int vlistID, int gridID, int 
   int zaxisSize = zaxisInqSize(zaxisID);
   // if (!gc->init)
   {
-    int ret = 0;
-
     // NOTE: Optional key/value pairs: Note that we do not distinguish between tiles here!
 
     for (int i = 0; i < vlistptr->vars[varID].opt_grib_nentries; i++)
@@ -3450,23 +3506,68 @@ gribapiEncode(int memType, int varID, int levelID, int vlistID, int gridID, int 
         // DR: Fix for multi-level fields (otherwise only the 1st level is correct)
         if (zaxisSize == (levelID + 1)) vlistptr->vars[varID].opt_grib_kvpair[i].update = false;
 
+        int ret = 0;
+
         if (vlistptr->vars[varID].opt_grib_kvpair[i].data_type == t_double)
         {
           if (CDI_Debug)
             Message("key \"%s\"  :   double value = %g", vlistptr->vars[varID].opt_grib_kvpair[i].keyword,
                     vlistptr->vars[varID].opt_grib_kvpair[i].dbl_val);
-          my_grib_set_double(gh, vlistptr->vars[varID].opt_grib_kvpair[i].keyword,
-                             vlistptr->vars[varID].opt_grib_kvpair[i].dbl_val);
+
+          ret = my_grib_set_double(gh, vlistptr->vars[varID].opt_grib_kvpair[i].keyword,
+                                   vlistptr->vars[varID].opt_grib_kvpair[i].dbl_val);
           GRIB_CHECK(ret, 0);
         }
+
         if (vlistptr->vars[varID].opt_grib_kvpair[i].data_type == t_int)
         {
           if (CDI_Debug)
             Message("key \"%s\"  :   integer value = %d", vlistptr->vars[varID].opt_grib_kvpair[i].keyword,
                     vlistptr->vars[varID].opt_grib_kvpair[i].int_val);
-          my_grib_set_long(gh, vlistptr->vars[varID].opt_grib_kvpair[i].keyword,
-                           (long) vlistptr->vars[varID].opt_grib_kvpair[i].int_val);
+
+          ret = my_grib_set_long(gh, vlistptr->vars[varID].opt_grib_kvpair[i].keyword,
+                                 (long) vlistptr->vars[varID].opt_grib_kvpair[i].int_val);
           GRIB_CHECK(ret, 0);
+        }
+
+        /* ------------------------------------------------------------------
+         * NEW: Support for integer arrays (t_intarr)
+         * ------------------------------------------------------------------ */
+        if (vlistptr->vars[varID].opt_grib_kvpair[i].data_type == t_intarr)
+        {
+          size_t len = vlistptr->vars[varID].opt_grib_kvpair[i].arr_len;
+          int *src = vlistptr->vars[varID].opt_grib_kvpair[i].int_arr;
+
+          if (src && len > 0)
+          {
+            if (CDI_Debug)
+              Message("key \"%s\"  :   integer array of length %zu", vlistptr->vars[varID].opt_grib_kvpair[i].keyword, len);
+
+            long *long_arr = (long *) Malloc(len * sizeof(long));
+            for (size_t j = 0; j < len; ++j) long_arr[j] = src[j];
+
+            ret = grib_set_long_array(gh, vlistptr->vars[varID].opt_grib_kvpair[i].keyword, long_arr, len);
+            Free(long_arr);
+            GRIB_CHECK(ret, 0);
+          }
+        }
+
+        /* ------------------------------------------------------------------
+         * NEW: Support for double arrays (t_doublearr)
+         * ------------------------------------------------------------------ */
+        if (vlistptr->vars[varID].opt_grib_kvpair[i].data_type == t_doublearr)
+        {
+          size_t len = vlistptr->vars[varID].opt_grib_kvpair[i].arr_len;
+          double *src = vlistptr->vars[varID].opt_grib_kvpair[i].dbl_arr;
+
+          if (src && len > 0)
+          {
+            if (CDI_Debug)
+              Message("key \"%s\"  :   double array of length %zu", vlistptr->vars[varID].opt_grib_kvpair[i].keyword, len);
+
+            ret = grib_set_double_array(gh, vlistptr->vars[varID].opt_grib_kvpair[i].keyword, src, len);
+            GRIB_CHECK(ret, 0);
+          }
         }
       }
     }

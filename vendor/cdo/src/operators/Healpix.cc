@@ -94,7 +94,9 @@ degrade(Varray<T1> const &v1, size_t n2, Varray<T2> &v2, bool hasMissvals, doubl
 {
   auto scale = get_scalefactor(params);
   size_t nvals = params.fact * params.fact;
+#ifdef _OPENMP
   size_t nx = n2 * nvals;
+#endif
 
   if (hasMissvals)
   {
@@ -341,7 +343,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Healpix> registration = RegisterEntry<Healpix>();
+  inline static auto registration = RegisterEntry<Healpix>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

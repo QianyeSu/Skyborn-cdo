@@ -54,7 +54,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Ninfo> registration = RegisterEntry<Ninfo>();
+  inline static auto registration = RegisterEntry<Ninfo>();
 
 private:
   int operfunc{};

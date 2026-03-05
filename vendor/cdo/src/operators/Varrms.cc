@@ -78,7 +78,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Varrms> registration = RegisterEntry<Varrms>();
+  inline static auto registration = RegisterEntry<Varrms>();
 
 private:
   CdoStreamID streamID1{};
@@ -160,9 +160,9 @@ public:
     field3.resize(1);
     field3.grid = gridID3;
 
-    FieldVector2D varsData1, varsData2;
-    field2D_init(varsData1, varList1, FIELD_VEC);
-    field2D_init(varsData2, varList2, FIELD_VEC);
+    FieldVector2D varDataList1, varDataList2;
+    field2D_init(varDataList1, varList1, FIELD_VEC);
+    field2D_init(varDataList2, varList2, FIELD_VEC);
 
     int tsID = 0;
     while (true)
@@ -180,20 +180,20 @@ public:
       {
         {
           auto [varID, levelID] = cdo_inq_field(streamID1);
-          cdo_read_field(streamID1, varsData1[varID][levelID]);
-          if (varsData1[varID][levelID].numMissVals) cdo_abort("Missing values unsupported for this operator!");
+          cdo_read_field(streamID1, varDataList1[varID][levelID]);
+          if (varDataList1[varID][levelID].numMissVals) cdo_abort("Missing values unsupported for this operator!");
         }
         {
           auto [varID, levelID] = cdo_inq_field(streamID2);
-          cdo_read_field(streamID2, varsData2[varID][levelID]);
-          if (varsData2[varID][levelID].numMissVals) cdo_abort("Missing values unsupported for this operator!");
+          cdo_read_field(streamID2, varDataList2[varID][levelID]);
+          if (varDataList2[varID][levelID].numMissVals) cdo_abort("Missing values unsupported for this operator!");
         }
       }
 
       for (int varID = 0; varID < numVars; ++varID)
       {
         auto wstatus = false;
-        auto gridID = varsData1[varID][0].grid;
+        auto gridID = varDataList1[varID][0].grid;
         if (needWeights && gridID != lastgrid)
         {
           lastgrid = gridID;
@@ -202,8 +202,8 @@ public:
         auto code = vlistInqVarCode(vlistID1, varID);
         if (wstatus != 0 && tsID == 0 && code != oldcode) cdo_warning("Using constant area weights for code %d!", oldcode = code);
 
-        field3.missval = varsData1[varID][0].missval;
-        var_rms(weights, varsData1[varID], varsData2[varID], field3);
+        field3.missval = varDataList1[varID][0].missval;
+        var_rms(weights, varDataList1[varID], varDataList2[varID], field3);
 
         cdo_def_field(streamID3, varID, 0);
         cdo_write_field(streamID3, field3);

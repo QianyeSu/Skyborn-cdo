@@ -32,7 +32,7 @@
 #include "field_functions.h"
 
 void remap_weights_zonal_mean(int gridID1, int gridID2, Varray2D<size_t> &remapIndices, Varray2D<double> &remapWeights);
-void remap_zonal_mean(const Varray2D<size_t> &remapIndices, Varray2D<double> const &remapWeights, Field const &field1,
+void remap_zonal_mean(Varray2D<size_t> const &remapIndices, Varray2D<double> const &remapWeights, Field const &field1,
                       Field &field2);
 
 template <typename T>
@@ -90,7 +90,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Zonstat> registration = RegisterEntry<Zonstat>();
+  inline static auto registration = RegisterEntry<Zonstat>();
   int gridIDdestroy = -1, gridID1 = -1, gridID2 = -1;
   int zongridID = -1;
   int sourceGridIsRegular = true;
@@ -161,11 +161,11 @@ public:
       auto gridtype = gridInqType(gridID);
       if (xsize > 1 || gridtype == GRID_GAUSSIAN_REDUCED || is_healpix_grid(gridID))
       {
-        if (gridID1 == -1) gridID1 = gridID;
+        if (gridID1 == -1) { gridID1 = gridID; }
       }
       else
       {
-        if (ysize > 1 && zongridID == -1) zongridID = gridID;
+        if (ysize > 1 && zongridID == -1) { zongridID = gridID; }
       }
     }
 

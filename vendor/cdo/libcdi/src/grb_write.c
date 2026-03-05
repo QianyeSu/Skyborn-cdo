@@ -133,8 +133,8 @@ cdi_fdb_store(void *fdbHandle, const char *filename, void *gribbuffer, size_t nb
   for (int k = 0; k < keyValue.numKeys; k++)
   {
     // clang-format off
-      if      (!expverDefined && str_is_equal(keyValue.keys[k], "expver")) expverDefined = true;
-      else if (!classDefined  && str_is_equal(keyValue.keys[k], "class")) classDefined = true;
+    if      (!expverDefined && str_is_equal(keyValue.keys[k], "expver")) expverDefined = true;
+    else if (!classDefined  && str_is_equal(keyValue.keys[k], "class")) classDefined = true;
     // clang-format on
   }
 

@@ -543,7 +543,7 @@ vlistCopyFlag(int vlistID2, int vlistID1)
   vlist_t *vlistptr1 = vlist_to_pointer(vlistID1);
   vlist_t *vlistptr2 = vlist_to_pointer(vlistID2);
   var_t *vars1 = vlistptr1->vars;
-  var_t *vars2 = vlistptr2->vars;
+  // var_t *vars2 = vlistptr2->vars;
 
   vlist_copy(vlistptr2, vlistptr1);
 
@@ -563,7 +563,7 @@ vlistCopyFlag(int vlistID2, int vlistID1)
 
     vlistptr2->nvars = nvars2;
     vlistptr2->varsAllocated = nvars2;
-    vars2 = (nvars2 > 0) ? (var_t *) Malloc((size_t) nvars2 * sizeof(var_t)) : NULL;
+    var_t *vars2 = (nvars2 > 0) ? (var_t *) Malloc((size_t) nvars2 * sizeof(var_t)) : NULL;
 
     vlistptr2->vars = vars2;
 
@@ -1641,6 +1641,8 @@ resize_opt_grib_entries(var_t *var, int nentries)
   {
     tmp[i].int_val = 0;
     tmp[i].dbl_val = 0;
+    tmp[i].int_arr = 0;
+    tmp[i].dbl_arr = 0;
     tmp[i].update = false;
     tmp[i].keyword = NULL;
   }  // for

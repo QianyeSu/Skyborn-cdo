@@ -51,7 +51,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Mapreduce> registration = RegisterEntry<Mapreduce>();
+  inline static auto registration = RegisterEntry<Mapreduce>();
   CdoStreamID streamID1;
   CdoStreamID streamID2;
 

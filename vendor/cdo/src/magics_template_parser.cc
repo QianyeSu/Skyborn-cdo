@@ -47,7 +47,7 @@ magics_template_parser(void *node)
     {
       if (DBG) printf("Version %s \n", value);
 
-      if (atof(value) > 3.0f) { return 1; }
+      if (std::atof(value) > 3.0f) { return 1; }
     }
   }
 
@@ -156,7 +156,7 @@ _set_magics_parameter_value(const char *, const char *, const char *)
   }
 
   // MAGICS++ FLOAT TYPE PARAMETERS
-  else if (cdo_cmpstr(param_type, "float")) { mag_setr(param_name, atof(param_value)); }
+  else if (cdo_cmpstr(param_type, "float")) { mag_setr(param_name, std::atof(param_value)); }
 
   // MAGICS++ FLOAT ARRAY  TYPE    PARAMETERS
   else if (cdo_cmpstr(param_type, "floatarray"))
@@ -182,7 +182,7 @@ _set_magics_parameter_value(const char *, const char *, const char *)
   }
 
   // MAGICS++ INT TYPE    PARAMETERS
-  else if (cdo_cmpstr(param_type, "int")) { mag_seti(param_name, atoi(param_value)); }
+  else if (cdo_cmpstr(param_type, "int")) { mag_seti(param_name, std::atoi(param_value)); }
 
   // MAGICS++ INT ARRAY  TYPE    PARAMETERS
   else if (cdo_cmpstr(param_type, "intarray"))
@@ -203,7 +203,8 @@ _set_magics_parameter_value(const char *, const char *, const char *)
   // MAGICS++ STRINGARRAY  TYPE    PARAMETERS
   else if (cdo_cmpstr(param_type, "stringarray"))
   {
-    if (DBG) std::fprintf(stderr, "Input strarr is %s  Sep char is %s Search char is %c\n", param_value, sep_char.c_str(), search_char);
+    if (DBG)
+      std::fprintf(stderr, "Input strarr is %s  Sep char is %s Search char is %c\n", param_value, sep_char.c_str(), search_char);
     if (std::strstr(param_value, ";")) sep_char = ';';
 
     if (DBG) std::fprintf(stderr, "Input strarr is %s  Sep char is %s\n", param_value, sep_char.c_str());
@@ -211,7 +212,7 @@ _set_magics_parameter_value(const char *, const char *, const char *)
 
     if (DBG)
       std::fprintf(stderr, "Input strarr is %s split str count is %d Sep char is %s\n", param_value, (int) splitStrings.size(),
-              sep_char.c_str());
+                   sep_char.c_str());
 
     const char **split_str = (const char **) std::malloc(splitStrings.size() * sizeof(char *));
     for (size_t k = 0, n = splitStrings.size(); k < n; ++k) split_str[k] = splitStrings[k].c_str();

@@ -56,7 +56,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Yseasstat> registration = RegisterEntry<Yseasstat>();
+  inline static auto registration = RegisterEntry<Yseasstat>();
 
 private:
   CdoStreamID streamID1{};
@@ -106,7 +106,7 @@ public:
 
     Field field;
     CdiDateTime vDateTimes[MaxSeasons]{};
-    FieldVector2D varsData1[MaxSeasons], varsData2[MaxSeasons], samp1[MaxSeasons];
+    FieldVector2D varDataList1[MaxSeasons], varDataList2[MaxSeasons], samp1[MaxSeasons];
 
     int VARS_MEMTYPE = stepStat.lminmax ? FIELD_NAT : 0;
     stepStat.set_dimlen0(MaxSeasons);

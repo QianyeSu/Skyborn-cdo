@@ -34,7 +34,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Splityear> registration = RegisterEntry<Splityear>();
+  inline static auto registration = RegisterEntry<Splityear>();
 
 private:
   int SPLITYEAR{}, SPLITYEARMON{};

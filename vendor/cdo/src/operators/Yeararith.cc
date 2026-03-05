@@ -37,7 +37,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Yeararith> registration = RegisterEntry<Yeararith>();
+  inline static auto registration = RegisterEntry<Yeararith>();
 
   CdoStreamID streamID1;
   CdoStreamID streamID2;
@@ -86,8 +86,8 @@ public:
   run() override
   {
     Field field;
-    FieldVector2D varsData2;
-    field2D_init(varsData2, varList2, FIELD_VEC | FIELD_NAT);
+    FieldVector2D varDataList2;
+    field2D_init(varDataList2, varList2, FIELD_VEC | FIELD_NAT);
 
     int year0 = -INT_MAX + 1;
     int year2last = 0;
@@ -116,7 +116,7 @@ public:
             while (numFields2--)
             {
               auto [varID, levelID] = cdo_inq_field(streamID2);
-              cdo_read_field(streamID2, varsData2[varID][levelID]);
+              cdo_read_field(streamID2, varDataList2[varID][levelID]);
             }
             break;
           }
@@ -137,7 +137,7 @@ public:
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
 
-        field2_function(field, varsData2[varID][levelID], operfunc);
+        field2_function(field, varDataList2[varID][levelID], operfunc);
 
         cdo_def_field(streamID3, varID, levelID);
         cdo_write_field(streamID3, field);

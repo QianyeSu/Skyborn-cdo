@@ -288,10 +288,10 @@ remap_write_data_scrip(std::string const &weightsfile, KnnParams const &knnParam
   auto dateAndTimeInSec = std::time(NULL);
   if (dateAndTimeInSec != -1)
   {
-    char history[1024] = "date and time";
+    char history[2 * 1024] = "date and time";
     struct tm *dateAndTime = std::localtime(&dateAndTimeInSec);
     (void) std::strftime(history, 1024, "%d %b %Y : ", dateAndTime);
-    std::strcat(history, cdo::command_line());
+    std::strncat(history, cdo::command_line(), 1024);
     put_att_text(ncId, NC_GLOBAL, "history", history);
   }
 
@@ -362,8 +362,8 @@ remap_write_data_scrip(std::string const &weightsfile, KnnParams const &knnParam
   const char *srcGridUnits = "radians";
   const char *tgtGridUnits = "radians";
   put_att_text(ncId, nc_srcgrdcntrlat_id, "units", srcGridUnits);
-  put_att_text(ncId, nc_dstgrdcntrlat_id, "units", tgtGridUnits);
   put_att_text(ncId, nc_srcgrdcntrlon_id, "units", srcGridUnits);
+  put_att_text(ncId, nc_dstgrdcntrlat_id, "units", tgtGridUnits);
   put_att_text(ncId, nc_dstgrdcntrlon_id, "units", tgtGridUnits);
   if (srcGrid.needCellCorners) put_att_text(ncId, nc_srcgrdcrnrlat_id, "units", srcGridUnits);
   if (srcGrid.needCellCorners) put_att_text(ncId, nc_srcgrdcrnrlon_id, "units", srcGridUnits);
@@ -466,13 +466,14 @@ remap_write_data_scrip(std::string const &weightsfile, KnnParams const &knnParam
 
   nce(nc_put_var_double(ncId, nc_dstgrdfrac_id, &tgtGrid.cellFrac[0]));
 
-  if (rv.numLinks > 0)
+  auto n = rv.numLinks;
+  if (n > 0)
   {
-    for (size_t i = 0; i < rv.numLinks; ++i) rv.srcCellIndices[i]++;
-    for (size_t i = 0; i < rv.numLinks; ++i) rv.tgtCellIndices[i]++;
+    for (size_t i = 0; i < n; ++i) rv.srcCellIndices[i]++;
+    for (size_t i = 0; i < n; ++i) rv.tgtCellIndices[i]++;
 
-    write_array_int64(ncId, nc_srcadd_id, srcSizetype, rv.numLinks, &rv.srcCellIndices[0]);
-    write_array_int64(ncId, nc_dstadd_id, dstSizetype, rv.numLinks, &rv.tgtCellIndices[0]);
+    write_array_int64(ncId, nc_srcadd_id, srcSizetype, n, &rv.srcCellIndices[0]);
+    write_array_int64(ncId, nc_dstadd_id, dstSizetype, n, &rv.tgtCellIndices[0]);
 
     nce(nc_put_var_double(ncId, nc_rmpmatrix_id, &rv.weights[0]));
   }

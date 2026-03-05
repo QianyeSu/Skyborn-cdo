@@ -1,3 +1,4 @@
+#include "cdi_limits.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -7,7 +8,7 @@
 #endif
 
 #ifdef HAVE_LIBNETCDF
-#include <netcdf.h> // NC_FORMAT_64BIT_DATA
+#include <netcdf.h>  // NC_FORMAT_64BIT_DATA
 #endif
 
 #ifdef HAVE_LIBFDB5
@@ -55,18 +56,16 @@ const resOps streamOps = { streamCompareP, streamDestroyP, streamPrintP, streamG
 static int
 getByteorder(int byteswap)
 {
-  int byteorder = -1;
-
   switch (HOST_ENDIANNESS)
   {
-    case CDI_BIGENDIAN: byteorder = byteswap ? CDI_LITTLEENDIAN : CDI_BIGENDIAN; break;
-    case CDI_LITTLEENDIAN: byteorder = byteswap ? CDI_BIGENDIAN : CDI_LITTLEENDIAN; break;
+    case CDI_BIGENDIAN: return byteswap ? CDI_LITTLEENDIAN : CDI_BIGENDIAN;
+    case CDI_LITTLEENDIAN: return byteswap ? CDI_BIGENDIAN : CDI_LITTLEENDIAN;
     /* FIXME: does not currently adjust for PDP endianness */
     case CDI_PDPENDIAN:
     default: Error("unhandled endianness");
   }
 
-  return byteorder;
+  return -1;
 }
 
 // used also in CDO
@@ -115,8 +114,8 @@ cdiGetFiletype(const char *uri, int *byteorder)
   if (memcmp(buffer, "GRIB", 4) == 0)
     {
       version = buffer[7];
-      if      (version <= 1) filetype = CDI_FILETYPE_GRB;
-      else if (version == 2) filetype = CDI_FILETYPE_GRB2;
+      if      (version <= 1) { filetype = CDI_FILETYPE_GRB; }
+      else if (version == 2) { filetype = CDI_FILETYPE_GRB2; }
     }
   else if (memcmp(buffer, "CDF\001", 4) == 0) { filetype = CDI_FILETYPE_NC; }
   else if (memcmp(buffer, "CDF\002", 4) == 0) { filetype = CDI_FILETYPE_NC2; }
@@ -134,8 +133,8 @@ cdiGetFiletype(const char *uri, int *byteorder)
 #ifdef HAVE_LIBGRIB
   else if (gribCheckSeek(fileID, &recpos, &version) == 0)
     {
-      if      (version <= 1) filetype = CDI_FILETYPE_GRB;
-      else if (version == 2) filetype = CDI_FILETYPE_GRB2;
+      if      (version <= 1) { filetype = CDI_FILETYPE_GRB; }
+      else if (version == 2) { filetype = CDI_FILETYPE_GRB2; }
     }
 #endif
   // clang-format on
@@ -178,18 +177,16 @@ streamInqFiletype(int streamID)
 int
 getByteswap(int byteorder)
 {
-  int byteswap = -1;
-
   switch (byteorder)
   {
     case CDI_BIGENDIAN:
     case CDI_LITTLEENDIAN:
-    case CDI_PDPENDIAN: byteswap = (HOST_ENDIANNESS != byteorder); break;
+    case CDI_PDPENDIAN: return (HOST_ENDIANNESS != byteorder);
     case -1: break;
     default: Error("unexpected byteorder %d query!", byteorder);
   }
 
-  return byteswap;
+  return -1;
 }
 
 void
@@ -211,7 +208,7 @@ streamInqNumSteps(int streamID)
   if (ntsteps == (long) CDI_UNDEFID)
   {
     int tsID = 0;
-    while (streamInqTimestep(streamID, tsID++)) ntsteps = streamptr->ntsteps;
+    while (streamInqTimestep(streamID, tsID++)) { ntsteps = streamptr->ntsteps; }
   }
 
   return (int) ntsteps;
@@ -639,7 +636,7 @@ cdiStreamOpenDefaultDelegate(const char *uri, char filemode, int filetype, strea
 }
 
 static long
-stream_create_vlist(stream_t *streamptr, CdiQuery *query)
+stream_create_vlist(stream_t *streamptr, struct CdiQuery *query)
 {
   int vlistID = vlistCreate();
   if (vlistID < 0) return CDI_ELIMIT;
@@ -647,7 +644,7 @@ stream_create_vlist(stream_t *streamptr, CdiQuery *query)
   cdiVlistMakeInternal(vlistID);
   streamptr->vlistID = vlistID;
 
-  if (query) streamptr->query = query;
+  if (query) { streamptr->query = query; }
 
   long status = cdiInqContents(streamptr);
   if (status >= 0)
@@ -697,7 +694,9 @@ streamOpenID(const char *filename, char filemode, int filetype, int resH)
     streamID = fileID;
     if (streamptr->record) Free(streamptr->record);
     reshRemove(streamptr->self, &streamOps);
+    if (streamptr->lockIO) CDI_IO_UNLOCK();
     Free(streamptr);
+    streamptr = NULL;
   }
   else
   {
@@ -707,9 +706,8 @@ streamOpenID(const char *filename, char filemode, int filetype, int resH)
     streamptr->filemode = filemode;
     streamptr->filename = strdup(filename);
     streamptr->fileID = fileID;
+    if (streamptr->lockIO) CDI_IO_UNLOCK();
   }
-
-  if (streamptr->lockIO) CDI_IO_UNLOCK();
 
   return streamID;
 }
@@ -944,7 +942,7 @@ streamOpenRead(const char *filename)
 }
 
 int
-streamOpenReadQuery(const char *filename, CdiQuery *query)
+streamOpenReadQuery(const char *filename, struct CdiQuery *query)
 {
   cdiInitialize();
 
@@ -1082,26 +1080,33 @@ streamDefaultValue(stream_t *streamptr)
 
 #ifdef HAVE_LIBNETCDF
   CdfInfo *cdfInfo = &(streamptr->cdfInfo);
-  cdfInfo->complexFloatId = CDI_UNDEFID;
-  cdfInfo->complexDoubleId = CDI_UNDEFID;
-
-  for (int i = 0; i < MAX_ZAXES_PS; i++) cdfInfo->zaxisIdVec[i] = CDI_UNDEFID;
-  for (int i = 0; i < MAX_ZAXES_PS; i++) cdfInfo->ncZvarIdVec[i] = CDI_UNDEFID;
 
   for (int i = 0; i < MAX_GRIDS_PS; i++)
   {
-    cdfInfo->cdfGridVec[i].start = CDI_UNDEFID;
-    cdfInfo->cdfGridVec[i].count = CDI_UNDEFID;
-    cdfInfo->cdfGridVec[i].gridID = CDI_UNDEFID;
-    for (size_t j = 0; j < CDF_SIZE_NCID; ++j) cdfInfo->cdfGridVec[i].ncIdVec[j] = CDI_UNDEFID;
+    cdfInfo->cdfGridList[i].start = CDI_UNDEFID;
+    cdfInfo->cdfGridList[i].count = CDI_UNDEFID;
+    cdfInfo->cdfGridList[i].gridID = CDI_UNDEFID;
+    for (size_t j = 0; j < CDF_SIZE_NCID; ++j) cdfInfo->cdfGridList[i].ncIdList[j] = CDI_UNDEFID;
   }
 
-  cdfInfo->ncNumDims = 0;
-  for (int i = 0; i < MAX_DIMS_PS; i++) cdfInfo->ncDimIdVec[i] = CDI_UNDEFID;
-  for (int i = 0; i < MAX_DIMS_PS; i++) cdfInfo->ncDimLenVec[i] = 0;
+  for (int i = 0; i < MAX_ZAXES_PS; i++)
+  {
+    cdfInfo->cdfZaxisList[i].start = CDI_UNDEFID;
+    cdfInfo->cdfZaxisList[i].count = CDI_UNDEFID;
+    cdfInfo->cdfZaxisList[i].zaxisID = CDI_UNDEFID;
+  }
 
   cdfInfo->chunkSizeDimT = 0;
   cdfInfo->chunkSizeDimZ = 0;
+
+  for (int i = 0; i < MAX_DIMS_PS; i++) cdfInfo->ncDimLenList[i] = 0;
+  for (int i = 0; i < MAX_ZAXES_PS; i++) cdfInfo->zaxisIdList[i] = CDI_UNDEFID;
+  for (int i = 0; i < MAX_ZAXES_PS; i++) cdfInfo->ncZvarIdList[i] = CDI_UNDEFID;
+  for (int i = 0; i < MAX_DIMS_PS; i++) cdfInfo->ncDimIdList[i] = CDI_UNDEFID;
+
+  cdfInfo->ncNumDims = 0;
+  cdfInfo->complexFloatId = CDI_UNDEFID;
+  cdfInfo->complexDoubleId = CDI_UNDEFID;
 
   cdfInfo->vct.ilev = 0;
   cdfInfo->vct.mlev = 0;
@@ -1134,8 +1139,7 @@ stream_new_entry(int resH)
   stream_t *streamptr = (stream_t *) Malloc(sizeof(stream_t));
   streamDefaultValue(streamptr);
 
-  if (resH == CDI_UNDEFID)
-    streamptr->self = reshPut(streamptr, &streamOps);
+  if (resH == CDI_UNDEFID) { streamptr->self = reshPut(streamptr, &streamOps); }
   else
   {
     streamptr->self = resH;
@@ -1241,9 +1245,9 @@ cdiStreamCloseDefaultDelegate(stream_t *streamptr, int recordBufIsToBeDeleted)
       {
         tsteps_t *tstep = &(streamptr->tsteps[0]);
         // clang-format off
-            if (tstep->recinfo) { Free(tstep->recinfo); tstep->recinfo = NULL; }
-            if (tstep->records) { Free(tstep->records); tstep->records = NULL; }
-            if (tstep->recIDs) { Free(tstep->recIDs); tstep->recIDs = NULL; }
+        if (tstep->recinfo) { Free(tstep->recinfo); tstep->recinfo = NULL; }
+        if (tstep->records) { Free(tstep->records); tstep->records = NULL; }
+        if (tstep->recIDs) { Free(tstep->recIDs); tstep->recIDs = NULL; }
         // clang-format on
       }
       break;
@@ -1266,10 +1270,18 @@ deallocate_sleveltable_t(sleveltable_t *entry)
   entry->lindex = NULL;
 }
 
+#ifdef HAVE_LIBNETCDF
+static void
+deallocate_cdfCache(CdfCache *cache)
+{
+  if (cache->buffer) Free(cache->buffer);
+  cache->buffer = NULL;
+}
+#endif
+
 static void
 streamDestroyViaDelegate(stream_t *streamptr, void (*streamCloseDelegate)(stream_t *streamptr, int recordBufIsToBeDeleted))
 {
-
   xassert(streamptr);
   if (streamptr->filetype != CDI_FILETYPE_UNDEF) streamCloseDelegate(streamptr, 1);
 
@@ -1297,6 +1309,10 @@ streamDestroyViaDelegate(stream_t *streamptr, void (*streamCloseDelegate)(stream
       unsigned nsub = streamptr->vars[index].subtypeSize >= 0 ? (unsigned) streamptr->vars[index].subtypeSize : 0U;
       for (size_t isub = 0; isub < nsub; isub++) deallocate_sleveltable_t(pslev + isub);
       if (pslev) Free(pslev);
+#ifdef HAVE_LIBNETCDF
+      if (streamptr->vars[index].cdfCache) deallocate_cdfCache(streamptr->vars[index].cdfCache);
+      streamptr->vars[index].cdfCache = NULL;
+#endif
     }
     Free(streamptr->vars);
     streamptr->vars = NULL;
@@ -1309,9 +1325,9 @@ streamDestroyViaDelegate(stream_t *streamptr, void (*streamCloseDelegate)(stream
     {
       tsteps_t *tstep = &(streamptr->tsteps[index]);
       // clang-format off
-          if (tstep->recinfo) { Free(tstep->recinfo); tstep->recinfo = NULL; }
-          if (tstep->records) { Free(tstep->records); tstep->records = NULL; }
-          if (tstep->recIDs) { Free(tstep->recIDs); tstep->recIDs = NULL; }
+      if (tstep->recinfo) { Free(tstep->recinfo); tstep->recinfo = NULL; }
+      if (tstep->records) { Free(tstep->records); tstep->records = NULL; }
+      if (tstep->recIDs) { Free(tstep->recIDs); tstep->recIDs = NULL; }
       // clang-format on
       taxisDestroyKernel(&(tstep->taxis));
     }
@@ -1394,14 +1410,11 @@ cdiStreamSync_(stream_t *streamptr)
   int fileID = streamptr->fileID;
   int filetype = streamptr->filetype;
   int vlistID = streamptr->vlistID;
-  int nvars = vlistNvars(vlistID);
+  int numVars = vlistNvars(vlistID);
 
-  if (fileID == CDI_UNDEFID)
-    Warning("File %s not open!", streamptr->filename);
-  else if (vlistID == CDI_UNDEFID)
-    Warning("Vlist undefined for file %s!", streamptr->filename);
-  else if (nvars == 0)
-    Warning("No variables defined!");
+  if (fileID == CDI_UNDEFID) { Warning("File %s not open!", streamptr->filename); }
+  else if (vlistID == CDI_UNDEFID) { Warning("Vlist undefined for file %s!", streamptr->filename); }
+  else if (numVars == 0) { Warning("No variables defined!"); }
   else
   {
     if (streamptr->filemode == 'w' || streamptr->filemode == 'a')
@@ -1807,8 +1820,8 @@ void
 cdiStreamSetupVlist_(stream_t *streamptr, int vlistID)
 {
   streamptr->vlistID = vlistID;
-  int nvars = vlistNvars(vlistID);
-  for (int varID = 0; varID < nvars; ++varID)
+  int numVars = vlistNvars(vlistID);
+  for (int varID = 0; varID < numVars; ++varID)
   {
     int gridID = vlistInqVarGrid(vlistID, varID);
     int zaxisID = vlistInqVarZaxis(vlistID, varID);
@@ -2043,9 +2056,9 @@ freePtrAfterNCMem(stream_t *streamptr, int recordBufIsToBeDeleted)
   {
     tsteps_t *tstep = &(streamptr->tsteps[0]);
     // clang-format off
-      if (tstep->recinfo) { Free(tstep->recinfo); tstep->recinfo = NULL; }
-      if (tstep->records) { Free(tstep->records); tstep->records = NULL; }
-      if (tstep->recIDs) { Free(tstep->recIDs); tstep->recIDs = NULL; }
+    if (tstep->recinfo) { Free(tstep->recinfo); tstep->recinfo = NULL; }
+    if (tstep->records) { Free(tstep->records); tstep->records = NULL; }
+    if (tstep->recIDs) { Free(tstep->recIDs); tstep->recIDs = NULL; }
     // clang-format on
   }
 }

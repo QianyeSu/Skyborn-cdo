@@ -26,12 +26,14 @@ compctl -k "(
 --netcdf_hdr_pad \
 --no_history \
 --no_remap_weights \
+--nofile \
 --operators \
 --operators_no_output \
 --pedantic \
 --percentile \
 --precision \
 --print_filename \
+--query \
 --reduce_dim \
 --remap_weights \
 --remove_chunkspec \
@@ -775,6 +777,7 @@ splitcode -splitcode \
 splitdate -splitdate \
 splitdatetime -splitdatetime \
 splitday -splitday \
+splitensemble -splitensemble \
 splitgrid -splitgrid \
 splithour -splithour \
 splitlevel -splitlevel \
@@ -800,6 +803,7 @@ sub -sub \
 subc -subc \
 subgrid -subgrid \
 subtrend -subtrend \
+symmetrize -symmetrize \
 szip -szip \
 tan -tan \
 tee -tee \
@@ -859,10 +863,14 @@ vardes -vardes \
 varquot2test -varquot2test \
 varrms -varrms \
 varsavg -varsavg \
+varskurt -varskurt \
 varsmax -varsmax \
 varsmean -varsmean \
+varsmedian -varsmedian \
 varsmin -varsmin \
+varspctl -varspctl \
 varsrange -varsrange \
+varsskew -varsskew \
 varsstd -varsstd \
 varsstd1 -varsstd1 \
 varssum -varssum \

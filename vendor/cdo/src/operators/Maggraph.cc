@@ -768,7 +768,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Maggraph> registration = RegisterEntry<Maggraph>();
+  inline static auto registration = RegisterEntry<Maggraph>();
 
   std::string varname, units;
   int gridID;

@@ -240,7 +240,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Gridcell> registration = RegisterEntry<Gridcell>();
+  inline static auto registration = RegisterEntry<Gridcell>();
 
   int GRIDAREA{}, GRIDWEIGHTS{}, GRIDMASK{}, GRIDDX{}, GRIDDY{}, GRIDCELLIDX{};
 

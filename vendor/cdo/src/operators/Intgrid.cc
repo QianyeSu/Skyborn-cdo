@@ -246,7 +246,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Intgrid> registration = RegisterEntry<Intgrid>();
+  inline static auto registration = RegisterEntry<Intgrid>();
 
 private:
   int INTGRID_BIL{}, INTGRID_DIS{}, INTGRID_NN{}, INTGRID_KNN{}, BOXAVG{}, THINOUT{};

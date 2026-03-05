@@ -31,7 +31,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Histogram> registration = RegisterEntry<Histogram>();
+  inline static auto registration = RegisterEntry<Histogram>();
 
 private:
   int HISTCOUNT{}, HISTSUM{}, HISTMEAN{}, HISTFREQ{};
@@ -118,13 +118,13 @@ public:
   run() override
   {
     auto numVars = varList2.numVars();
-    Varray2D<double> vardata(numVars);
+    Varray2D<double> varDataList(numVars);
     Varray2D<double> varcount(numVars);
     Varray2D<double> vartcount(numVars);
     for (int varID = 0; varID < numVars; ++varID)
     {
       auto gridsize = varList1.vars[varID].gridsize;
-      vardata[varID].resize(numBins * gridsize, 0);
+      varDataList[varID].resize(numBins * gridsize, 0);
       varcount[varID].resize(numBins * gridsize, 0);
       vartcount[varID].resize(gridsize, 0);
     }
@@ -158,9 +158,9 @@ public:
             while (index < numBins)
             {
               auto offset = gridsize * index;
-              if (!fp_is_equal(vardata[varID][offset + i], missval) && array[i] >= fltarr[index] && array[i] < fltarr[index + 1])
+              if (!fp_is_equal(varDataList[varID][offset + i], missval) && array[i] >= fltarr[index] && array[i] < fltarr[index + 1])
               {
-                vardata[varID][offset + i] += array[i];
+                varDataList[varID][offset + i] += array[i];
                 varcount[varID][offset + i] += 1;
                 break;
               }
@@ -198,9 +198,9 @@ public:
               if (varcount[varID][offset + i] > 0)
               {
                 if (operatorID == HISTMEAN)
-                  vardata[varID][offset + i] /= varcount[varID][offset + i];
+                  varDataList[varID][offset + i] /= varcount[varID][offset + i];
                 else
-                  vardata[varID][offset + i] = varcount[varID][offset + i] / vartcount[varID][i];
+                  varDataList[varID][offset + i] = varcount[varID][offset + i] / vartcount[varID][i];
               }
             }
           }
@@ -208,7 +208,7 @@ public:
           {
             numMissVals++;
             varcount[varID][offset + i] = missval;
-            vardata[varID][offset + i] = missval;
+            varDataList[varID][offset + i] = missval;
           }
         }
 
@@ -217,7 +217,7 @@ public:
         if (operatorID == HISTCOUNT)
           cdo_write_field(streamID2, &varcount[varID][offset], numMissVals);
         else
-          cdo_write_field(streamID2, &vardata[varID][offset], numMissVals);
+          cdo_write_field(streamID2, &varDataList[varID][offset], numMissVals);
       }
     }
   }

@@ -93,7 +93,7 @@ CLIOptions::handle_argument(cdo_option_argument &argument, const std::vector<std
   if (not out_of_bounds)
   {
     Debug(CLIOP_DBG, "not out of bounds %s", p_argv[i]);
-    const std::string arg_str = p_argv[i];
+    auto const &arg_str = p_argv[i];
     bool is_option = not argument.allow_keyword && (optionMap.find(p_argv[i]) != optionMap.end());
     bool unparsable_keyword = (is_keyword(arg_str) && not argument.allow_keyword) || is_option;
     Debug(CLIOP_DBG, "is option: %i, unparsable_keyword: %i : %i %i", is_option, unparsable_keyword, is_keyword(arg_str),
@@ -131,7 +131,7 @@ CLIOptions::parse(std::vector<std::string> p_argv)
 
     if (it == optionMap.end())
     {
-      std::string arg = p_argv[i];
+      auto const &arg = p_argv[i];
       bool isLongFrom = (arg.size() >= 2 && arg[0] == '-' && arg[1] == '-');
       bool isShortForm = (arg.size() == 2 && arg[0] == '-');
       if (isLongFrom || isShortForm) { cdo_abort("Option %s not found", p_argv[i]); }
@@ -274,7 +274,8 @@ CLIOptions::print_option(const std::unique_ptr<CliOption> &option)
     helpString += " <" + option->argument.description + "> ";
     if (option->argument.description.empty())
     {
-      std::cerr << "error: help argument of " << option->name << " has no description!" << "\n";
+      std::cerr << "error: help argument of " << option->name << " has no description!"
+                << "\n";
       std::exit(0);
     }
   }

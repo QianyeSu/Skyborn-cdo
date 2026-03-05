@@ -122,7 +122,7 @@ cdo_usage(std::FILE *target)
   */
   pad = CLIOptions::pad_size_terminal('=');
   std::fprintf(target, "%s\n", pad.c_str());
-  std::fprintf(target, "    CDO version %s, Copyright (C) 2002-2025 MPI für Meteorologie\n", VERSION);
+  std::fprintf(target, "    CDO version %s, Copyright (C) 2002-2026 Max-Planck-Institut für Meteorologie\n", VERSION);
   std::fprintf(target, "    This is free software and comes with ABSOLUTELY NO WARRANTY\n");
   std::fprintf(target, "    Report bugs to <https://mpimet.mpg.de/cdo>\n\n");
   pad = CLIOptions::pad_size_terminal('=');
@@ -236,10 +236,10 @@ static const char *
 get_progname(char *string)
 {
 #ifdef _WIN32
-  //  progname = strrchr(string, '\\');
+  //  progname = std::strrchr(string, '\\');
   char *progname = " cdo";
 #else
-  char *progname = strrchr(string, '/');
+  char *progname = std::strrchr(string, '/');
 #endif
 
   return (progname == nullptr) ? string : ++progname;
@@ -341,11 +341,7 @@ setup_cli_options()
             auto &factory = Factory::get();
             if (factory.find(operator_name) != factory.end()) { Modules::print_help(operator_name); }
             else if (!op.empty()) { std::cout << op; }
-            else
-            {
-              std::cerr << operator_name << " is neither a operator nor an options"
-                        << "\n";
-            }
+            else { std::cerr << operator_name << " is neither an operator nor an options\n"; }
           })
       ->on_empty_argument([]() { cdo_usage(stdout); })
       ->aborts_program(true)
@@ -468,7 +464,7 @@ main(int argc, char *argv[])
     if (CdoDefault::TableID != CDI_UNDEFID) cdo_def_table_id(CdoDefault::TableID);
 
 #ifdef HAVE_H5DONT_ATEXIT
-    H5dont_atexit();  // don't call H5close on exit
+    H5dont_atexit();  // don't call H5close at exit
 #endif
 #ifdef CUSTOM_MODULES
     load_custom_modules("custom_modules");

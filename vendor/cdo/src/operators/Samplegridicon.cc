@@ -317,6 +317,7 @@ compute_child_from_bounds(CellIndex &cellindex2, Varray<double> &grid_center_lon
 
   constexpr int MaxSearch = 128;
   std::vector<KnnData> knnDataList;
+  knnDataList.reserve(Threading::ompNumMaxThreads);
   for (int i = 0; i < Threading::ompNumMaxThreads; ++i) knnDataList.emplace_back(MaxSearch);
 
   cellindex2.child.resize(MAX_CHILDS * ncells2);
@@ -483,7 +484,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 2, OnlyFirst },
   };
-  inline static RegisterEntry<Samplegridicon> registration = RegisterEntry<Samplegridicon>();
+  inline static auto registration = RegisterEntry<Samplegridicon>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

@@ -403,7 +403,7 @@ public:
     const auto envstr = getenv("REMAPETA_PTOP");
     if (envstr)
     {
-      auto fval = atof(envstr);
+      auto fval = std::atof(envstr);
       if (fval > 0.0)
       {
         cptop = fval;
@@ -484,20 +484,11 @@ public:
     if (zaxisID_ML == -1) cdo_warning("No 3D variable with hybrid sigma pressure coordinate found!");
 
     auto numVars = varList1.numVars();
+    auto const &vars1 = varList1.vars;
 
     varIDs = varList_search_varIDs(varList1, numFullLevels1);
 
-    if (Options::cdoVerbose)
-    {
-      cdo_print("Found:");
-      // clang-format off
-        if (-1 != varIDs.taID)    cdo_print("  %s", var_stdname(air_temperature));
-        if (-1 != varIDs.psID)      cdo_print("  %s", var_stdname(surface_air_pressure));
-        if (-1 != varIDs.lnpsID)    cdo_print("  LOG(%s)", var_stdname(surface_air_pressure));
-        if (-1 != varIDs.sgeopotID) cdo_print("  %s", var_stdname(surface_geopotential));
-        if (-1 != varIDs.husID)     cdo_print("  %s", var_stdname(specific_humidity));
-      // clang-format on
-    }
+    if (Options::cdoVerbose) print_found_variables(varIDs, vars1);
 
     for (int varID = 0; varID < numVars; ++varID)
     {

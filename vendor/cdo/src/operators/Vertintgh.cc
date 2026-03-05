@@ -54,10 +54,8 @@ create_zaxis_height(Varray<double> &heightLevels)
       heightLevels.resize(numLevels);
       zaxisInqLevels(zaxisID, heightLevels.data());
     }
-    else if (arg1 == "default")
-      heightLevels = { 10, 50, 100, 500, 1000, 5000, 10000, 15000, 20000, 25000, 30000 };
-    else
-      cdo_abort("Open failed on %s", zfilename);
+    else if (arg1 == "default") { heightLevels = { 10, 50, 100, 500, 1000, 5000, 10000, 15000, 20000, 25000, 30000 }; }
+    else { cdo_abort("Open failed on %s", zfilename); }
   }
   else { heightLevels = cdo_argv_to_fltarr(cdo_get_oper_argv()); }
 
@@ -85,7 +83,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertintgh> registration = RegisterEntry<Vertintgh>();
+  inline static auto registration = RegisterEntry<Vertintgh>();
 
   int GH2HLX{};
 
@@ -109,7 +107,8 @@ public:
   VarList varList1{};
   VarList varList2{};
   Varray2D<size_t> varnumMissVals;
-  Field3DVector vardata1, vardata2;
+  Field3DVector varDataList1;
+  Field3DVector varDataList2;
 
   Varray<double> heightLevels;
 
@@ -210,8 +209,8 @@ public:
     processVars.resize(numVars);
     interpVars.resize(numVars);
     varnumMissVals.resize(numVars);
-    vardata1.resize(numVars);
-    vardata2.resize(numVars);
+    varDataList1.resize(numVars);
+    varDataList2.resize(numVars);
 
     auto maxLevels = std::max(std::max(numFullLevels, numHalfLevels), (int) heightLevels.size());
 
@@ -222,7 +221,7 @@ public:
 
       if (gridInqType(var.gridID) == GRID_SPECTRAL) cdo_abort("Spectral data unsupported!");
 
-      vardata1[varID].init(var);
+      varDataList1[varID].init(var);
 
       interpVars[varID] = (var.zaxisID == zaxisID_FL || var.zaxisID == zaxisID_HL
                            || (isHeightAxis && (var.nlevels == numHalfLevels || var.nlevels == numFullLevels)));
@@ -230,7 +229,7 @@ public:
       if (interpVars[varID])
       {
         varnumMissVals[varID].resize(maxLevels, 0);
-        vardata2[varID].init(varList2.vars[varID]);
+        varDataList2[varID].init(varList2.vars[varID]);
       }
       else
       {
@@ -281,7 +280,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
         processVars[varID] = true;
       }
 
@@ -291,22 +290,22 @@ public:
       auto lreverse = true;
       if (-1 != heightID_FL && (tsID == 0 || !varList1.vars[heightID_FL].isConstant))
       {
-        gen_vert_index(vertIndex_FL, heightLevels, vardata1[heightID_FL], gridsize, lreverse);
+        gen_vert_index(vertIndex_FL, heightLevels, varDataList1[heightID_FL], gridsize, lreverse);
         if (!extrapolate)
         {
           heightBottom.init(varList1.vars[heightID_FL]);
-          field_copy(vardata1[heightID_FL], numFullLevels - 1, heightBottom);
+          field_copy(varDataList1[heightID_FL], numFullLevels - 1, heightBottom);
           gen_vert_index_mv(vertIndex_FL, heightLevels, gridsize, heightBottom, numMiss_FL, lreverse);
         }
       }
 
       if (-1 != heightID_HL && (tsID == 0 || !varList1.vars[heightID_HL].isConstant))
       {
-        gen_vert_index(vertIndex_HL, heightLevels, vardata1[heightID_HL], gridsize, lreverse);
+        gen_vert_index(vertIndex_HL, heightLevels, varDataList1[heightID_HL], gridsize, lreverse);
         if (!extrapolate)
         {
           heightBottom.init(varList1.vars[heightID_HL]);
-          field_copy(vardata1[heightID_HL], numHalfLevels - 1, heightBottom);
+          field_copy(varDataList1[heightID_HL], numHalfLevels - 1, heightBottom);
           gen_vert_index_mv(vertIndex_HL, heightLevels, gridsize, heightBottom, numMiss_HL, lreverse);
         }
       }
@@ -328,9 +327,9 @@ public:
               if (varnumMissVals[varID][levelID]) cdo_abort("Missing values unsupported for this operator!");
             }
 
-            auto const &height3D = (var.nlevels == numFullLevels) ? vardata1[heightID_FL] : vardata1[heightID_HL];
+            auto const &height3D = (var.nlevels == numFullLevels) ? varDataList1[heightID_FL] : varDataList1[heightID_HL];
             auto const &vertIndex3D = (var.nlevels == numFullLevels) ? vertIndex_FL : vertIndex_HL;
-            vertical_interp_X(height3D, vardata1[varID], vardata2[varID], vertIndex3D, heightLevels, gridsize);
+            vertical_interp_X(height3D, varDataList1[varID], varDataList2[varID], vertIndex3D, heightLevels, gridsize);
 
             if (!extrapolate)
             {
@@ -342,7 +341,7 @@ public:
           for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
           {
             cdo_def_field(streamID2, varID, levelID);
-            cdo_write_field(streamID2, interpVars[varID] ? vardata2[varID] : vardata1[varID], levelID,
+            cdo_write_field(streamID2, interpVars[varID] ? varDataList2[varID] : varDataList1[varID], levelID,
                             varnumMissVals[varID][levelID]);
           }
         }

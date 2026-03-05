@@ -43,8 +43,6 @@ strStartsWith(const char *vstr, const char *cstr)
 int
 get_time_units(size_t len, const char *ptu)
 {
-  int timeunit = -1;
-
   while (isspace(*ptu) && len)
   {
     ptu++;
@@ -53,19 +51,19 @@ get_time_units(size_t len, const char *ptu)
 
   // clang-format off
   if (len > 2)
-    {
-      if      (strStartsWith(ptu, "sec"))            timeunit = TUNIT_SECOND;
-      else if (strStartsWith(ptu, "minute"))         timeunit = TUNIT_MINUTE;
-      else if (strStartsWith(ptu, "hour"))           timeunit = TUNIT_HOUR;
-      else if (strStartsWith(ptu, "day"))            timeunit = TUNIT_DAY;
-      else if (strStartsWith(ptu, "month"))          timeunit = TUNIT_MONTH;
-      else if (strStartsWith(ptu, "calendar_month")) timeunit = TUNIT_MONTH;
-      else if (strStartsWith(ptu, "year"))           timeunit = TUNIT_YEAR;
-    }
-  else if     (len == 1 && ptu[0] == 's')            timeunit = TUNIT_SECOND;
+  {
+    if (strStartsWith(ptu, "sec"))            return TUNIT_SECOND;
+    if (strStartsWith(ptu, "minute"))         return TUNIT_MINUTE;
+    if (strStartsWith(ptu, "hour"))           return TUNIT_HOUR;
+    if (strStartsWith(ptu, "day"))            return TUNIT_DAY;
+    if (strStartsWith(ptu, "month"))          return TUNIT_MONTH;
+    if (strStartsWith(ptu, "calendar_month")) return TUNIT_MONTH;
+    if (strStartsWith(ptu, "year"))           return TUNIT_YEAR;
+  }
+  else if (len == 1 && ptu[0] == 's')         return TUNIT_SECOND;
   // clang-format on
 
-  return timeunit;
+  return -1;
 }
 
 bool
@@ -117,7 +115,6 @@ bool
 is_height_units(const char *units)
 {
   int u0 = units[0];
-
   // clang-format off
   return ((u0=='m' && (!units[1] || strStartsWith(units, "meter")))
        || (!units[2] && units[1]=='m' && (u0=='c' || u0=='d' || u0=='k'))
@@ -158,11 +155,11 @@ is_depth_axis(const char *stdname, const char *longname)
   return (str_is_equal(stdname, "depth")
        || str_is_equal(longname, "depth_below_sea")
        || str_is_equal(longname, "depth below sea"));
-  // clang-format ofn
+  // clang-format on
 }
 
-
-bool is_height_axis(const char *stdname, const char *longname)
+bool
+is_height_axis(const char *stdname, const char *longname)
 {
   // clang-format off
   return (str_is_equal(stdname, "height")

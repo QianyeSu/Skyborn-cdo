@@ -28,7 +28,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Gengrid> registration = RegisterEntry<Gengrid>();
+  inline static auto registration = RegisterEntry<Gengrid>();
 
   CdoStreamID streamID3{};
   size_t gridsize{};

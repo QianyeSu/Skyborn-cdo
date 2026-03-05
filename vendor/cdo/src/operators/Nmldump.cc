@@ -77,7 +77,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 0, NoRestriction },
   };
-  inline static RegisterEntry<Nmldump> registration = RegisterEntry<Nmldump>();
+  inline static auto registration = RegisterEntry<Nmldump>();
 
   int NMLDUMP, KVLDUMP;
   int operatorID;

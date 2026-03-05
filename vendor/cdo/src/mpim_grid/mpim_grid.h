@@ -111,7 +111,7 @@ void gme_factorni(int kni, int *kni2, int *kni3);
 void gme_grid(int withBounds, size_t gridsize, double *rlon, double *rlat, double *blon, double *blat, int *imask, int ni, int nd,
               int ni2, int ni3);
 
-void cdo_print_griddes(int gridID, int opt);
+void cdo_print_griddes(int gridID, int opt, bool genBounds = false);
 
 bool grid_has_proj_params(int gridID);
 std::string grid_get_proj_params(int gridID);

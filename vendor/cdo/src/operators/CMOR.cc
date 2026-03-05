@@ -37,7 +37,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<CMOR> registration = RegisterEntry<CMOR>();
+  inline static auto registration = RegisterEntry<CMOR>();
 
   // clang-format off
   void
@@ -352,10 +352,7 @@ parse_string_to_values(std::string const &workfile, std::string const &pppline, 
       cdo_warning("Value to parse '%s' contains '='. This will not be used as assignment.", trimmedLine);
       i++;
     }
-    else
-    {
-      i++;
-    }
+    else { i++; }
   }
   errh = copy_value(trimmedLine, values);
   if (errh) { handleError(workfile, errh, trimmedLine); }
@@ -602,7 +599,8 @@ static struct mapping *
 new_var_mapping(struct mapping vars[])
 {
   int i;
-  for (i = 0; vars[i].cdi_varID != CDI_UNDEFID; ++i);
+  for (i = 0; vars[i].cdi_varID != CDI_UNDEFID; ++i)
+    ;
   vars[i + 1].cdi_varID = CDI_UNDEFID;
   vars[i + 1].cmor_varID = CMOR_UNDEFID;
   vars[i + 1].data = nullptr;
@@ -614,7 +612,8 @@ static int *
 new_axis_id(int *axis_ids)
 {
   int i;
-  for (i = 0; axis_ids[i] != CMOR_UNDEFID; ++i);
+  for (i = 0; axis_ids[i] != CMOR_UNDEFID; ++i)
+    ;
   axis_ids[i + 1] = CMOR_UNDEFID;
   return &axis_ids[i];
 }
@@ -623,7 +622,8 @@ static int
 count_axis_ids(int *axis_ids)
 {
   int i;
-  for (i = 0; axis_ids[i] != CMOR_UNDEFID; ++i);
+  for (i = 0; axis_ids[i] != CMOR_UNDEFID; ++i)
+    ;
   return i;
 }
 
@@ -725,7 +725,8 @@ addcharvar(const KeyValues *charvars, int vlistID, std::string const &key, struc
   {
     ntsteps = 0;
     int dummy;
-    while ((dummy = streamInqTimestep(streamID2, ntsteps++)));
+    while ((dummy = streamInqTimestep(streamID2, ntsteps++)))
+      ;
   }
 
   axissize = withnewcharaxis.define_new_axes(axissize);
@@ -1063,10 +1064,7 @@ get_infile_attvalue(int vlistID, int varID, std::string &name, int type, int len
       infile_attvalue += tempflt;
     }
   }
-  else
-  {
-    infile_attvalue += cdo::inq_att_string(vlistID, varID, name);
-  }
+  else { infile_attvalue += cdo::inq_att_string(vlistID, varID, name); }
 
   return infile_attvalue;
 }
@@ -2656,10 +2654,7 @@ register_fourth_axis(KVList *kvl, int vlistID, int varID, std::string const &var
             != 0)
           cdo_abort("ERROR (infile: '%s')! Could not register axis '%s' with double values.", cdo_get_stream_name(0), chardim);
       }
-      else
-      {
-        register_char_axis(nofvals, fvalss, axis_ids, chardim);
-      }
+      else { register_char_axis(nofvals, fvalss, axis_ids, chardim); }
     }
   }
   else if (Options::cdoVerbose)
@@ -3098,7 +3093,7 @@ register_z_axis(KVList *kvl, int vlistID, int varID, int zaxisID, std::string co
     if (!szc_value.empty())
     {
       levels = (double *) std::malloc(sizeof(double));
-      levels[0] = (double) atof(szc_value.c_str());
+      levels[0] = (double) std::atof(szc_value.c_str());
 
       std::string szc_key;
       szc_key = zaxis + "_bounds";
@@ -4436,7 +4431,8 @@ get_frequency(/*KVList *kvl,*/ int vlistID, int miptab_freq)
       int taxisID2 = vlistInqTaxis(vlistID2);
       if (ntsteps < 0)
       {
-        while ((recdummy = streamInqTimestep(streamID2, reccounter++)));
+        while ((recdummy = streamInqTimestep(streamID2, reccounter++)))
+          ;
         ntsteps = reccounter;
       }
       ntsteps -= 1;
@@ -4913,10 +4909,7 @@ get_time_bounds(KVList *kvl, int taxisID, int ifreq, JulianDate ref_date, Julian
       }
     }
   }
-  else
-  {
-    taxisInqVdatetimeBounds(taxisID, &vDateTime0b, &vDateTime1b);
-  }
+  else { taxisInqVdatetimeBounds(taxisID, &vDateTime0b, &vDateTime1b); }
 
   auto juldate = julianDate_encode(calendar, vDateTime0b);
   time_bnds[0] = julianDate_to_seconds(julianDate_sub(juldate, ref_date)) / tunitsec;
@@ -4969,10 +4962,7 @@ read_record(CdoStreamID streamID, struct mapping vars[], int vlistID)
       else
         newIndex = i;
       if (var->datatype == 'f') { ((float *) var->data)[newIndex] = (float) buffer[i]; }
-      else
-      {
-        ((double *) var->data)[newIndex] = (double) buffer[i];
-      }
+      else { ((double *) var->data)[newIndex] = (double) buffer[i]; }
     }
   }
   std::free(buffer);
@@ -5046,8 +5036,8 @@ check_append_and_size(KVList *kvl, char *testIn, int ifreq, int calendar)
       std::sscanf(old_end_date, "%04d%02d", &old_end_year, &old_end_month);
       break;
     case (4):
-      old_start_year = atol(old_start_date);
-      old_end_year = atol(old_end_date);
+      old_start_year = std::atol(old_start_date);
+      old_end_year = std::atol(old_end_date);
       break;
     default:
     {
@@ -5160,7 +5150,8 @@ check_append_and_size(KVList *kvl, char *testIn, int ifreq, int calendar)
   if (ntsteps < 0)
   {
     ntsteps = 0;
-    while (streamInqTimestep(streamID2, ntsteps++));
+    while (streamInqTimestep(streamID2, ntsteps++))
+      ;
     if (ntsteps == 0)
     {
       if (Options::cdoVerbose)
@@ -5321,7 +5312,8 @@ get_chunk_files(KVList *kvl, struct mapping vars[], int vlistID, int ifreq, int 
                 std::string const &miptab_freqptr, std::string const &project_id, int *mergeIDs, int psID)
 {
   int i = 0;
-  for (i = 0; vars[i].cmor_varID != CMOR_UNDEFID; ++i);
+  for (i = 0; vars[i].cmor_varID != CMOR_UNDEFID; ++i)
+    ;
   if (mergeIDs[0] != CMOR_UNDEFID) i = 1;
   char **chunk_files = (char **) std::malloc((i + 1) * sizeof(char *));
   chunk_files[i] = nullptr;
@@ -5409,7 +5401,7 @@ write_variables(KVList *kvl, CdoStreamID streamID, struct mapping vars[], int mi
   int vlistID = cdo_stream_inq_vlist(streamID);
   int taxisID = vlistInqTaxis(vlistID);
   int tsID = 0;
-  int numFields;
+  int numFields{};
   size_t gridsize = cdo_vlist_gridsizemax(vlistID);
 
   if (Options::cdoVerbose) cdo_print("10. Start to write variables via cmor_write.");
@@ -5750,26 +5742,23 @@ write_variables(KVList *kvl, CdoStreamID streamID, struct mapping vars[], int mi
           std::memcpy(smon2, &timename[12], 2);
           smon1[2] = '\0';
           smon2[2] = '\0';
-          if (atol(smon1) != 1)
-            std::snprintf(smon1, sizeof(smon1), "%02d", atoi(smon1) - 1);
+          if (std::atoi(smon1) != 1) { std::snprintf(smon1, sizeof(smon1), "%02d", std::atoi(smon1) - 1); }
           else
           {
             char syr[12];
             std::memcpy(syr, &timename[1], 4);
             syr[4] = '\0';
-            std::snprintf(syr, sizeof(syr), "%04d", atoi(syr) - 1);
+            std::snprintf(syr, sizeof(syr), "%04d", std::atoi(syr) - 1);
             std::memcpy(&timename[1], syr, 4);
-
             std::snprintf(smon1, sizeof(smon1), "12");
           }
-          if (atol(smon2) != 1)
-            std::snprintf(smon2, sizeof(smon2), "%02d", atoi(smon2) + 1);
+          if (std::atoi(smon2) != 1) { std::snprintf(smon2, sizeof(smon2), "%02d", std::atoi(smon2) + 1); }
           else
           {
             char syr[12];
             std::memcpy(syr, &timename[8], 4);
             syr[4] = '\0';
-            std::snprintf(syr, sizeof(syr), "%04d", atoi(syr) - 1);
+            std::snprintf(syr, sizeof(syr), "%04d", std::atoi(syr) - 1);
             std::memcpy(&timename[8], syr, 4);
 
             std::snprintf(smon2, sizeof(smon2), "12");
@@ -6347,7 +6336,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<CMOR> registration = RegisterEntry<CMOR>();
+  inline static auto registration = RegisterEntry<CMOR>();
 
   CdoStreamID streamID;
   KVList kvl;

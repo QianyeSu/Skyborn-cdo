@@ -80,7 +80,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Invertlev> registration = RegisterEntry<Invertlev>();
+  inline static auto registration = RegisterEntry<Invertlev>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
@@ -89,7 +89,7 @@ public:
   int taxisID2{ CDI_UNDEFID };
 
   VarList varList1{};
-  Varray2D<double> vardata{};
+  Varray2D<double> varDataList{};
 
   bool dataIsUnchanged{};
   std::vector<std::vector<size_t>> varnumMissVals{};
@@ -122,7 +122,7 @@ public:
     varList1 = VarList(vlistID1);
     auto numVars = varList1.numVars();
 
-    vardata.resize(numVars);
+    varDataList.resize(numVars);
     varnumMissVals.resize(numVars);
 
     auto has3dVar = false;
@@ -132,7 +132,7 @@ public:
       if (var.nlevels > 1)
       {
         has3dVar = true;
-        vardata[varID].resize(var.gridsize * var.nlevels);
+        varDataList[varID].resize(var.gridsize * var.nlevels);
         varnumMissVals[varID].resize(var.nlevels);
       }
     }
@@ -159,10 +159,10 @@ public:
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
 
-        if (vardata[varID].size())
+        if (varDataList[varID].size())
         {
           auto offset = varList1.vars[varID].gridsize * levelID;
-          cdo_read_field(streamID1, &vardata[varID][offset], &numMissVals);
+          cdo_read_field(streamID1, &varDataList[varID][offset], &numMissVals);
           varnumMissVals[varID][levelID] = numMissVals;
         }
         else
@@ -179,7 +179,7 @@ public:
 
       for (int varID = 0, numVars = varList1.numVars(); varID < numVars; ++varID)
       {
-        if (vardata[varID].size())
+        if (varDataList[varID].size())
         {
           auto const &var = varList1.vars[varID];
           for (int levelID = 0; levelID < var.nlevels; ++levelID)
@@ -189,7 +189,7 @@ public:
             auto offset = var.gridsize * (var.nlevels - levelID - 1);
             numMissVals = varnumMissVals[varID][var.nlevels - levelID - 1];
 
-            cdo_write_field(streamID2, &vardata[varID][offset], numMissVals);
+            cdo_write_field(streamID2, &varDataList[varID][offset], numMissVals);
           }
         }
       }

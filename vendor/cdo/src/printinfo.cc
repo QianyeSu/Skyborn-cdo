@@ -11,8 +11,8 @@
 #include "compare.h"
 #include "printinfo.h"
 
-#define DATE_FORMAT "%5.4d-%2.2d-%2.2d"
-#define TIME_FORMAT "%2.2d:%2.2d:%2.2d"
+constexpr const char *DATE_FORMAT = "%5.4d-%2.2d-%2.2d";
+constexpr const char *TIME_FORMAT = "%2.2d:%2.2d:%2.2d";
 
 std::string
 date_to_string(CdiDate date)
@@ -134,7 +134,7 @@ print_xvals(int gridID, int dig)
         if (is_not_equal(xinc, 0.0)) std::fprintf(stdout, " by %.*g", dig, xinc);
       }
       if (xunits.size()) std::fprintf(stdout, " [%s]", xunits.c_str());
-      if (gridIsCircular(gridID)) std::fprintf(stdout, "  circular");
+      if (gridIsCyclic(gridID)) std::fprintf(stdout, "  cyclic");
       std::fprintf(stdout, "\n");
     }
   }
@@ -252,7 +252,7 @@ print_xyvals2D(int gridID, int dig)
     if (gridsize > 1) std::fprintf(stdout, " to %.*g", dig, xmm.max);
     if (is_not_equal(xinc, 0.0)) std::fprintf(stdout, " by %.*g", dig, xinc);
     if (xunits.size()) std::fprintf(stdout, " [%s]", xunits.c_str());
-    if (gridIsCircular(gridID)) std::fprintf(stdout, "  circular");
+    if (gridIsCyclic(gridID)) std::fprintf(stdout, "  cyclic");
     std::fprintf(stdout, "\n");
     std::fprintf(stdout, "%33s : %.*g", yname.c_str(), dig, ymm.min);
     if (gridsize > 1) std::fprintf(stdout, " to %.*g", dig, ymm.max);

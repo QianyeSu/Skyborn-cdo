@@ -31,9 +31,12 @@ gen_grid_healpix_index(int gridID1, size_t gridsize2, std::vector<int64_t> const
   auto refinementLevel = hpParams.level();
   auto healpixOrder = (hpParams.order() == HpOrder::Ring) ? "ring" : "nested";
 
+  auto dimName = cdo::inq_key_string(gridID1, CDI_GLOBAL, CDI_KEY_DIMNAME);
+  auto gridMapping = cdo::inq_key_string(gridID1, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME);
+
   auto gridID2 = gridCreate(GRID_HEALPIX, gridsize2);
-  cdiDefKeyString(gridID2, CDI_GLOBAL, CDI_KEY_DIMNAME, "cell");
-  cdiDefKeyString(gridID2, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, "crs");
+  if (dimName.size()) cdiDefKeyString(gridID2, CDI_GLOBAL, CDI_KEY_DIMNAME, dimName.c_str());
+  if (gridMapping.size()) cdiDefKeyString(gridID2, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, gridMapping.c_str());
   const std::string gridmapName = "healpix";
   cdiDefKeyString(gridID2, CDI_GLOBAL, CDI_KEY_GRIDMAP_NAME, gridmapName.c_str());
   cdiDefAttTxt(gridID2, CDI_GLOBAL, "grid_mapping_name", (int) gridmapName.size(), gridmapName.c_str());
@@ -141,7 +144,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Selgridcell> registration = RegisterEntry<Selgridcell>();
+  inline static auto registration = RegisterEntry<Selgridcell>();
 
 private:
   struct sindex_t

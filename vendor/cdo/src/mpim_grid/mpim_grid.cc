@@ -5,6 +5,7 @@
 
 */
 
+#include <string>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -209,10 +210,7 @@ gridToZonal(int gridID1)
     gridDefXvals(gridID2, &xval);
     gridDefYvals(gridID2, latitudes.data());
   }
-  else
-  {
-    cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType));
-  }
+  else { cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType)); }
 
   return gridID2;
 }
@@ -239,10 +237,7 @@ gridToMeridional(int gridID1)
     double yval = 0.0;
     gridDefYvals(gridID2, &yval);
   }
-  else
-  {
-    cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType));
-  }
+  else { cdo_abort("Gridtype %s unsupported!", gridNamePtr(gridType)); }
 
   return gridID2;
 }
@@ -578,36 +573,41 @@ check_range(long n, Varray<double> const &vals, double valid_min, double valid_m
   return status;
 }
 
+static int
+search_attr_txt(int cdiID, int varID, std::string const &name)
+{
+  int atttype, attlen;
+  char attname[CDI_MAX_NAME + 1];
+  int natts;
+  cdiInqNatts(cdiID, varID, &natts);
+  for (int iatt = 0; iatt < natts; ++iatt)
+  {
+    cdiInqAtt(cdiID, varID, iatt, attname, &atttype, &attlen);
+    if (atttype == CDI_DATATYPE_TXT && name == attname) return attlen;
+  }
+
+  return -1;
+}
+
+static std::string
+get_attr_txt(int cdiID, int varID, std::string const &name, int attlen)
+{
+  std::vector<char> atttxt(attlen + 1);
+  cdiInqAttTxt(cdiID, varID, name.c_str(), attlen, atttxt.data());
+  atttxt[attlen] = 0;
+  return atttxt.data();
+}
+
 bool
 grid_has_proj_params(int gridID)
 {
-  bool hasProjParams = false;
-
   auto gridType = gridInqType(gridID);
   if (gridType == GRID_PROJECTION)
   {
-    int atttype, attlen;
-    char attname[CDI_MAX_NAME + 1];
-
-    int natts;
-    cdiInqNatts(gridID, CDI_GLOBAL, &natts);
-
-    for (int iatt = 0; iatt < natts; ++iatt)
-    {
-      cdiInqAtt(gridID, CDI_GLOBAL, iatt, attname, &atttype, &attlen);
-
-      if (atttype == CDI_DATATYPE_TXT)
-      {
-        if (cdo_cmpstr(attname, "proj_params") || cdo_cmpstr(attname, "proj4_params"))
-        {
-          hasProjParams = true;
-          break;
-        }
-      }
-    }
+    if (search_attr_txt(gridID, CDI_GLOBAL, "proj_params") > 0) return true;
+    if (search_attr_txt(gridID, CDI_GLOBAL, "proj4_params") > 0) return true;
   }
-
-  return hasProjParams;
+  return false;
 }
 
 std::string
@@ -618,27 +618,13 @@ grid_get_proj_params(int gridID)
   auto gridType = gridInqType(gridID);
   if (gridType == GRID_PROJECTION)
   {
-    char attname[CDI_MAX_NAME + 1];
-
-    int natts;
-    cdiInqNatts(gridID, CDI_GLOBAL, &natts);
-
-    for (int iatt = 0; iatt < natts; ++iatt)
+    if (int attlen = search_attr_txt(gridID, CDI_GLOBAL, "proj_params"); attlen > 0)
     {
-      int atttype, attlen;
-      cdiInqAtt(gridID, CDI_GLOBAL, iatt, attname, &atttype, &attlen);
-
-      if (atttype == CDI_DATATYPE_TXT)
-      {
-        std::vector<char> atttxt(attlen + 1);
-        cdiInqAttTxt(gridID, CDI_GLOBAL, attname, attlen, atttxt.data());
-        atttxt[attlen] = 0;
-        if (cdo_cmpstr(attname, "proj_params") || cdo_cmpstr(attname, "proj4_params"))
-        {
-          projParams = atttxt.data();
-          break;
-        }
-      }
+      projParams = get_attr_txt(gridID, CDI_GLOBAL, "proj_params", attlen);
+    }
+    else if (attlen = search_attr_txt(gridID, CDI_GLOBAL, "proj4_params"); attlen > 0)
+    {
+      projParams = get_attr_txt(gridID, CDI_GLOBAL, "proj4_params", attlen);
     }
   }
 
@@ -767,6 +753,7 @@ gridToCurvilinear(int gridID1, NeedCorners needCorners)
   }
 
   auto isProjection = is_valid_projection(projection);
+  auto useProj = (projection == Projection::PARAMS);
 
   auto xunits = cdo::inq_key_string(gridID1, CDI_XAXIS, CDI_KEY_UNITS);
   auto yunits = cdo::inq_key_string(gridID1, CDI_YAXIS, CDI_KEY_UNITS);
@@ -784,16 +771,16 @@ gridToCurvilinear(int gridID1, NeedCorners needCorners)
     }
   }
 
-  double xscale = (xunits[0] == 'k' && xunits[1] == 'm') ? 1000.0 : 1.0;
-  double yscale = (yunits[0] == 'k' && yunits[1] == 'm') ? 1000.0 : 1.0;
+  auto xscale = (xunits[0] == 'k' && xunits[1] == 'm') ? 1000.0 : 1.0;
+  auto yscale = (yunits[0] == 'k' && yunits[1] == 'm') ? 1000.0 : 1.0;
 
   gridDefXsize(gridID2, nx);
   gridDefYsize(gridID2, ny);
 
   Varray<double> xvals2D(gridsize), yvals2D(gridsize);
 
-  if (nx == 0) nx = 1;
-  if (ny == 0) ny = 1;
+  if (nx == 0) { nx = 1; }
+  if (ny == 0) { ny = 1; }
 
   Varray<double> xvals(nx, 0.0), yvals(ny, 0.0);
   if (gridInqXvals(gridID1, nullptr)) gridInqXvals(gridID1, xvals.data());
@@ -826,11 +813,12 @@ gridToCurvilinear(int gridID1, NeedCorners needCorners)
     {
       xbounds.resize(2 * nx);
       gridInqXbounds(gridID1, xbounds.data());
-      if (check_range(2 * nx, xbounds, -720, 720))
-      {
-        cdo_warning("longitude bounds out of range, skipped!");
-        xbounds.clear();
-      }
+      if (useProj == false)
+        if (check_range(2 * nx, xbounds, -720, 720))
+        {
+          cdo_warning("longitude bounds out of range, skipped!");
+          xbounds.clear();
+        }
     }
     else if (genBounds && nx > 1)
     {
@@ -842,11 +830,12 @@ gridToCurvilinear(int gridID1, NeedCorners needCorners)
     {
       ybounds.resize(2 * ny);
       gridInqYbounds(gridID1, ybounds.data());
-      if (check_range(2 * ny, ybounds, -180, 180))
-      {
-        cdo_warning("latitude bounds out of range, skipped!");
-        ybounds.clear();
-      }
+      if (useProj == false)
+        if (check_range(2 * ny, ybounds, -180, 180))
+        {
+          cdo_warning("latitude bounds out of range, skipped!");
+          ybounds.clear();
+        }
     }
     else if (genBounds && ny > 1)
     {
@@ -1058,10 +1047,7 @@ gridToUnstructuredGaussianReduced(int gridID1, int gridID2, size_t gridsize, int
 
     gridDefYvals(gridID2, yvals2D.data());
   }
-  else
-  {
-    cdo_abort("%s: latitude coordinates missing!", gridNamePtr(gridInqType(gridID1)));
-  }
+  else { cdo_abort("%s: latitude coordinates missing!", gridNamePtr(gridInqType(gridID1))); }
 
   std::vector<double> xvals(gridsize);
 
@@ -1209,10 +1195,7 @@ gridToUnstructured(int gridID1, NeedCorners needCorners)
       isProjRLL = true;
     }
     else if (projType == CDI_PROJ_HEALPIX) { isProjHealpix = true; }
-    else
-    {
-      cdo_abort("Projection unsupported!");
-    }
+    else { cdo_abort("Projection unsupported!"); }
   }
 
   switch (gridType)
@@ -1436,10 +1419,7 @@ gridcell_weights(int gridID, Varray<double> &gridCellWeights)
       if (areaStatus != 0 && (gridType == GRID_LONLAT || gridType == GRID_GAUSSIAN))
         areaStatus = gridGenAreaReg2Dweights(gridID, gridCellArea);
     }
-    else
-    {
-      areaStatus = 1;
-    }
+    else { areaStatus = 1; }
   }
 
   if (areaStatus == 0) { weightStatus = compute_gridcell_weights(gridID, gridCellArea, gridCellWeights); }

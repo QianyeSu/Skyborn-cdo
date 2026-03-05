@@ -56,7 +56,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Condc> registration = RegisterEntry<Condc>();
+  inline static auto registration = RegisterEntry<Condc>();
 
 private:
   int IFTHENC{}, IFNOTTHENC{};

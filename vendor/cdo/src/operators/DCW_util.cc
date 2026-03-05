@@ -44,7 +44,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 0, NoRestriction },
   };
-  inline static RegisterEntry<DCW_util> registration = RegisterEntry<DCW_util>();
+  inline static auto registration = RegisterEntry<DCW_util>();
 
 private:
   int argc = 0;

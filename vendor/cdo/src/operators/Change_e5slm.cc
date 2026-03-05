@@ -47,7 +47,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Change_e5slm> registration = RegisterEntry<Change_e5slm>();
+  inline static auto registration = RegisterEntry<Change_e5slm>();
 
 private:
   int numFields{};

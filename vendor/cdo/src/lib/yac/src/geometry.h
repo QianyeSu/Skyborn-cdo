@@ -286,6 +286,114 @@ static inline void XYZtoLL (double const p_in[], double * lon, double * lat) {
    *lat = M_PI_2 - acos(p_in[2]);
 }
 
+/**
+ * computes the product of two floating-point numbers with error tracking
+ * using error-free transformation (EFT)
+ *
+ * based on code by Hongyu Chen
+ * (https://github.com/hongyuchen1030/regridding-geom-benchmark)
+ * @param[in]  a        first factor
+ * @param[in]  b        second factor
+ * @param[out] product  result of a * b
+ * @param[out] error    rounding error of the multiplication
+ */
+static inline void product_eft(
+  double a, double b, double * restrict product, double * restrict error) {
+  *product = a * b;
+  *error = fma(a, b, -*product);
+}
+
+/**
+ * computes the sum of two floating-point numbers with error tracking
+ * using error-free transformation (EFT)
+ *
+ * based on code by Hongyu Chen
+ * (https://github.com/hongyuchen1030/regridding-geom-benchmark)
+ * @param[in]  a      first summand
+ * @param[in]  b      second summand
+ * @param[out] sum    result of a + b
+ * @param[out] error  rounding error of the addition
+ */
+static inline void sum_eft(
+  double a, double b, double * restrict sum, double * restrict error) {
+  *sum = a + b;
+  double temp = *sum - a;
+  *error = (a - (*sum - temp)) + (b - temp);
+}
+
+/**
+ * accumulates a value with error compensation using error-free
+ * transformation (EFT)
+ *
+ * based on code by Hongyu Chen
+ * (https://github.com/hongyuchen1030/regridding-geom-benchmark)
+ * @param[in]     a      value to accumulate
+ * @param[in,out] accu   accumulator variable
+ * @param[in,out] error  accumulated rounding error
+ */
+static inline void accu_eft(
+  double a, double * restrict accu, double * restrict error) {
+  double a_ = a - *error;
+  double temp = *accu + a_;
+  *error = (temp - *accu) - a_;
+  *accu = temp;
+}
+
+/**
+ * computes the product of two floating-point numbers and accumulates it
+ * with error compensation using error-free transformation (EFT)
+ *
+ * This function multiplies a and b, then adds the result to the accumulator
+ * while tracking and compensating for rounding errors. This is useful for
+ * maintaining numerical precision in summations of products.
+ *
+ * based on code by Hongyu Chen
+ * (https://github.com/hongyuchen1030/regridding-geom-benchmark)
+ * @param[in]     a           first factor
+ * @param[in]     b           second factor
+ * @param[in,out] accu        accumulator variable
+ * @param[in,out] accu_error  accumulated rounding error
+ */
+static inline void accu_product_eft(
+  double a, double b, double * restrict accu, double * restrict accu_error) {
+
+  // compute product with error
+  double product, product_error;
+  product_eft(a, b, &product, &product_error);
+
+  // compensated accumulation
+  accu_eft(product, accu, accu_error);
+  *accu_error += product_error;
+}
+
+/**
+ * computes the determinant of a 2x2 matrix with error tracking
+ * using error-free transformation (EFT)
+ *
+ * Computes det = a*d - b*c with accumulated rounding error
+ *
+ * @param[in]  a          element (0,0) of the matrix
+ * @param[in]  b          element (0,1) of the matrix
+ * @param[in]  c          element (1,0) of the matrix
+ * @param[in]  d          element (1,1) of the matrix
+ * @param[out] det        determinant result (a*d - b*c)
+ * @param[out] det_error  accumulated rounding error of the computation
+ */
+static inline void det2_error(
+  double a, double b, double c, double d,
+  double * restrict det, double * restrict det_error) {
+
+  double ad, ad_err;
+  product_eft(a, d, &ad, &ad_err);
+
+  double bc, bc_err;
+  product_eft(b, -c, &bc, &bc_err);
+
+  double temp_err;
+  sum_eft(ad, bc, det, &temp_err);
+  *det_error = ad_err + (temp_err + bc_err);
+}
+
 // computation of the determinant of a 2x2 matrix using Kahan summation
 static inline double det2_kahan(double a, double b, double c, double d) {
   double bc = b*c;
@@ -320,47 +428,32 @@ static inline void crossproduct_d (
 }
 
 /**
- * computes the great circle distance in rad for two points given in xyz coordinates
- * taken from http://johnblackburne.blogspot.de/2012/05/angle-between-two-3d-vectors.html
+ * computes the great circle distance in rad for two points given in
+ * xyz coordinates
+ *
+ * uses the following formula:
+ *   angle = 2 * atan(|a-b|/|a+b|)
+ * (taken from
+ *  “How Futile are Mindless Assessments of Roundoff in Floating-Point
+ *   Computation?” by W. Kahan.
+ *  https://people.eecs.berkeley.edu/~wkahan/Mindless.pdf)
+ *
+ * In contrast to other formulas, this one provided the very good accuracy
+ * across all angles. An due to its simiple nature (no branching) also good
+ * performance.
  * @param[in] a point coordinates of point a
  * @param[in] b point coordinates of point b
  * @return great circle distance in rad between both points
  */
 static inline double get_vector_angle(double const a[3], double const b[3]) {
 
-   double dot_product = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+  double sub[3] = {a[0] - b[0], a[1] - b[1], a[2] - b[2]};
+  double add[3] = {a[0] + b[0], a[1] + b[1], a[2] + b[2]};
+  double sq_sub = sub[0] * sub[0] + sub[1] * sub[1] + sub[2] * sub[2];
+  double sq_add = add[0] * add[0] + add[1] * add[1] + add[2] * add[2];
 
-   // the acos most accurate in the range [-M_SQRT1_2;M_SQRT1_2]
-   if (fabs(dot_product) > M_SQRT1_2) {
-
-      double cross_ab[3];
-
-      crossproduct_kahan(a, b, cross_ab);
-
-      double asin_tmp = asin(sqrt(cross_ab[0]*cross_ab[0]+
-                                  cross_ab[1]*cross_ab[1]+
-                                  cross_ab[2]*cross_ab[2]));
-
-      if (dot_product > 0.0) // if the angle is smaller than (PI / 2)
-         return MAX(asin_tmp,0.0);
-      else
-         return MIN(M_PI - asin_tmp, M_PI);
-
-   } else {
-
-      return acos(dot_product);
-   }
-
-   /*
-   // this solution is simpler, but has a much worse performance
-   double cross[3], dot, cross_abs;
-
-   crossproduct_kahan(a, b, cross);
-   dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-   cross_abs = sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
-
-   return fabs(atan2(cross_abs, dot));
-   */
+  // angle = 2 * atan(|a-b|/|a+b|)
+  return (fabs(sq_add) > 1e-12)?(2.0 * atan(sqrt(sq_sub/sq_add))):M_PI;
 }
 
 static inline struct sin_cos_angle sin_cos_angle_new(double sin, double cos) {
@@ -622,23 +715,8 @@ static inline int points_are_identically(double const * a, double const * b) {
  */
 static inline int compare_coords(double const * a, double const * b) {
 
-   double dot_product = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-
-   // if the angle is smaller than ~0.81 degree
-   // (in this range the acos is still rather accurate)
-   if (dot_product > 0.9999) { // (acos(0.9999) = ~0.81 degree)
-
-      // both points are close to each other -> use cross product for higher
-     // accuracy
-
-      double cross_ab[3];
-      crossproduct_kahan(a, b, cross_ab);
-
-      // for very small angles: asin(alpha) = ~alpha   (alpha in rad)
-      if (sqrt(cross_ab[0]*cross_ab[0] +
-               cross_ab[1]*cross_ab[1] +
-               cross_ab[2]*cross_ab[2]) < yac_angle_tol) return 0;
-   }
+   // Check if points are identical using squared chord distance
+   if (points_are_identically(a, b)) return 0;
 
    int ret;
    if ((ret = (a[0] > b[0]) - (a[0] < b[0]))) return ret;

@@ -459,20 +459,20 @@ gen_lonlat_selbox_reg2d(int gridID, double xlon1, double xlon2, double xlat1, do
   {
     // while ( nlon == 1 || (xvals[nlon-1] - xvals[0]) >= 360 ) nlon--;
 
-    for (lon21 = 0; lon21 < nlon && xvals[lon21] < xlon1; lon21++);
-    for (lon22 = lon21; lon22 < nlon && xvals[lon22] < xlon2; lon22++);
+    for (lon21 = 0; lon21 < nlon && xvals[lon21] < xlon1; lon21++) {}
+    for (lon22 = lon21; lon22 < nlon && xvals[lon22] < xlon2; lon22++) {}
 
-    if (lon22 >= nlon || xvals[lon22] > xlon2) lon22--;
+    if (lon22 >= nlon || xvals[lon22] > xlon2) { lon22--; }
 
     xlon1 -= 360;
     xlon2 -= 360;
 
-    for (lon11 = 0; xvals[lon11] < xlon1; lon11++);
-    for (lon12 = lon11; lon12 < nlon && xvals[lon12] < xlon2; lon12++);
+    for (lon11 = 0; xvals[lon11] < xlon1; lon11++) {}
+    for (lon12 = lon11; lon12 < nlon && xvals[lon12] < xlon2; lon12++) {}
 
     // lon12--;
-    if (lon12 >= nlon || xvals[lon12] > xlon2) lon12--;
-    if (lon21 < nlon && lon12 >= 0 && is_equal(xvals[lon12], xvals[lon21])) lon12--;
+    if (lon12 >= nlon || xvals[lon12] > xlon2) { lon12--; }
+    if (lon21 < nlon && lon12 >= 0 && is_equal(xvals[lon12], xvals[lon21])) { lon12--; }
 
     if (lon12 - lon11 + 1 + lon22 - lon21 + 1 <= 0) cdo_abort("Longitudinal dimension is too small!");
   }
@@ -483,26 +483,26 @@ gen_lonlat_selbox_reg2d(int gridID, double xlon1, double xlon2, double xlat1, do
     {
       if (xlat1 > xlat2)
       {
-        for (lat1 = 0; lat1 < nlat && yvals[lat1] > xlat1; lat1++);
-        for (lat2 = nlat - 1; lat2 && yvals[lat2] < xlat2; lat2--);
+        for (lat1 = 0; lat1 < nlat && yvals[lat1] > xlat1; lat1++) {}
+        for (lat2 = nlat - 1; lat2 && yvals[lat2] < xlat2; lat2--) {}
       }
       else
       {
-        for (lat1 = 0; lat1 < nlat && yvals[lat1] > xlat2; lat1++);
-        for (lat2 = nlat - 1; lat2 && yvals[lat2] < xlat1; lat2--);
+        for (lat1 = 0; lat1 < nlat && yvals[lat1] > xlat2; lat1++) {}
+        for (lat2 = nlat - 1; lat2 && yvals[lat2] < xlat1; lat2--) {}
       }
     }
     else
     {
       if (xlat1 < xlat2)
       {
-        for (lat1 = 0; lat1 < nlat && yvals[lat1] < xlat1; lat1++);
-        for (lat2 = nlat - 1; lat2 && yvals[lat2] > xlat2; lat2--);
+        for (lat1 = 0; lat1 < nlat && yvals[lat1] < xlat1; lat1++) {}
+        for (lat2 = nlat - 1; lat2 && yvals[lat2] > xlat2; lat2--) {}
       }
       else
       {
-        for (lat1 = 0; lat1 < nlat && yvals[lat1] < xlat2; lat1++);
-        for (lat2 = nlat - 1; lat2 && yvals[lat2] > xlat1; lat2--);
+        for (lat1 = 0; lat1 < nlat && yvals[lat1] < xlat2; lat1++) {}
+        for (lat2 = nlat - 1; lat2 && yvals[lat2] > xlat1; lat2--) {}
       }
     }
 
@@ -526,7 +526,7 @@ gen_lonlat_selbox_curv(int gridID, double xlon1, double xlon2, double xlat1, dou
   long nlat = gridInqYsize(gridID);
   size_t gridsize = nlon * nlat;
 
-  auto grid_is_circular = gridIsCircular(gridID);
+  auto isCyclic = gridIsCyclic(gridID);
 
   Varray<double> xvals(gridsize);
   Varray<double> yvals(gridsize);
@@ -560,7 +560,7 @@ gen_lonlat_selbox_curv(int gridID, double xlon1, double xlon2, double xlat1, dou
   bool lp2 = false;
   double xfirst, xlast, ylast;
 
-  if (grid_is_circular)
+  if (isCyclic)
   {
     for (long ilat = 0; ilat < nlat; ilat++)
     {
@@ -740,7 +740,8 @@ selbox_cell_grid(int gridID1)
   if (!gridHasCoordinates(gridID1)) cdo_abort("Cell center coordinates missing!");
 
   {
-    Varray<double> xvals(gridsize1), yvals(gridsize1);
+    Varray<double> xvals(gridsize1);
+    Varray<double> yvals(gridsize1);
     gridInqXvals(gridID1, xvals.data());
     gridInqYvals(gridID1, yvals.data());
 
@@ -755,24 +756,33 @@ selbox_cell_grid(int gridID1)
     {
       auto xval = xvals[i];
       auto yval = yvals[i];
-      if (yval >= xlat1 && yval <= xlat2)
-        if ((xval >= xlon1 && xval <= xlon2) || (xval + 360 >= xlon1 && xval + 360 <= xlon2)
-            || (xval - 360 >= xlon1 && xval - 360 <= xlon2))
+      if ((yval >= xlat1 && yval <= xlat2)
+          && ((xval >= xlon1 && xval <= xlon2) || (xval + 360 >= xlon1 && xval + 360 <= xlon2)
+              || (xval - 360 >= xlon1 && xval - 360 <= xlon2)))
+      {
+        nvals++;
+        if (nvals > maxcell)
         {
-          nvals++;
-          if (nvals > maxcell)
-          {
-            constexpr long cellinc = 4096;
-            maxcell += cellinc;
-            cellIndices.resize(maxcell);
-          }
-          cellIndices[nvals - 1] = i;
+          constexpr long cellinc = 4096;
+          maxcell += cellinc;
+          cellIndices.resize(maxcell);
         }
+        cellIndices[nvals - 1] = i;
+      }
     }
 
     if (nvals == 0) cdo_abort("No grid points found!");
 
+    cellIndices.resize(nvals);
+    cellIndices.shrink_to_fit();
+
     gridsize2 = nvals;
+  }
+
+  if (Options::cdoVerbose)
+  {
+    const auto [minval, maxval] = std::minmax_element(cellIndices.begin(), cellIndices.end());
+    cdo_print("indices min/max: %ld/%ld", (long) *minval + 1, (long) *maxval + 1);
   }
 
   selboxInfo.gridID2 = gengridcell(gridID1, gridsize2, cellIndices);
@@ -1038,7 +1048,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Selbox> registration = RegisterEntry<Selbox>();
+  inline static auto registration = RegisterEntry<Selbox>();
 
   int SELLONLATBOX, SELINDEXBOX;
   CdoStreamID streamID1;

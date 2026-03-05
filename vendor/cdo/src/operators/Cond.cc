@@ -56,14 +56,14 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Cond> registration = RegisterEntry<Cond>();
+  inline static auto registration = RegisterEntry<Cond>();
 
 private:
   int IFTHEN{}, IFNOTTHEN{};
   int filltype = FILL_NONE;
   double missval1 = -9.E33;
   Varray2D<size_t> varnumMissVals1;
-  Varray2D<double> vardata1;
+  Varray2D<double> varDataList1;
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
@@ -129,7 +129,7 @@ public:
         filltype = FILL_TS;
         cdo_print("Filling up stream1 >%s< by copying the first timestep.", cdo_get_stream_name(0));
 
-        cdo_fill_ts(vlistID1, vardata1, varnumMissVals1);
+        cdo_fill_ts(vlistID1, varDataList1, varnumMissVals1);
       }
     }
   }
@@ -176,7 +176,7 @@ public:
           {
             auto gridsize = varList1.vars[varID].gridsize;
             auto offset = gridsize * levelID;
-            array_copy(gridsize, &varrayIn1[0], &vardata1[varID][offset]);
+            array_copy(gridsize, &varrayIn1[0], &varDataList1[varID][offset]);
             varnumMissVals1[varID][levelID] = numMissVals1;
           }
         }
@@ -184,7 +184,7 @@ public:
         {
           auto gridsize = varList1.vars[varID].gridsize;
           auto offset = gridsize * levelID;
-          array_copy(gridsize, &vardata1[varID][offset], &varrayIn1[0]);
+          array_copy(gridsize, &varDataList1[varID][offset], &varrayIn1[0]);
           numMissVals1 = varnumMissVals1[varID][levelID];
         }
 

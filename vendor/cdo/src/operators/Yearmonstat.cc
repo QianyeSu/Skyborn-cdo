@@ -33,7 +33,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Yearmonstat> registration = RegisterEntry<Yearmonstat>();
+  inline static auto registration = RegisterEntry<Yearmonstat>();
 
 private:
   CdoStreamID streamID1{};
@@ -94,9 +94,9 @@ public:
     auto maxFields = varList1.maxFields();
     std::vector<FieldInfo> fieldInfoList(maxFields);
 
-    FieldVector2D samp1, varsData1;
+    FieldVector2D samp1, varDataList1;
     field2D_init(samp1, varList1);
-    field2D_init(varsData1, varList1, FIELD_VEC);
+    field2D_init(varDataList1, varList1, FIELD_VEC);
 
     int tsID = 0;
     int otsID = 0;
@@ -139,7 +139,7 @@ public:
           if (tsID == 0) fieldInfoList[fieldID].set(varID, levelID);
 
           auto &rsamp1 = samp1[varID][levelID];
-          auto &rvars1 = varsData1[varID][levelID];
+          auto &rvars1 = varDataList1[varID][levelID];
 
           if (numSets == 0)
           {
@@ -187,7 +187,7 @@ public:
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
           auto const &rsamp1 = samp1[varID][levelID];
-          auto &rvars1 = varsData1[varID][levelID];
+          auto &rvars1 = varDataList1[varID][levelID];
           if (!rsamp1.empty())
             field2_div(rvars1, rsamp1);
           else
@@ -205,7 +205,7 @@ public:
         auto [varID, levelID] = fieldInfoList[fieldID].get();
         if (otsID && varList1.vars[varID].isConstant) continue;
 
-        auto &rvars1 = varsData1[varID][levelID];
+        auto &rvars1 = varDataList1[varID][levelID];
         cdo_def_field(streamID2, varID, levelID);
         cdo_write_field(streamID2, rvars1);
       }

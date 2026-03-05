@@ -102,8 +102,8 @@ struct ExprFuncEntry
 {
   int type{};
   int flag{};
-  const std::string name{};  // function name
-  void (*func)(void){};      // pointer to function
+  std::string name{};    // function name
+  void (*func)(void){};  // pointer to function
 };
 }  // namespace
 
@@ -417,10 +417,7 @@ expr_var_var(int init, int oper, nodeType *p1, nodeType *p2)
         px = p2;
       }
     }
-    else
-    {
-      cdo_abort("%s: Number of levels differ (%s[%zu] <-> %s[%zu])", __func__, p1->param.name, nlev1, p2->param.name, nlev2);
-    }
+    else { cdo_abort("%s: Number of levels differ (%s[%zu] <-> %s[%zu])", __func__, p1->param.name, nlev1, p2->param.name, nlev2); }
   }
 
   auto p = new nodeType;
@@ -472,10 +469,7 @@ expr_var_var(int init, int oper, nodeType *p1, nodeType *p2)
                       : oper_expr_con_var(oper, hasMV, ngp, missval2, odat, idat1[0], idat2);
         }
       }
-      else
-      {
-        oper_expr_var_var(oper, hasMV, ngp, missval1, missval2, odat, idat1, idat2);
-      }
+      else { oper_expr_var_var(oper, hasMV, ngp, missval1, missval2, odat, idat1, idat2); }
     }
 
     p->param.numMissVals = array_num_mv(ngp * nlev, p->param.data, missval1);
@@ -1024,10 +1018,7 @@ func_var_var(int init, int funcID, nodeType *p1, nodeType *p2)
     {
       if (nlev1 == 1) { nlev = nlev2, px = p2; }
     }
-    else
-    {
-      cdo_abort("%s: Number of levels differ (%s[%zu] <-> %s[%zu])", __func__, p1->param.name, nlev1, p2->param.name, nlev2);
-    }
+    else { cdo_abort("%s: Number of levels differ (%s[%zu] <-> %s[%zu])", __func__, p1->param.name, nlev1, p2->param.name, nlev2); }
   }
 
   auto p = new nodeType;
@@ -1077,10 +1068,7 @@ func_var_var(int init, int funcID, nodeType *p1, nodeType *p2)
                       : func_expr_con_var(funcID, hasMV, ngp, missval2, odat, idat1[0], idat2);
         }
       }
-      else
-      {
-        func_expr_var_var(funcID, hasMV, ngp, missval1, missval2, odat, idat1, idat2);
-      }
+      else { func_expr_var_var(funcID, hasMV, ngp, missval1, missval2, odat, idat1, idat2); }
     }
 
     p->param.numMissVals = array_num_mv(ngp * nlev, p->param.data, missval1);
@@ -1194,10 +1182,7 @@ ex_remap(int init, int funcID, nodeType *p1, nodeType *p2)
       }
     }
   }
-  else
-  {
-    cdo_abort("Syntax error in call to %s(p, c), check type of parameter!", funcname);
-  }
+  else { cdo_abort("Syntax error in call to %s(p, c), check type of parameter!", funcname); }
 
   if (p1->isTmpObj) node_delete(p1);
 
@@ -1301,10 +1286,7 @@ ex_fun1c(int init, int funcID, nodeType *p1, nodeType *p2, ParseParamType &parse
     pdata = data.data();
     cdo_zaxis_inq_levels(zaxisID, pdata);
   }
-  else
-  {
-    pdata = parseArg.coords[coordID].data.data();
-  }
+  else { pdata = parseArg.coords[coordID].data.data(); }
 
   size_t levidx = 0;
   if (funcname == "sellevidx")
@@ -1390,10 +1372,7 @@ ex_fun2c(int init, int funcID, nodeType *p1, nodeType *p2, nodeType *p3, ParsePa
     pdata = data.data();
     cdo_zaxis_inq_levels(zaxisID, pdata);
   }
-  else
-  {
-    pdata = parseArg.coords[coordID].data.data();
-  }
+  else { pdata = parseArg.coords[coordID].data.data(); }
 
   size_t levidx1 = 0;
   size_t levidx2 = 0;
@@ -1643,10 +1622,7 @@ str_add_node_info(char *string, size_t stringlen, nodeType *p, const char *ext)
 {
   auto len = std::strlen(string);
   if (p->type == NodeEnum::typeCon) { snprintf(string + len, stringlen - len, "%g%s", p->con().value, ext); }
-  else
-  {
-    snprintf(string + len, stringlen - len, "%s[N%zu][L%zu]%s", p->var().name.c_str(), p->param.ngp, p->param.nlev, ext);
-  }
+  else { snprintf(string + len, stringlen - len, "%s[N%zu][L%zu]%s", p->var().name.c_str(), p->param.ngp, p->param.nlev, ext); }
 }
 
 static nodeType *
@@ -2090,10 +2066,7 @@ expr_run_fun2(nodeType *p, ParseParamType &parseArg)
   if (funcEntry.type == FT_1C) { return ex_fun1c(init, funcID, fnode1, fnode2, parseArg); }
   else if (funcEntry.type == FT_STD) { return ex_fun2(init, funcID, fnode1, fnode2); }
   else if (funcEntry.type == FT_REMAP) { return ex_remap(init, funcID, fnode1, fnode2); }
-  else
-  {
-    cdo_abort("Syntax error in call to %s(p1, p2), check number of parameter!", p->fun().name);
-  }
+  else { cdo_abort("Syntax error in call to %s(p1, p2), check number of parameter!", p->fun().name); }
 
   return nullptr;
 }
@@ -2111,10 +2084,7 @@ expr_run_fun3(nodeType *p, ParseParamType &parseArg)
   auto fnode3 = expr_run(p->fun().op[2], parseArg);
 
   if (funcEntry.type == FT_2C) { return ex_fun2c(init, funcID, fnode1, fnode2, fnode3, parseArg); }
-  else
-  {
-    cdo_abort("Syntax error in call to %s(p1, p2, p3), check number of parameter!", p->fun().name);
-  }
+  else { cdo_abort("Syntax error in call to %s(p1, p2, p3), check number of parameter!", p->fun().name); }
 
   return nullptr;
 }
@@ -2151,10 +2121,7 @@ expr_run_fun(nodeType *p, ParseParamType &parseArg)
 
       return ex_fun(init, funcID, fnode);
     }
-    else
-    {
-      cdo_abort("Syntax error in call to %s(p), check number of parameter!", p->fun().name);
-    }
+    else { cdo_abort("Syntax error in call to %s(p), check number of parameter!", p->fun().name); }
   }
   else if (numFunArgs == 0)
   {
@@ -2163,10 +2130,7 @@ expr_run_fun(nodeType *p, ParseParamType &parseArg)
       auto vartsID = parseArg.tsID;
       return ex_fun0_con(init, funcID, params[vartsID].data);
     }
-    else
-    {
-      cdo_abort("Syntax error in call to %s(), check number of parameter!", p->fun().name);
-    }
+    else { cdo_abort("Syntax error in call to %s(), check number of parameter!", p->fun().name); }
   }
 
   return nullptr;

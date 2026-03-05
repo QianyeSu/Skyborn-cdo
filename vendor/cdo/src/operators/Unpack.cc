@@ -21,7 +21,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Unpack> registration = RegisterEntry<Unpack>();
+  inline static auto registration = RegisterEntry<Unpack>();
 
 private:
   CdoStreamID streamID1{};

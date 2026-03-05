@@ -146,7 +146,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setchunkspec> registration = RegisterEntry<Setchunkspec>();
+  inline static auto registration = RegisterEntry<Setchunkspec>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

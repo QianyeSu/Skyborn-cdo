@@ -35,7 +35,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Dayarith> registration = RegisterEntry<Dayarith>();
+  inline static auto registration = RegisterEntry<Dayarith>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
@@ -85,8 +85,8 @@ public:
   run() override
   {
     Field field;
-    FieldVector2D varsData2;
-    field2D_init(varsData2, varList2, FIELD_VEC | FIELD_NAT);
+    FieldVector2D varDataList2;
+    field2D_init(varDataList2, varList2, FIELD_VEC | FIELD_NAT);
 
     CdiDate vDate2{};
     int tsID = 0;
@@ -119,7 +119,7 @@ public:
         for (int fieldID = 0; fieldID < numFields2; ++fieldID)
         {
           auto [varID, levelID] = cdo_inq_field(streamID2);
-          cdo_read_field(streamID2, varsData2[varID][levelID]);
+          cdo_read_field(streamID2, varDataList2[varID][levelID]);
         }
 
         tsID2++;
@@ -134,7 +134,7 @@ public:
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
 
-        field2_function(field, varsData2[varID][levelID], operfunc);
+        field2_function(field, varDataList2[varID][levelID], operfunc);
 
         cdo_def_field(streamID3, varID, levelID);
         cdo_write_field(streamID3, field);

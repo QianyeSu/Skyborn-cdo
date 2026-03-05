@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <utility>
 
 enum class HpOrder
 {
@@ -17,8 +18,8 @@ enum class HpOrder
 class HpParams
 {
 public:
-  HpParams() {};
-  HpParams(int nside, HpOrder order) : m_nside(nside), m_order(order) {};
+  HpParams(){};
+  HpParams(int nside, HpOrder order) : m_nside(nside), m_order(order){};
 
   // clang-format off
   constexpr int nside() const { return m_nside; };
@@ -36,6 +37,7 @@ int64_t hp_lonlat_to_index(HpParams hpParams, double xval, double yval);
 void hp_index_to_lonlat(HpParams hpParams, int64_t index, double *xval, double *yval);
 void hp_get_neighbours(HpParams hpParams, int64_t index, int64_t *neighbours);
 void hp_bilinear_interpolate_weights(HpParams hpParams, double lon, double lat, size_t (&indices)[4], double (&weights)[4]);
+std::pair<double, double> hp_nested_generate_lonlat(int nside, int64_t index);
 void hp_generate_coords(HpOrder order, int nside, int64_t nvals, double *xvals, double *yvals, bool withBounds, double *xbounds,
                         double *ybounds);
 void hp_generate_coords_indices(HpOrder order, int nside, int64_t nvals, double *xvals, double *yvals, bool withBounds,

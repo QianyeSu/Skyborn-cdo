@@ -38,7 +38,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Yhourarith> registration = RegisterEntry<Yhourarith>();
+  inline static auto registration = RegisterEntry<Yhourarith>();
 
   int operfunc;
   CdoStreamID streamID1;
@@ -89,7 +89,7 @@ public:
   run() override
   {
     Field field;
-    FieldVector2D varsData2[MaxHours];
+    FieldVector2D varDataList2[MaxHours];
 
     int tsID = 0;
     while (true)
@@ -98,14 +98,14 @@ public:
       if (numFields == 0) break;
 
       auto hourOfYear = decode_hour_of_year(taxisInqVdatetime(taxisID2), MaxHours);
-      if (varsData2[hourOfYear].size() > 0) cdo_abort("Hour of year index %d already allocated!", hourOfYear);
+      if (varDataList2[hourOfYear].size() > 0) cdo_abort("Hour of year index %d already allocated!", hourOfYear);
 
-      field2D_init(varsData2[hourOfYear], varList2, FIELD_VEC | FIELD_NAT);
+      field2D_init(varDataList2[hourOfYear], varList2, FIELD_VEC | FIELD_NAT);
 
       while (numFields--)
       {
         auto [varID, levelID] = cdo_inq_field(streamID2);
-        cdo_read_field(streamID2, varsData2[hourOfYear][varID][levelID]);
+        cdo_read_field(streamID2, varDataList2[hourOfYear][varID][levelID]);
       }
 
       tsID++;
@@ -120,7 +120,7 @@ public:
       if (numFields == 0) break;
 
       auto hourOfYear = decode_hour_of_year(taxisInqVdatetime(taxisID1), MaxHours);
-      if (varsData2[hourOfYear].size() == 0) cdo_abort("Hour of year index %d not found!", hourOfYear);
+      if (varDataList2[hourOfYear].size() == 0) cdo_abort("Hour of year index %d not found!", hourOfYear);
 
       cdo_taxis_copy_timestep(taxisID3, taxisID1);
       cdo_def_timestep(streamID3, tsID);
@@ -131,7 +131,7 @@ public:
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
 
-        field2_function(field, varsData2[hourOfYear][varID][levelID], operfunc);
+        field2_function(field, varDataList2[hourOfYear][varID][levelID], operfunc);
 
         cdo_def_field(streamID3, varID, levelID);
         cdo_write_field(streamID3, field);

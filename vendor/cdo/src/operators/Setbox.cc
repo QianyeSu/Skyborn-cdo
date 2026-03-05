@@ -106,7 +106,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setbox> registration = RegisterEntry<Setbox>();
+  inline static auto registration = RegisterEntry<Setbox>();
 
   int SETCLONLATBOX{}, SETCINDEXBOX{};
   CdoStreamID streamID1{};

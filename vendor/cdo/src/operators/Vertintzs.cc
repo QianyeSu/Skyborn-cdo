@@ -73,7 +73,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertintzs> registration = RegisterEntry<Vertintzs>();
+  inline static auto registration = RegisterEntry<Vertintzs>();
 
 private:
   int numVars{};
@@ -88,8 +88,8 @@ private:
 
   VarList varList1;
   VarList varList2;
-  Field3DVector vardata1;
-  Field3DVector vardata2;
+  Field3DVector varDataList1;
+  Field3DVector varDataList2;
 
   Varray2D<size_t> varnumMissVals;
 
@@ -169,8 +169,8 @@ public:
     processVars.resize(numVars);
     interpVars.resize(numVars);
     varnumMissVals.resize(numVars);
-    vardata1.resize(numVars);
-    vardata2.resize(numVars);
+    varDataList1.resize(numVars);
+    varDataList2.resize(numVars);
 
     auto maxLevels = std::max(numFullLevels, (int) depthLevels.size());
 
@@ -180,12 +180,12 @@ public:
 
       if (gridInqType(var.gridID) == GRID_SPECTRAL) cdo_abort("Spectral data unsupported!");
 
-      vardata1[varID].init(var);
+      varDataList1[varID].init(var);
       varnumMissVals[varID].resize(maxLevels, 0);
 
       interpVars[varID] = (var.zaxisID == zaxisIDfull || (is_depth_axis(var.zaxisID) && (var.nlevels == numFullLevels)));
 
-      if (interpVars[varID]) { vardata2[varID].init(varList2.vars[varID]); }
+      if (interpVars[varID]) { varDataList2[varID].init(varList2.vars[varID]); }
       else if (is_depth_axis(var.zaxisID) && var.nlevels > 1)
       {
 
@@ -227,7 +227,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
         processVars[varID] = true;
       }
 
@@ -237,7 +237,7 @@ public:
       if (tsID == 0 || !varList1.vars[depthID].isConstant)
       {
         constexpr auto lreverse = false;
-        field_copy(vardata1[depthID], fullDepth);
+        field_copy(varDataList1[depthID], fullDepth);
         gen_vert_index(vertIndexFull, depthLevels, fullDepth, gridsize, lreverse);
         if (!extrapolate)
         {
@@ -264,7 +264,7 @@ public:
               if (varnumMissVals[varID][levelID]) cdo_abort("Missing values unsupported for this operator!");
             }
 
-            vertical_interp_X(fullDepth, vardata1[varID], vardata2[varID], vertIndexFull, depthLevels, gridsize);
+            vertical_interp_X(fullDepth, varDataList1[varID], varDataList2[varID], vertIndexFull, depthLevels, gridsize);
 
             if (!extrapolate) varray_copy(depthLevels.size(), pnumMissVals, varnumMissVals[varID]);
           }
@@ -272,7 +272,7 @@ public:
           for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
           {
             cdo_def_field(streamID2, varID, levelID);
-            auto varout = (interpVars[varID] ? vardata2[varID] : vardata1[varID]);
+            auto varout = (interpVars[varID] ? varDataList2[varID] : varDataList1[varID]);
             cdo_write_field(streamID2, varout, levelID, varnumMissVals[varID][levelID]);
           }
         }

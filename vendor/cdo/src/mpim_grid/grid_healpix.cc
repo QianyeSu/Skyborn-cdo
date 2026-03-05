@@ -117,6 +117,16 @@ hp_generate_kernel(int64_t xyIndex, int nside, int64_t index, double *xvals, dou
   }
 }
 
+std::pair<double, double>
+hp_nested_generate_lonlat(int nside, int64_t index)
+{
+  static auto order_to_xy = &healpixl_nested_to_xy;
+  auto xyIndex = order_to_xy(index, nside);
+  double lon, lat;
+  healpixl_to_radec(xyIndex, nside, 0.5, 0.5, &lon, &lat);
+  return std::make_pair(lon, lat);
+}
+
 void
 hp_generate_coords(HpOrder order, int nside, int64_t nvals, double *xvals, double *yvals, bool withBounds, double *xbounds,
                    double *ybounds)

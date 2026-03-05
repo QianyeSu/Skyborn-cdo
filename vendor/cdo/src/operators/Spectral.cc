@@ -112,7 +112,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Spectral> registration = RegisterEntry<Spectral>();
+  inline static auto registration = RegisterEntry<Spectral>();
 
 private:
   int GP2SP{}, GP2SPL{}, SP2GP{}, SP2GPL{}, SP2SP{}, SPCUT{};

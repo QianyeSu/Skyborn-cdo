@@ -91,13 +91,13 @@ time_gen_bounds(int calendar, int tunit, int incrPeriod, CdiDateTime const &vDat
   }
   else if (tunit == TUNIT_HOUR || tunit == TUNIT_3HOURS || tunit == TUNIT_6HOURS || tunit == TUNIT_12HOURS)
   {
-    if (incrPeriod == 0) incrPeriod = 1;
+    if (incrPeriod == 0) { incrPeriod = 1; }
     if (incrPeriod > 24) cdo_abort("Time period must be less equal 24!");
 
     // clang-format off
-    if      (tunit == TUNIT_3HOURS)  incrPeriod = 3;
-    else if (tunit == TUNIT_6HOURS)  incrPeriod = 6;
-    else if (tunit == TUNIT_12HOURS) incrPeriod = 12;
+    if      (tunit == TUNIT_3HOURS)  { incrPeriod = 3; }
+    else if (tunit == TUNIT_6HOURS)  { incrPeriod = 6; }
+    else if (tunit == TUNIT_12HOURS) { incrPeriod = 12; }
     // clang-format on
 
     int hour, minute, second, ms;
@@ -111,31 +111,28 @@ time_gen_bounds(int calendar, int tunit, int incrPeriod, CdiDateTime const &vDat
       julianDate = julianDate_add_seconds(julianDate, incrPeriod * 3600);
       vDateTimeBounds[1] = julianDate_decode(calendar, julianDate);
     }
-    else
-      vDateTimeBounds[1].time = cdiTime_encode(h1, 0, 0, 0);
+    else { vDateTimeBounds[1].time = cdiTime_encode(h1, 0, 0, 0); }
   }
 }
 
 int
 evaluate_calendar_string(int operatorID, std::string const &calendarName)
 {
-  int calendar = CALENDAR_STANDARD;
   auto calendarString = string_to_lower(calendarName);
-  // clang-format off
-  if      (calendarString == "standard")  calendar = CALENDAR_STANDARD;
-  else if (calendarString == "gregorian") calendar = CALENDAR_GREGORIAN;
-  else if (calendarString == "proleptic") calendar = CALENDAR_PROLEPTIC;
-  else if (calendarString == "proleptic_gregorian") calendar = CALENDAR_PROLEPTIC;
-  else if (calendarString == "360days") calendar = CALENDAR_360DAYS;
-  else if (calendarString == "360_day") calendar = CALENDAR_360DAYS;
-  else if (calendarString == "365days") calendar = CALENDAR_365DAYS;
-  else if (calendarString == "365_day") calendar = CALENDAR_365DAYS;
-  else if (calendarString == "366days") calendar = CALENDAR_366DAYS;
-  else if (calendarString == "366_day") calendar = CALENDAR_366DAYS;
-  else cdo_abort("Calendar >%s< unsupported! Available %s", calendarName, cdo_operator_enter(operatorID));
-  // clang-format on
+  if (calendarString == "standard") return CALENDAR_STANDARD;
+  if (calendarString == "gregorian") return CALENDAR_GREGORIAN;
+  if (calendarString == "proleptic") return CALENDAR_PROLEPTIC;
+  if (calendarString == "proleptic_gregorian") return CALENDAR_PROLEPTIC;
+  if (calendarString == "360days") return CALENDAR_360DAYS;
+  if (calendarString == "360_day") return CALENDAR_360DAYS;
+  if (calendarString == "365days") return CALENDAR_365DAYS;
+  if (calendarString == "365_day") return CALENDAR_365DAYS;
+  if (calendarString == "366days") return CALENDAR_366DAYS;
+  if (calendarString == "366_day") return CALENDAR_366DAYS;
 
-  return calendar;
+  cdo_abort("Calendar >%s< unsupported! Available %s", calendarName, cdo_operator_enter(operatorID));
+
+  return CALENDAR_STANDARD;
 }
 
 static CdiDateTime
@@ -187,11 +184,12 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Settime> registration = RegisterEntry<Settime>();
+  inline static auto registration = RegisterEntry<Settime>();
 
 private:
   int SETYEAR{}, SETMON{}, SETDAY{}, SETDATE{}, SETTIME{}, SETTUNITS{}, SETTAXIS{}, SETTBOUNDS{}, SETREFTIME{}, SETCALENDAR{},
       SHIFTTIME{};
+
   int64_t newval = 0;
   int timeUnits = TUNIT_DAY;
   int64_t ijulinc = 0;
@@ -221,9 +219,8 @@ private:
 
   VarList varList1{};
 
-public:
   void
-  init() override
+  get_ids()
   {
     SETYEAR = module.get_id("setyear");
     SETMON = module.get_id("setmon");
@@ -236,12 +233,11 @@ public:
     SETREFTIME = module.get_id("setreftime");
     SETCALENDAR = module.get_id("setcalendar");
     SHIFTTIME = module.get_id("shifttime");
+  }
 
-    operatorID = cdo_operator_id();
-    // nargs = cdo_operator_f2(operatorID);
-
-    operator_input_arg(cdo_operator_enter(operatorID));
-
+  void
+  get_parameter(void)
+  {
     if (operatorID == SETTAXIS || operatorID == SETREFTIME)
     {
       sDateTime = argument2datetimeinc(incrPeriod, incrUnits, timeUnits);
@@ -284,6 +280,20 @@ public:
       operator_check_argc(1);
       newval = parameter_to_int(cdo_operator_argv(0));
     }
+  }
+
+public:
+  void
+  init() override
+  {
+    get_ids();
+
+    operatorID = cdo_operator_id();
+    // nargs = cdo_operator_f2(operatorID);
+
+    operator_input_arg(cdo_operator_enter(operatorID));
+
+    get_parameter();
 
     streamID1 = cdo_open_read(0);
 

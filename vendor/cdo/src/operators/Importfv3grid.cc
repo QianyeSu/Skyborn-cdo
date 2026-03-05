@@ -21,7 +21,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Importfv3grid> registration = RegisterEntry<Importfv3grid>();
+  inline static auto registration = RegisterEntry<Importfv3grid>();
 
   size_t gridsize1{};
   size_t gridsize2{};

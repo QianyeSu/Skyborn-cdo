@@ -404,8 +404,6 @@ noinst_LTLIBRARIES = libyac.la
 libyac_la_SOURCES = \
                area.c               \
                area.h               \
-               basic_grid.h         \
-               basic_grid_data.h    \
                bnd_circle.c         \
                check_overlap.c      \
                clipping.c           \
@@ -427,6 +425,7 @@ libyac_la_SOURCES = \
                utils_core.c         \
                utils_core.h         \
                utils_common.h       \
+               yac_assert.h         \
                yac_lapack_interface.c \
                yac_lapack_interface.h \
                yac_types.h          \

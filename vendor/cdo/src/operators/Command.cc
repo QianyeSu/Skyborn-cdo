@@ -50,8 +50,8 @@ namespace
 struct command_t
 {
   int (*func)(std::string const &);  // Function to call to do the job.
-  const std::string name;            // User printable name of the function.
-  const std::string doc;             // Documentation for this function.
+  std::string name;                  // User printable name of the function.
+  std::string doc;                   // Documentation for this function.
 };
 }  // namespace
 
@@ -513,7 +513,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Command> registration = RegisterEntry<Command>();
+  inline static auto registration = RegisterEntry<Command>();
 
 public:
   void

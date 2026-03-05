@@ -4,10 +4,20 @@ CDO NEWS
 Version 2.6.0 (20 Feb 2026):
 
    New features:
-     * option --async_read <true|false> to read input data asynchronously.
+     * Significant performance improvement for reading HEALPix zarr datasets with NCZARR.
+     * New option --query to pre-selects a subset of the data cube from a dataset.
+     * New option --nofile to set maximum number of files that can be opened.
+     * New option --async_read <true|false> to read input data asynchronously.
        Available for the operators: diff, info, trend, detrend, Timstat
+   New operators:
+     * VarsStat: add operator varsskew, varskurt, varsmedian, varspctl
+     * symmetrize - Mirrors data at the equator
+     * splitensemble - Split ensembles
+   Fixed bugs:
+     * fillmiss: wrong result for n<4 [Bug #12341]
+     * chparam: failed since release 2.5.3 [Bug: #12328]
 
-Version 2.5.4 (20 Nov 2025):
+Version 2.5.4 (7 Nov 2025):
 
    New features:
      * expr: added function trimrel(x,kb) and trimabs(x,err)

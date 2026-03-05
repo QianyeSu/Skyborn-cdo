@@ -274,19 +274,19 @@ scan_pcs_def(char *pcs_def, char proj[128], double *a, double *lon0, double *lat
     else if (std::memcmp(pcs[i], "a=", 2) == 0)
     {
       pcs[i] += 2;
-      *a = atof(pcs[i]);
+      *a = std::atof(pcs[i]);
       nfound++;
     }
     else if (std::memcmp(pcs[i], "lon_0=", 6) == 0)
     {
       pcs[i] += 6;
-      *lon0 = atof(pcs[i]);
+      *lon0 = std::atof(pcs[i]);
       nfound++;
     }
     else if (std::memcmp(pcs[i], "lat_0=", 6) == 0)
     {
       pcs[i] += 6;
-      *lat0 = atof(pcs[i]);
+      *lat0 = std::atof(pcs[i]);
       nfound++;
     }
   }
@@ -769,7 +769,7 @@ read_dataset(hid_t loc_id, const char *name, void *opdata)
     {
       if (nt > 1) cdo_abort("Combination of nlevel > 1 and ntime > 1 not implemented!");
 
-      nz = atoi(&varname[len - 1]);
+      nz = std::atoi(&varname[len - 1]);
       varname[len - 1] = 0;
     }
 
@@ -1218,7 +1218,7 @@ get_vdate(int vlistID)
         cdiInqAttTxt(vlistID, CDI_GLOBAL, name, CDI_MAX_NAME, attstr);
         if (len > 8) len = 8;
         attstr[len] = 0;
-        vdate = atoi(attstr);
+        vdate = std::atoi(attstr);
         if (vdate < 999999) vdate = vdate * 100 + 1;
       }
     }
@@ -1268,7 +1268,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Importcmsaf> registration = RegisterEntry<Importcmsaf>();
+  inline static auto registration = RegisterEntry<Importcmsaf>();
 #ifdef HAVE_LIBHDF5
   int gridID = -1, zaxisID;
   size_t numMissVals;

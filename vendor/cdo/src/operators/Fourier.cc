@@ -148,7 +148,7 @@ public:
     .number = CDI_COMP,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Fourier> registration = RegisterEntry<Fourier>();
+  inline static auto registration = RegisterEntry<Fourier>();
 
   size_t nalloc = 0;
 
@@ -202,7 +202,7 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
     std::vector<CdiDateTime> vDateTimes;
 
     auto numVars = varList.numVars();
@@ -217,19 +217,19 @@ public:
         constexpr size_t NALLOC_INC = 1024;
         nalloc += NALLOC_INC;
         vDateTimes.resize(nalloc);
-        varsData.resize(nalloc);
+        varDataList.resize(nalloc);
       }
 
       vDateTimes[tsID] = taxisInqVdatetime(taxisID1);
 
-      field2D_init(varsData[tsID], varList);
+      field2D_init(varDataList[tsID], varList);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
         auto gridsize = varList.vars[varID].gridsize;
-        varsData[tsID][varID][levelID].resize(2 * gridsize);
-        cdo_read_field(streamID1, varsData[tsID][varID][levelID]);
+        varDataList[tsID][varID][levelID].resize(2 * gridsize);
+        cdo_read_field(streamID1, varDataList[tsID][varID][levelID]);
       }
 
       tsID++;
@@ -270,9 +270,9 @@ public:
       for (int levelID = 0; levelID < var.nlevels; ++levelID)
       {
         if (use_fftw)
-          fourier_fftw(sign, varID, levelID, nts, var.gridsize, var.missval, varsData, fourierMemory);
+          fourier_fftw(sign, varID, levelID, nts, var.gridsize, var.missval, varDataList, fourierMemory);
         else
-          fourier_intrinsic(sign, varID, levelID, nts, var.gridsize, var.missval, varsData, fourierMemory);
+          fourier_intrinsic(sign, varID, levelID, nts, var.gridsize, var.missval, varDataList, fourierMemory);
       }
     }
 
@@ -300,10 +300,10 @@ public:
         auto numLevels = varList.vars[varID].nlevels;
         for (int levelID = 0; levelID < numLevels; ++levelID)
         {
-          if (!varsData[tsID][varID][levelID].empty())
+          if (!varDataList[tsID][varID][levelID].empty())
           {
             cdo_def_field(streamID2, varID, levelID);
-            cdo_write_field(streamID2, varsData[tsID][varID][levelID]);
+            cdo_write_field(streamID2, varDataList[tsID][varID][levelID]);
           }
         }
       }

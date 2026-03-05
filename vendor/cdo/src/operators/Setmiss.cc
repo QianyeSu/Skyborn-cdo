@@ -174,7 +174,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setmiss> registration = RegisterEntry<Setmiss>();
+  inline static auto registration = RegisterEntry<Setmiss>();
 
 private:
   int SETMISSVAL{}, SETCTOMISS{}, SETMISSTOC{}, SETRTOMISS{}, SETVRANGE{};

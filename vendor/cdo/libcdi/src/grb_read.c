@@ -168,9 +168,9 @@ grb_read_raw_data(stream_t *streamptr, int tsID, int recID, int memType, void *g
   }
 
   return (JobArgsGRB) {
+    .outZip = &streamptr->tsteps[tsID].records[recID].zip,
     .recID = recID,
     .tsID = tsID,
-    .outZip = &streamptr->tsteps[tsID].records[recID].zip,
     .filetype = streamptr->filetype,
     .memType = memType,
     .datatype = vlistInqVarDatatype(vlistID, varID),

@@ -249,6 +249,32 @@ param_to_string(int param)
   int maxlen = sizeof(paramstr);
   int len;
   if (dis == 255 && (cat == 255 || cat == 0))
+  {
+    len = std::snprintf(paramstr, maxlen, "%d", num);
+    printf("%s", paramstr);
+  }
+  if (dis == 255 && (cat == 255 || cat == 0))
+    len = std::snprintf(paramstr, maxlen, "%d", num);
+  else if (dis == 255)
+    len = std::snprintf(paramstr, maxlen, "%d.%d", num, cat);
+  else
+    len = std::snprintf(paramstr, maxlen, "%d.%d.%d", num, cat, dis);
+
+  if (len >= maxlen || len < 0) cdo_abort("Internal problem (%s): size of input string is too small!", __func__);
+
+  return std::string{ paramstr };
+}
+
+std::string
+param_to_string_zerofilled(int param)
+{
+  char paramstr[CDI_MAX_NAME];
+  int dis, cat, num;
+  cdiDecodeParam(param, &num, &cat, &dis);
+
+  int maxlen = sizeof(paramstr);
+  int len;
+  if (dis == 255 && (cat == 255 || cat == 0))
     len = std::snprintf(paramstr, maxlen, "%03d", num);
   else if (dis == 255)
     len = std::snprintf(paramstr, maxlen, "%03d.%03d", num, cat);

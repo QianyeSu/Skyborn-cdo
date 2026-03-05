@@ -167,7 +167,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<NCL_wind> registration = RegisterEntry<NCL_wind>();
+  inline static auto registration = RegisterEntry<NCL_wind>();
 
   int UV2DV_CFD{}, UV2VR_CFD{};
 
@@ -238,7 +238,7 @@ public:
 
     if (gridsizeuv != gridInqSize(gridIDv)) cdo_abort("u and v must have the same grid size!");
 
-    if (boundOpt == -1) boundOpt = gridIsCircular(gridIDu) ? 1 : 0;
+    if (boundOpt == -1) boundOpt = gridIsCyclic(gridIDu) ? 1 : 0;
     if (Options::cdoVerbose) print_parameter();
     if (boundOpt < 0 || boundOpt > 3) cdo_abort("Parameter boundOpt=%d out of bounds (0-3)!", boundOpt);
 

@@ -159,7 +159,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
 {
   double cpi2 = M_PI * 2;
 
-  auto isCircularGrid = gridIsCircular(gridID1);
+  auto isCyclicGrid = gridIsCyclic(gridID1);
 
   long nlon1 = gridInqXsize(gridID1);
   long nlat1 = gridInqYsize(gridID1);
@@ -226,7 +226,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
       {
         const auto pxvals1 = &xvals1[ilat * nlon1];
         const auto pyvals1 = &yvals1[ilat * nlon1];
-        if (isCircularGrid)
+        if (isCyclicGrid)
         {
           for (long ilon = nlon1 - haloParam.east; ilon < nlon1; ilon++) *pxvals2++ = pxvals1[ilon];
           for (long ilon = nlon1 - haloParam.east; ilon < nlon1; ilon++) *pyvals2++ = pyvals1[ilon];
@@ -240,7 +240,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
         for (long ilon = lonMinIdx; ilon < lonMaxIdx; ilon++) *pxvals2++ = pxvals1[ilon];
         for (long ilon = lonMinIdx; ilon < lonMaxIdx; ilon++) *pyvals2++ = pyvals1[ilon];
 
-        if (isCircularGrid)
+        if (isCyclicGrid)
         {
           for (long ilon = 0; ilon < haloParam.west; ilon++) *pxvals2++ = pxvals1[ilon];
           for (long ilon = 0; ilon < haloParam.west; ilon++) *pyvals2++ = pyvals1[ilon];
@@ -268,7 +268,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
     {
       if (yvals1[0] > yvals1[nlat1 - 1]) std::swap(haloParam.south, haloParam.north);
 
-      if (isCircularGrid)
+      if (isCyclicGrid)
       {
         // clang-format off
         for (long ilon = nlon1 - haloParam.east; ilon < nlon1; ilon++) *pxvals2++ = xvals1[ilon] - cpi2;
@@ -296,7 +296,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
     gridDefYvals(gridID2, yvals2.data());
   }
 
-  if (isCircularGrid && gridHasBounds(gridID1))
+  if (isCyclicGrid && gridHasBounds(gridID1))
   {
     auto nv = isCurvilinearGrid ? 4 : 2;
     gridDefNvertex(gridID2, nv);
@@ -314,7 +314,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
 
     if (isCurvilinearGrid)
     {
-      if (isCircularGrid)
+      if (isCyclicGrid)
       {
         for (long ilat = 0; ilat < nlat1; ilat++)
         {
@@ -333,7 +333,7 @@ gen_regular_grid(int gridID1, Parameter &haloParam)
     }
     else
     {
-      if (isCircularGrid)
+      if (isCyclicGrid)
       {
         // clang-format off
         for (long ilon = nv * (nlon1 - haloParam.east); ilon < nv * nlon1; ilon++) *pxbounds2++ = xbounds1[ilon] - cpi2;
@@ -406,12 +406,12 @@ get_params()
 static HaloInfo
 gen_index_grid(int gridID1, Parameter &haloParam)
 {
-  auto isCircularGrid = gridIsCircular(gridID1);
+  auto isCyclicGrid = gridIsCyclic(gridID1);
   long nlon = gridInqXsize(gridID1);
   long nlat = gridInqYsize(gridID1);
 
-  if (isCircularGrid && haloParam.east > nlon) cdo_abort("east halo out of range (max=%ld).", nlon);
-  if (isCircularGrid && haloParam.west > nlon) cdo_abort("west halo out of range (max=%ld).", nlon);
+  if (isCyclicGrid && haloParam.east > nlon) cdo_abort("east halo out of range (max=%ld).", nlon);
+  if (isCyclicGrid && haloParam.west > nlon) cdo_abort("west halo out of range (max=%ld).", nlon);
   if (haloParam.east < 0 && -haloParam.east > nlon - 1) cdo_abort("negative east halo out of range (max=%ld).", -nlon + 1);
   if (haloParam.west < 0 && -haloParam.west > nlon - 1) cdo_abort("negative west halo out of range (max=%ld).", -nlon + 1);
   if (haloParam.south < 0 && -haloParam.south > nlat - 1) cdo_abort("negative south halo out of range (max=%ld).", -nlat + 1);
@@ -440,10 +440,10 @@ regular_halo(Varray<double> const &array1, int gridID1, Varray<double> &array2, 
   long nlat1 = gridInqYsize(gridID1);
   long nlon2 = nlon1 + haloParam.east + haloParam.west;
 
-  auto isCircularGrid = gridIsCircular(gridID1);
+  auto isCyclicGrid = gridIsCyclic(gridID1);
   auto fillValueDefined = is_not_equal(haloParam.value, UndefValue);
   auto fillValue = fillValueDefined ? haloParam.value : missval;
-  auto useFillValue = (!isCircularGrid || fillValueDefined);
+  auto useFillValue = (!isCyclicGrid || fillValueDefined);
   if (!fillValueDefined && (haloParam.east > 0 || haloParam.west > 0 || haloParam.south > 0 || haloParam.north > 0))
     recalcNumMiss = true;
 
@@ -588,7 +588,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Sethalo> registration = RegisterEntry<Sethalo>();
+  inline static auto registration = RegisterEntry<Sethalo>();
 
 private:
   int SETHALO{};

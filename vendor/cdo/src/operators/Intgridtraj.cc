@@ -52,7 +52,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Intgridtraj> registration = RegisterEntry<Intgridtraj>();
+  inline static auto registration = RegisterEntry<Intgridtraj>();
 
   size_t numMissVals = 0;
   double xpos{}, ypos{};
@@ -70,8 +70,8 @@ public:
 
   VarList varList1{};
 
-  Varray2D<double> vardata1;
-  Varray2D<double> vardata2;
+  Varray2D<double> varDataList1;
+  Varray2D<double> varDataList2;
 
   JulianDate julianDate{};
 
@@ -96,14 +96,14 @@ public:
     varList1 = VarList(vlistID1);
     numVars = varList1.numVars();
 
-    vardata1.resize(numVars);
-    vardata2.resize(numVars);
+    varDataList1.resize(numVars);
+    varDataList2.resize(numVars);
     for (int varID = 0; varID < numVars; ++varID)
     {
       auto gridsize = varList1.vars[varID].gridsize;
       auto nlevels = varList1.vars[varID].nlevels;
-      vardata1[varID].resize(gridsize * nlevels);
-      vardata2[varID].resize(gridsize * nlevels);
+      varDataList1[varID].resize(gridsize * nlevels);
+      varDataList2[varID].resize(gridsize * nlevels);
     }
 
     gridID2 = gridCreate(GRID_TRAJECTORY, 1);
@@ -148,7 +148,7 @@ public:
       auto [varID, levelID] = cdo_inq_field(streamID1);
       auto gridsize = varList1.vars[varID].gridsize;
       auto offset = gridsize * levelID;
-      auto single1 = &vardata1[varID][offset];
+      auto single1 = &varDataList1[varID][offset];
       cdo_read_field(streamID1, single1, &numMissVals);
       if (numMissVals) cdo_abort("Missing values unsupported for this operator!");
     }
@@ -168,7 +168,7 @@ public:
 
         auto gridsize = varList1.vars[varID].gridsize;
         auto offset = gridsize * levelID;
-        auto single2 = &vardata2[varID][offset];
+        auto single2 = &varDataList2[varID][offset];
         cdo_read_field(streamID1, single2, &numMissVals);
         if (numMissVals) cdo_abort("Missing values unsupported for this operator!");
       }
@@ -199,8 +199,8 @@ public:
             auto &var1 = varList1.vars[varID];
             auto gridsize = var1.gridsize;
             auto offset = gridsize * levelID;
-            auto single1 = &vardata1[varID][offset];
-            auto single2 = &vardata2[varID][offset];
+            auto single1 = &varDataList1[varID][offset];
+            auto single2 = &varDataList2[varID][offset];
 
             for (size_t i = 0; i < gridsize; ++i) field1.vec_d[i] = single1[i] * fac1 + single2[i] * fac2;
 
@@ -225,9 +225,9 @@ public:
       julianDate1 = julianDate2;
       for (int varID = 0; varID < numVars; ++varID)
       {
-        auto vardatap = vardata1[varID];
-        vardata1[varID] = vardata2[varID];
-        vardata2[varID] = vardatap;
+        auto varData = varDataList1[varID];
+        varDataList1[varID] = varDataList2[varID];
+        varDataList2[varID] = varData;
       }
     }
 

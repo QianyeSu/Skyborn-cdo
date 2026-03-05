@@ -74,9 +74,9 @@ get_parameter()
       auto const &value = kv.values[0];
 
       // clang-format off
-      if      (key == "nts") params.nts = parameter_to_int(value);
-      else if (key == "p")   params.pn = parameter_to_double(value);
-      else if (key == "rm")  params.rm = value[0];
+      if      (key == "nts") { params.nts = parameter_to_int(value); }
+      else if (key == "p")   { params.pn = parameter_to_double(value); }
+      else if (key == "rm")  { params.rm = value[0]; }
       else if (key == "pm")  { auto pm = parameter_to_word(value); params.pm = (pm == "r8") ? "rtype8" : pm; }
       else cdo_abort("Invalid parameter key >%s<!", key);
       // clang-format on
@@ -109,7 +109,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ydrunpctl> registration = RegisterEntry<Ydrunpctl>();
+  inline static auto registration = RegisterEntry<Ydrunpctl>();
 
 private:
   CdoStreamID streamID1{};
@@ -180,8 +180,8 @@ public:
   run() override
   {
     Field field1, field2;
-    FieldVector3D varsData1(numDates + 1);
-    for (int its = 0; its < numDates; its++) field2D_init(varsData1[its], varList1, FIELD_VEC | FIELD_NAT);
+    FieldVector3D varDataList1(numDates + 1);
+    for (int its = 0; its < numDates; its++) field2D_init(varDataList1[its], varList1, FIELD_VEC | FIELD_NAT);
 
     std::vector<bool> vars2(MaxDays, false);
     CdiDateTime vDateTimes1[MaxDays]{};
@@ -264,7 +264,7 @@ public:
           constFields[fieldID].init(var);
           cdo_read_field(streamID1, constFields[fieldID]);
         }
-        else { cdo_read_field(streamID1, varsData1[tsID][varID][levelID]); }
+        else { cdo_read_field(streamID1, varDataList1[tsID][varID][levelID]); }
       }
     }
 
@@ -289,16 +289,16 @@ public:
 
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
           for (int inp = 0; inp < numDates; ++inp)
-            hsets[dayOfYear].addVarLevelValues(varID, levelID, varsData1[inp][varID][levelID]);
+            hsets[dayOfYear].addVarLevelValues(varID, levelID, varDataList1[inp][varID][levelID]);
       }
 
       cdiDateTimes[numDates] = cdiDateTimes[0];
-      varsData1[numDates] = varsData1[0];
+      varDataList1[numDates] = varDataList1[0];
 
       for (int inp = 0; inp < numDates; ++inp)
       {
         cdiDateTimes[inp] = cdiDateTimes[inp + 1];
-        varsData1[inp] = varsData1[inp + 1];
+        varDataList1[inp] = varDataList1[inp + 1];
       }
 
       auto numFields = cdo_stream_inq_timestep(streamID1, tsID);
@@ -309,7 +309,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, varsData1[numDates - 1][varID][levelID]);
+        cdo_read_field(streamID1, varDataList1[numDates - 1][varID][levelID]);
       }
 
       numSets[dayOfYear] += numDates;
@@ -339,7 +339,7 @@ public:
         {
           int varID, levelID;
           streamInqField(cdiStream, &varID, &levelID);
-          auto &pvars1 = varsData1[numDates - 1][varID][levelID];
+          auto &pvars1 = varDataList1[numDates - 1][varID][levelID];
           if (pvars1.memType == MemType::Float)
             streamReadFieldF(cdiStream, pvars1.vec_f.data(), &pvars1.numMissVals);
           else
@@ -363,16 +363,16 @@ public:
 
           for (int levelID = 0; levelID < var.nlevels; ++levelID)
             for (int inp = 0; inp < numDates; ++inp)
-              hsets[dayOfYear].addVarLevelValues(varID, levelID, varsData1[inp][varID][levelID]);
+              hsets[dayOfYear].addVarLevelValues(varID, levelID, varDataList1[inp][varID][levelID]);
         }
 
         cdiDateTimes[numDates] = cdiDateTimes[0];
-        varsData1[numDates] = varsData1[0];
+        varDataList1[numDates] = varDataList1[0];
 
         for (int inp = 0; inp < numDates; ++inp)
         {
           cdiDateTimes[inp] = cdiDateTimes[inp + 1];
-          varsData1[inp] = varsData1[inp + 1];
+          varDataList1[inp] = varDataList1[inp + 1];
         }
       }
 

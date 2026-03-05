@@ -20,12 +20,15 @@
 #include <vector>
 
 #include <cdi.h>
+#include "cdo_omp.h"
 #include "cdo_options.h"
 #include "cdo_cdi_wrapper.h"
 #include "grid_proj.h"
 #include "grid_healpix.h"
 #include "cdo_output.h"
 #include "compare.h"
+#include "grid_convert.h"
+#include "varray.h"
 
 static void
 set_xyvals(double val, size_t nvals, double *xvals, double *yvals)
@@ -475,6 +478,39 @@ cdo_healpix_to_lonlat(int gridID, size_t numVals, Varray<double> &xvals, Varray<
   }
 
   return 0;
+}
+
+std::vector<size_t>
+healpix_compute_cell_parameter(int refinementLevel, double lon1, double lon2, double lat1, double lat2)
+{
+  int64_t nside = std::lround(std::pow(2.0, refinementLevel));
+  int64_t gridSize = 12 * nside * nside;
+  int64_t imin = gridSize;
+  int64_t imax = -1;
+#ifdef HAVE_OPENMP4
+#pragma omp parallel for default(shared) schedule(static) reduction(min : imin) reduction(max : imax)
+#endif
+  for (int64_t i = 0; i < gridSize; ++i)
+  {
+    auto [xval, yval] = hp_nested_generate_lonlat(nside, i);
+    xval *= RAD2DEG;
+    yval *= RAD2DEG;
+    if ((yval >= lat1 && yval <= lat2)
+        && ((xval >= lon1 && xval <= lon2) || (xval + 360 >= lon1 && xval + 360 <= lon2)
+            || (xval - 360 >= lon1 && xval - 360 <= lon2)))
+    {
+      imin = std::min(imin, i);
+      imax = std::max(imax, i);
+    }
+  }
+
+  std::vector<size_t> cells = { 0, 0 };
+  if (imin != gridSize && imax != -1)
+  {
+    cells[0] = imin + 1;
+    cells[1] = imax - imin + 1;
+  }
+  return cells;
 }
 
 void

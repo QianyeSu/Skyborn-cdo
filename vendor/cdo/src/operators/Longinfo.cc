@@ -164,7 +164,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Longinfo> registration = RegisterEntry<Longinfo>();
+  inline static auto registration = RegisterEntry<Longinfo>();
 
   CdoStreamID streamID{};
 

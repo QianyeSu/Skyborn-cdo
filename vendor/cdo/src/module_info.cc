@@ -45,7 +45,8 @@ ModListOptions::parse_request(std::string const &requestString)
         if (opt.find(s) != opt.end()) { opt[s] = 1; }
         else
         {
-          std::cerr << "option " << s << " not found" << "\n";
+          std::cerr << "option " << s << " not found"
+                    << "\n";
           return false;
         }
       }
@@ -101,7 +102,10 @@ create_help_sections(const CdoHelp &p_help)
 
         operators[operator_name] = std::vector<std::string>{ std::string(line) };
       }
-      else { operators[operator_name].push_back(std::string(line)); }
+      else
+      {
+        operators[operator_name].push_back(std::string(line));
+      }
     }
     else if (synopsis_active == true)
     {
@@ -122,7 +126,10 @@ create_help_sections(const CdoHelp &p_help)
       }
     }
 
-    else { sections[key].push_back(std::string(line)); }
+    else
+    {
+      sections[key].push_back(std::string(line));
+    }
   }
 
   std::map<std::string, std::pair<std::string, std::vector<std::string>>> oper_syn_map;
@@ -135,7 +142,10 @@ create_help_sections(const CdoHelp &p_help)
       syn = oper_synopsis[op.first];
       oper_synopsis.erase(it);
     }
-    else { syn = "    " + op.first + " " + sections["SYNOPSIS"][0]; }
+    else
+    {
+      syn = "    " + op.first + " " + sections["SYNOPSIS"][0];
+    }
     oper_syn_map[op.first] = std::make_pair(syn, op.second);
   }
   for (auto const &syn : oper_synopsis) { oper_syn_map[syn.first].first = syn.second; }
@@ -351,25 +361,33 @@ operator_print_list(bool print_no_output)
 }
 namespace Modules
 {
-void
-print_help(Factory::OperatorMap::iterator &it)
+std::string
+construct_help(Factory::OperatorMap::iterator &it)
 {
   const CdoHelp &help = Factory::get_help(it);
-  if (help.empty())
-    std::fprintf(stderr, "No help available for this operator!\n");
-  else
+  std::stringstream ss;
+  if (!help.empty())
   {
+    constexpr std::array<std::string_view, 11> headers
+        = { "NAME",        "SYNOPSIS", "DESCRIPTION", "OPERATORS", "NAMELIST", "PARAMETERS",
+            "ENVIRONMENT", "NOTE",     "OPTIONS",     "EXAMPLE",   "AUTHOR" };
+    auto section = headers[0];
     for (auto &line : help)
     {
-      constexpr std::array<std::string_view, 9> headers
-          = { "NAME", "SYNOPSIS", "DESCRIPTION", "OPERATORS", "NAMELIST", "PARAMETER", "ENVIRONMENT", "NOTE", "EXAMPLES" };
-
-      auto useBold = (color_enabled() && std::ranges::find(headers, line) != headers.end());
+      if (std::ranges::find(headers, line) != headers.end())
+      {
+        section = line;
+        if (section != "NAME" && section != "EXAMPLE" && section != "AUTHOR") { ss << "\n"; }
+      }
+      if (section == "EXAMPLE" || section == "AUTHOR") continue;
+      if (line.size() == 0) continue;
+      auto useBold = (color_enabled() && line == section);
       if (useBold) set_text_color(stdout, BRIGHT);
-      std::cout << line << "\n";
+      ss << line << "\n";
       if (useBold) reset_text_color(stdout);
     }
   }
+  return ss.str();
 }
 
 void
@@ -377,6 +395,12 @@ print_help(std::string const &p_operator_name)
 {
   auto it
       = Factory::find(p_operator_name, [&p_operator_name]() { cdo_abort("%s", Factory::err_msg_oper_not_found(p_operator_name)); });
-  print_help(it);
+  std::string help = construct_help(it);
+
+  if (help.empty()) { std::fprintf(stderr, "No help available for this operator!\n"); }
+  else
+  {
+    std::cout << help << std::endl;
+  }
 }
 }  // namespace Modules

@@ -44,7 +44,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timpctl> registration = RegisterEntry<Timpctl>();
+  inline static auto registration = RegisterEntry<Timpctl>();
 
   CdiDateTime vDateTime0{};
 

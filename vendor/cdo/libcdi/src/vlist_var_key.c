@@ -132,6 +132,130 @@ vlistDefVarDblKey(int vlistID, int varID, const char *name, double value)
 #endif
 }
 
+void
+vlistDefVarIntArrKey(int vlistID, int varID, const char *name, int *values, int nvalues)
+{
+#ifdef HAVE_LIBGRIB_API
+  vlist_t *vlistptr = vlist_to_pointer(vlistID);
+  if (vlistptr == NULL) Error("Internal error!");
+  if (name == NULL) Error("Internal error, name undefined!");
+
+  if (vlistptr->immutable)
+    Error("vlistDefVarIntArrKey() was called on an immutable vlist object (vlistID = %d)\n"
+          "Either call this before passing the vlist object to streamDefVlist(),\n"
+          "or use the stream-internal vlist by calling streamInqVlist().",
+          vlistID);
+
+  int idx;
+  for (idx = 0; idx < vlistptr->vars[varID].opt_grib_nentries; idx++)
+    if (str_is_equal(name, vlistptr->vars[varID].opt_grib_kvpair[idx].keyword)
+        && (vlistptr->vars[varID].opt_grib_kvpair[idx].data_type == t_intarr))
+      break;
+
+  opt_key_val_pair_t *entry = NULL;
+
+  if (idx < vlistptr->vars[varID].opt_grib_nentries)
+  {
+    entry = &vlistptr->vars[varID].opt_grib_kvpair[idx];
+    free(entry->int_arr);
+  }
+  else
+  {
+    resize_opt_grib_entries(&vlistptr->vars[varID], vlistptr->vars[varID].opt_grib_nentries + 1);
+    vlistptr->vars[varID].opt_grib_nentries += 1;
+    idx = vlistptr->vars[varID].opt_grib_nentries - 1;
+    entry = &vlistptr->vars[varID].opt_grib_kvpair[idx];
+
+    entry->keyword = strdup(name);
+    entry->data_type = t_intarr;
+  }
+
+  entry->update = true;
+  entry->arr_len = nvalues;
+  entry->int_arr = (int *) malloc(nvalues * sizeof(int));
+  if (!entry->int_arr) Error("Memory allocation failed for int_arr");
+  memcpy(entry->int_arr, values, nvalues * sizeof(int));
+
+  entry->dbl_arr = NULL;  // safety
+
+  if (CDI_Debug)
+  {
+    Message("define additional GRIB2 key \"%s\" (integer array, len=%zu)", name, nvalues);
+    for (int i = 0; i < nvalues; ++i) Message("  [%zu] = %d", i, entry->int_arr[i]);
+  }
+
+  reshSetStatus(vlistID, &vlistOps, RESH_DESYNC_IN_USE);
+#else
+  (void) vlistID;
+  (void) varID;
+  (void) name;
+  (void) values;
+  (void) nvalues;
+#endif
+}
+
+void
+vlistDefVarDblArrKey(int vlistID, int varID, const char *name, double *values, int nvalues)
+{
+#ifdef HAVE_LIBGRIB_API
+  vlist_t *vlistptr = vlist_to_pointer(vlistID);
+  if (vlistptr == NULL) Error("Internal error!");
+  if (name == NULL) Error("Internal error, name undefined!");
+
+  if (vlistptr->immutable)
+    Error("vlistDefVarDblArrKey() was called on an immutable vlist object (vlistID = %d)\n"
+          "Either call this before passing the vlist object to streamDefVlist(),\n"
+          "or use the stream-internal vlist by calling streamInqVlist().",
+          vlistID);
+
+  int idx;
+  for (idx = 0; idx < vlistptr->vars[varID].opt_grib_nentries; idx++)
+    if (str_is_equal(name, vlistptr->vars[varID].opt_grib_kvpair[idx].keyword)
+        && (vlistptr->vars[varID].opt_grib_kvpair[idx].data_type == t_doublearr))
+      break;
+
+  opt_key_val_pair_t *entry;
+
+  if (idx < vlistptr->vars[varID].opt_grib_nentries)
+  {
+    entry = &vlistptr->vars[varID].opt_grib_kvpair[idx];
+    free(entry->dbl_arr);
+  }
+  else
+  {
+    resize_opt_grib_entries(&vlistptr->vars[varID], vlistptr->vars[varID].opt_grib_nentries + 1);
+    vlistptr->vars[varID].opt_grib_nentries += 1;
+    idx = vlistptr->vars[varID].opt_grib_nentries - 1;
+    entry = &vlistptr->vars[varID].opt_grib_kvpair[idx];
+
+    entry->keyword = strdup(name);
+    entry->data_type = t_doublearr;
+  }
+
+  entry->update = true;
+  entry->arr_len = nvalues;
+  entry->dbl_arr = (double *) malloc(nvalues * sizeof(double));
+  if (!entry->dbl_arr) Error("Memory allocation failed for dbl_arr");
+  memcpy(entry->dbl_arr, values, nvalues * sizeof(double));
+
+  entry->int_arr = NULL;  // safety
+
+  if (CDI_Debug)
+  {
+    Message("define additional GRIB2 key \"%s\" (double array, len=%zu)", name, nvalues);
+    for (int i = 0; i < nvalues; ++i) Message("  [%zu] = %g", i, entry->dbl_arr[i]);
+  }
+
+  reshSetStatus(vlistID, &vlistOps, RESH_DESYNC_IN_USE);
+#else
+  (void) vlistID;
+  (void) varID;
+  (void) name;
+  (void) values;
+  (void) nvalues;
+#endif
+}
+
 /* cdiClearAdditionalKeys: Clears the list of additional GRIB keys. */
 void
 cdiClearAdditionalKeys(void)
@@ -228,6 +352,64 @@ vlistInqVarIntKey(int vlistID, int varID, const char *name)
   (void) name;
 #endif
   return (int) value;
+}
+
+/* vlistInqVarIntArrKey: raw access to GRIB integer array meta-data */
+int *
+vlistInqVarIntArrKey(int vlistID, int varID, const char *name)
+{
+  int *int_arr = NULL;
+
+#ifdef HAVE_LIBGRIB_API
+  vlist_t *vlistptr = vlist_to_pointer(vlistID);
+
+  for (int i = 0; i < vlistptr->vars[varID].opt_grib_nentries; ++i)
+  {
+    int isub = subtypeInqActiveIndex(vlistptr->vars[varID].subtypeID);
+    if (str_is_equal(name, vlistptr->vars[varID].opt_grib_kvpair[i].keyword)
+        && (vlistptr->vars[varID].opt_grib_kvpair[i].data_type == t_intarr)
+        && (vlistptr->vars[varID].opt_grib_kvpair[i].subtype_index == isub))
+    {
+      int_arr = vlistptr->vars[varID].opt_grib_kvpair[i].int_arr;
+      break;
+    }
+  }
+#else
+  (void) vlistID;
+  (void) varID;
+  (void) name;
+#endif
+
+  return int_arr;
+}
+
+/* vlistInqVarDblArrKey: raw access to GRIB double array meta-data */
+double *
+vlistInqVarDblArrKey(int vlistID, int varID, const char *name)
+{
+  double *dbl_arr = NULL;
+
+#ifdef HAVE_LIBGRIB_API
+  vlist_t *vlistptr = vlist_to_pointer(vlistID);
+
+  for (int i = 0; i < vlistptr->vars[varID].opt_grib_nentries; ++i)
+  {
+    int isub = subtypeInqActiveIndex(vlistptr->vars[varID].subtypeID);
+    if (str_is_equal(name, vlistptr->vars[varID].opt_grib_kvpair[i].keyword)
+        && (vlistptr->vars[varID].opt_grib_kvpair[i].data_type == t_doublearr)
+        && (vlistptr->vars[varID].opt_grib_kvpair[i].subtype_index == isub))
+    {
+      dbl_arr = vlistptr->vars[varID].opt_grib_kvpair[i].dbl_arr;
+      break;
+    }
+  }
+#else
+  (void) vlistID;
+  (void) varID;
+  (void) name;
+#endif
+
+  return dbl_arr;
 }
 
 /*

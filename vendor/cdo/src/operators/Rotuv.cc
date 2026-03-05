@@ -52,7 +52,7 @@ rot_uv_back(int gridID, Varray<double> &us, Varray<double> &vs)
     }
 }
 
-#define MAXARG 16384
+constexpr int MAXARG = 16384;
 
 class Rotuv : public Process
 {
@@ -66,7 +66,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Rotuv> registration = RegisterEntry<Rotuv>();
+  inline static auto registration = RegisterEntry<Rotuv>();
   int chcodes[MAXARG];
   const char *chvars[MAXARG];
 
@@ -82,7 +82,7 @@ public:
   bool lvar{};
 
   VarList varList1{};
-  Varray3D<double> varsData;
+  Varray3D<double> varDataList;
   std::vector<std::vector<size_t>> varnumMissVals;
 
 public:
@@ -123,7 +123,7 @@ public:
     numVars = varList1.numVars();
 
     varnumMissVals.resize(numVars);
-    varsData.resize(numVars);
+    varDataList.resize(numVars);
 
     bool lfound[MAXARG];
     for (int i = 0; i < nch; ++i) lfound[i] = false;
@@ -159,8 +159,8 @@ public:
       auto gridsize = gridInqSize(gridID);
       auto nlevels = varList1.vars[varID].nlevels;
       varnumMissVals[varID].resize(nlevels);
-      varsData[varID].resize(nlevels);
-      for (int levelID = 0; levelID < nlevels; ++levelID) varsData[varID][levelID].resize(gridsize);
+      varDataList[varID].resize(nlevels);
+      for (int levelID = 0; levelID < nlevels; ++levelID) varDataList[varID][levelID].resize(gridsize);
     }
 
     taxisID1 = vlistInqTaxis(vlistID1);
@@ -192,7 +192,7 @@ public:
 
         fieldInfoList[fieldID].set(varID, levelID);
 
-        cdo_read_field(streamID1, varsData[varID][levelID].data(), &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, varDataList[varID][levelID].data(), &varnumMissVals[varID][levelID]);
         if (varnumMissVals[varID][levelID]) cdo_abort("Missing values unsupported for this operator!");
       }
 
@@ -247,14 +247,14 @@ public:
         if (nlevels1 != nlevels2) cdo_abort("u-wind and v-wind have different number of levels!");
 
         for (int levelID = 0; levelID < nlevels1; ++levelID)
-          rot_uv_back(gridID, varsData[usvarID][levelID], varsData[vsvarID][levelID]);
+          rot_uv_back(gridID, varDataList[usvarID][levelID], varDataList[vsvarID][levelID]);
       }
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = fieldInfoList[fieldID].get();
         cdo_def_field(streamID2, varID, levelID);
-        cdo_write_field(streamID2, varsData[varID][levelID].data(), varnumMissVals[varID][levelID]);
+        cdo_write_field(streamID2, varDataList[varID][levelID].data(), varnumMissVals[varID][levelID]);
       }
 
       tsID++;

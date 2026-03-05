@@ -15,6 +15,7 @@
 #include "cdo_cdi_wrapper.h"
 #include "compare.h"
 #include "util_string.h"
+#include "mpim_grid.h"
 
 constexpr int MaxLen = 120;
 
@@ -319,8 +320,10 @@ print_healpix(int gridID, std::FILE *fp, SizeType gridsize)
 }
 
 static void
-grid_print_kernel(int gridID, int opt, std::FILE *fp)
+grid_print_kernel(int gridID, int opt, bool genBounds)
 {
+  std::FILE *fp = stdout;
+
   auto nxvals = gridInqXvals(gridID, nullptr);
   auto nyvals = gridInqYvals(gridID, nullptr);
   auto nxbounds = gridInqXbounds(gridID, nullptr);
@@ -401,10 +404,24 @@ grid_print_kernel(int gridID, int opt, std::FILE *fp)
 
       if (nxvals > 0) print_xvals(gridID, opt, fp, nxvals, type, dig);
 
+      bool genBoundsReg2d = false;
+      if (genBounds && type == GRID_LONLAT && nxbounds == 0 && nybounds == 0)
+      {
+        genBoundsReg2d = true;
+        nxbounds = 2 * nxvals;
+        nybounds = 2 * nyvals;
+      }
+
       if (nxbounds)
       {
         std::vector<double> xbounds(nxbounds);
-        gridInqXbounds(gridID, xbounds.data());
+        if (genBoundsReg2d)
+        {
+          std::vector<double> xvals(nxvals);
+          gridInqXvals(gridID, xvals.data());
+          grid_gen_bounds(nxvals, xvals, xbounds);
+        }
+        else { gridInqXbounds(gridID, xbounds.data()); }
         print_bounds(fp, dig, "xbounds   = ", xdim, nvertex, xbounds);
       }
 
@@ -415,7 +432,14 @@ grid_print_kernel(int gridID, int opt, std::FILE *fp)
       if (nybounds)
       {
         std::vector<double> ybounds(nybounds);
-        gridInqYbounds(gridID, ybounds.data());
+        if (genBoundsReg2d)
+        {
+          std::vector<double> yvals(nyvals);
+          gridInqYvals(gridID, yvals.data());
+          grid_gen_bounds(nyvals, yvals, ybounds);
+          grid_check_lat_borders(nybounds, ybounds);
+        }
+        else { gridInqYbounds(gridID, ybounds.data()); }
         print_bounds(fp, dig, "ybounds   = ", ydim, nvertex, ybounds);
       }
 
@@ -494,11 +518,11 @@ grid_print_kernel(int gridID, int opt, std::FILE *fp)
   }
 
   auto projID = gridInqProj(gridID);
-  if (projID != CDI_UNDEFID && gridInqType(projID) == GRID_PROJECTION) grid_print_kernel(projID, opt, fp);
+  if (projID != CDI_UNDEFID && gridInqType(projID) == GRID_PROJECTION) grid_print_kernel(projID, opt, genBounds);
 }
 
 void
-cdo_print_griddes(int gridID, int opt)
+cdo_print_griddes(int gridID, int opt, bool genBounds)
 {
-  grid_print_kernel(gridID, opt, stdout);
+  grid_print_kernel(gridID, opt, genBounds);
 }

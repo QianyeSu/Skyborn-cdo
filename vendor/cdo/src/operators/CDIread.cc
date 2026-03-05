@@ -39,7 +39,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<CDIread> registration = RegisterEntry<CDIread>();
+  inline static auto registration = RegisterEntry<CDIread>();
 
 private:
   MemType memtype = Options::CDO_Memtype;

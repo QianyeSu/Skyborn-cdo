@@ -82,7 +82,7 @@ find(std::string const &p_operName, std::function<void()> p_onError)
 }
 
 bool
-exists(const std::string arg)
+exists(const std::string &arg)
 {
   std::string name = arg;
   if (arg[0] == '-') { name = arg.substr(1); }

@@ -36,16 +36,21 @@ void cdfCopyField(stream_t *streamptr2, stream_t *streamptr1);
 
 void cdfDefineAttributes(int filetype, int vlistID, int varID, int fileID, int ncvarID);
 
-void cdf_read_field(stream_t *streamptr, int memtype, void *data, size_t *numMissVals);
-void cdf_write_field(stream_t *streamptr, int memtype, const void *data, size_t numMissVals);
+void cdf_read_field(stream_t *streamptr, int memType, void *data, size_t *numMissVals);
+void cdf_write_field(stream_t *streamptr, int memType, const void *data, size_t numMissVals);
 
-void cdf_read_var(stream_t *streamptr, int varID, int memtype, void *data, size_t *numMissVals);
-void cdf_write_var(stream_t *streamptr, int varID, int memtype, const void *data, size_t numMissVals);
+void cdf_read_var(stream_t *streamptr, int varID, int memType, void *data, size_t *numMissVals);
+void cdf_write_var(stream_t *streamptr, int varID, int memType, const void *data, size_t numMissVals);
 
-void cdf_read_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, void *data, size_t *numMissVals);
-void cdf_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, const void *data, size_t numMissVals);
+void cdf_read_var_slice(stream_t *streamptr, int varID, int levelID, int memType, void *data, size_t *numMissVals);
+void cdf_write_var_slice(stream_t *streamptr, int varID, int levelID, int memType, const void *data, size_t numMissVals);
 
-void cdf_write_var_chunk(stream_t *streamptr, int varID, int memtype, const int rect[][2], const void *data, size_t numMissVals);
+void cdf_read_var_part(stream_t *streamptr, int varID, int memType, int varType, int startpoint, size_t length, void *data,
+                       size_t *numMissVals);
+void cdf_read_var_slice_part(stream_t *streamptr, int varID, int levelID, int memType, int varType, int startpoint, size_t length,
+                             void *data, size_t *numMissVals);
+
+void cdf_write_var_chunk(stream_t *streamptr, int varID, int memType, const int rect[][2], const void *data, size_t numMissVals);
 
 void cdfDefVarDeflate(int ncid, int ncvarid, int shuffle, int deflateLevel);
 void cdfDefTime(stream_t *streamptr);

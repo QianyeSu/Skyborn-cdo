@@ -172,19 +172,7 @@ public:
 
     varIDs = varList_search_varIDs(varList1, numFullLevels);
 
-    if (Options::cdoVerbose)
-    {
-      cdo_print("Found:");
-      // clang-format off
-      if (-1 != varIDs.husID)     cdo_print("  %s -> %s", var_stdname(specific_humidity), vars1[varIDs.husID].name);
-      if (-1 != varIDs.taID)      cdo_print("  %s -> %s", var_stdname(air_temperature), vars1[varIDs.taID].name);
-      if (-1 != varIDs.psID)      cdo_print("  %s -> %s", var_stdname(surface_air_pressure), vars1[varIDs.psID].name);
-      if (-1 != varIDs.lnpsID)    cdo_print("  LOG(%s) -> %s", var_stdname(surface_air_pressure), vars1[varIDs.lnpsID].name);
-      if (-1 != varIDs.sgeopotID) cdo_print("  %s -> %s", var_stdname(surface_geopotential), vars1[varIDs.sgeopotID].name);
-      if (-1 != varIDs.geopotID)  cdo_print("  %s -> %s", var_stdname(geopotential), vars1[varIDs.geopotID].name);
-      if (-1 != varIDs.gheightID) cdo_print("  %s -> %s", var_stdname(geopotential_height), vars1[varIDs.gheightID].name);
-      // clang-format on
-    }
+    if (Options::cdoVerbose) print_found_variables(varIDs, vars1);
 
     if (varIDs.lnpsID != -1 && varIDs.lnpsID2 != -1)
       cdo_abort("Found LOG(%s) twice: lsp and lnps!", var_stdname(surface_air_pressure));

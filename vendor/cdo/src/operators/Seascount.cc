@@ -33,7 +33,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Seascount> registration = RegisterEntry<Seascount>();
+  inline static auto registration = RegisterEntry<Seascount>();
 
   CdiDateTime vDateTime0{};
   int seas0 = 0;
@@ -71,8 +71,8 @@ public:
   void
   run() override
   {
-    FieldVector2D varsData1;
-    field2D_init(varsData1, varList1, FIELD_VEC);
+    FieldVector2D varDataList1;
+    field2D_init(varDataList1, varList1, FIELD_VEC);
 
     auto maxFields = varList1.maxFields();
     std::vector<FieldInfo> fieldInfoList(maxFields);
@@ -123,18 +123,18 @@ public:
 
           if (tsID == 0) fieldInfoList[fieldID].set(varID, levelID);
 
-          auto fieldsize = varsData1[varID][levelID].size;
+          auto fieldsize = varDataList1[varID][levelID].size;
 
           if (numSets == 0)
           {
-            for (size_t i = 0; i < fieldsize; ++i) varsData1[varID][levelID].vec_d[i] = varsData1[varID][levelID].missval;
-            varsData1[varID][levelID].numMissVals = fieldsize;
+            for (size_t i = 0; i < fieldsize; ++i) varDataList1[varID][levelID].vec_d[i] = varDataList1[varID][levelID].missval;
+            varDataList1[varID][levelID].numMissVals = fieldsize;
           }
 
           field.init(var);
           cdo_read_field(streamID1, field);
 
-          field2_count(varsData1[varID][levelID], field);
+          field2_count(varDataList1[varID][levelID], field);
         }
 
         vDateTime0 = vDateTime;
@@ -153,7 +153,7 @@ public:
         if (otsID && varList1.vars[varID].isConstant) continue;
 
         cdo_def_field(streamID2, varID, levelID);
-        cdo_write_field(streamID2, varsData1[varID][levelID]);
+        cdo_write_field(streamID2, varDataList1[varID][levelID]);
       }
 
       if (numFields == 0) break;

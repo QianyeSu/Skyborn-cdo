@@ -82,17 +82,14 @@ wordexp_error_status(int status, const char *argument)
   if (status == WRDE_BADCHAR)
   {
     std::fprintf(stderr,
-            "Argument '%s' contains one of the following unsupported unquoted characters: <newline>, `|', "
-            "`&', `;', `<', `>', `(', `)', `{', `}'.\n",
-            argument);
+                 "Argument '%s' contains one of the following unsupported unquoted characters: <newline>, `|', "
+                 "`&', `;', `<', `>', `(', `)', `{', `}'.\n",
+                 argument);
   }
   else if (status == WRDE_NOSPACE) { std::fprintf(stderr, "Not enough memory to store the result.\n"); }
   else if (status == WRDE_SYNTAX) { std::fprintf(stderr, "Shell syntax error in '%s'\n", argument); }
   else if (status == WRDE_BADVAL) { std::fprintf(stderr, "Undefined shell variable in '%s'\n", argument); }
-  else
-  {
-    std::fprintf(stderr, "wordexp() returns an error.\n");
-  }
+  else { std::fprintf(stderr, "wordexp() returns an error.\n"); }
 
   std::exit(EXIT_FAILURE);
 }
@@ -197,8 +194,8 @@ expand_wild_cards(std::vector<std::string> argv)
 bool
 wildcard_match(std::string const &text, std::string const &pattern)
 {
-  int n = text.length();
-  int m = pattern.length();
+  int n = static_cast<int>(text.length());
+  int m = static_cast<int>(pattern.length());
   int i = 0, j = 0, startIndex = -1, match = 0;
   while (i < n)
   {
@@ -210,10 +207,7 @@ wildcard_match(std::string const &text, std::string const &pattern)
     // Backtrack to the last '*' character position and try for a different match.
     else if (startIndex != -1) { j = startIndex + 1, i = ++match; }
     // If none of the above cases comply, the pattern does not match.
-    else
-    {
-      return false;
-    }
+    else { return false; }
   }
   // Consume any remaining '*' characters in the given pattern.
   while (j < m && pattern[j] == '*') { j++; }

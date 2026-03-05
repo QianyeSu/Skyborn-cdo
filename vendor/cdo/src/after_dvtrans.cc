@@ -18,28 +18,25 @@
 void
 dv2ps(const double *restrict div, double *restrict pot, long nlev, long ntr)
 {
-  long l, m, n;
-  double fact;
-
-  for (l = 0; l < nlev; ++l)
+  for (long l = 0; l < nlev; ++l)
   {
     /* m == 0 */
     *pot++ = 0.0;
     *pot++ = 0.0;
     div += 2;
 
-    for (n = 1; n <= ntr; ++n)
+    for (long n = 1; n <= ntr; ++n)
     {
-      fact = SQUARE_RADIUS / (n * n + n);
+      double fact = SQUARE_RADIUS / (n * n + n);
       *pot++ = *div++ * fact;
       *pot++ = *div++ * fact;
     }
 
     /* m >= 0 */
-    for (m = 1; m <= ntr; ++m)
-      for (n = m; n <= ntr; ++n)
+    for (long m = 1; m <= ntr; ++m)
+      for (long n = m; n <= ntr; ++n)
       {
-        fact = SQUARE_RADIUS / (n * n + n);
+        double fact = SQUARE_RADIUS / (n * n + n);
         *pot++ = *div++ * fact;
         *pot++ = *div++ * fact;
       }

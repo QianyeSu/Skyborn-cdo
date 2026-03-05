@@ -140,7 +140,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Filter> registration = RegisterEntry<Filter>();
+  inline static auto registration = RegisterEntry<Filter>();
 
   std::vector<std::string> tunits{};
   std::vector<int> iunits{};
@@ -203,7 +203,7 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
 
     int tsID = 0;
     while (true)
@@ -212,16 +212,16 @@ public:
       if (numFields == 0) break;
 
       constexpr size_t NALLOC_INC = 1024;
-      if ((size_t) tsID >= varsData.size()) varsData.resize(varsData.size() + NALLOC_INC);
+      if ((size_t) tsID >= varDataList.size()) varDataList.resize(varDataList.size() + NALLOC_INC);
 
       dtlist.taxis_inq_timestep(taxisID1, tsID);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       while (numFields--)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
         if (field.numMissVals) cdo_abort("Missing value support for operators in module Filter not added yet!");
@@ -269,8 +269,8 @@ public:
     auto nts = tsID;
     if (nts <= 1) cdo_abort("Number of time steps <= 1!");
 
-    auto numArrays = vars_numArrays(varsData);
-    auto allocatedMem = vars_allocatedMem(varsData) * nts;
+    auto numArrays = vars_numArrays(varDataList);
+    auto allocatedMem = vars_allocatedMem(varDataList) * nts;
     if (Options::cdoVerbose)
       cdo_print("Allocate %zu array%s over %zu steps: size=%zu Bytes", numArrays, numArrays > 1 ? "s" : "", nts, allocatedMem);
 
@@ -352,22 +352,22 @@ public:
             if (var.memType == MemType::Float)
               for (int t = 0; t < nts; ++t)
               {
-                fm.in_fft[t][0] = varsData[t][varID][levelID].vec_f[i];
+                fm.in_fft[t][0] = varDataList[t][varID][levelID].vec_f[i];
                 fm.in_fft[t][1] = 0.0;
               }
             else
               for (int t = 0; t < nts; ++t)
               {
-                fm.in_fft[t][0] = varsData[t][varID][levelID].vec_d[i];
+                fm.in_fft[t][0] = varDataList[t][varID][levelID].vec_d[i];
                 fm.in_fft[t][1] = 0.0;
               }
 
             filter_fftw(nts, fmasc, fm.out_fft, &fm.p_T2S, &fm.p_S2T);
 
             if (var.memType == MemType::Float)
-              for (int t = 0; t < nts; ++t) varsData[t][varID][levelID].vec_f[i] = fm.in_fft[t][0] / nts;
+              for (int t = 0; t < nts; ++t) varDataList[t][varID][levelID].vec_f[i] = fm.in_fft[t][0] / nts;
             else
-              for (int t = 0; t < nts; ++t) varsData[t][varID][levelID].vec_d[i] = fm.in_fft[t][0] / nts;
+              for (int t = 0; t < nts; ++t) varDataList[t][varID][levelID].vec_d[i] = fm.in_fft[t][0] / nts;
           }
 #endif
         }
@@ -382,18 +382,18 @@ public:
             auto &fm = fourierMemory[ompthID];
 
             if (var.memType == MemType::Float)
-              for (int t = 0; t < nts; ++t) fm.real[t] = varsData[t][varID][levelID].vec_f[i];
+              for (int t = 0; t < nts; ++t) fm.real[t] = varDataList[t][varID][levelID].vec_f[i];
             else
-              for (int t = 0; t < nts; ++t) fm.real[t] = varsData[t][varID][levelID].vec_d[i];
+              for (int t = 0; t < nts; ++t) fm.real[t] = varDataList[t][varID][levelID].vec_d[i];
 
             std::ranges::fill(fm.imag, 0.0);
 
             filter_intrinsic(nts, fmasc, fm.real.data(), fm.imag.data());
 
             if (var.memType == MemType::Float)
-              for (int t = 0; t < nts; ++t) varsData[t][varID][levelID].vec_f[i] = fm.real[t];
+              for (int t = 0; t < nts; ++t) varDataList[t][varID][levelID].vec_f[i] = fm.real[t];
             else
-              for (int t = 0; t < nts; ++t) varsData[t][varID][levelID].vec_d[i] = fm.real[t];
+              for (int t = 0; t < nts; ++t) varDataList[t][varID][levelID].vec_d[i] = fm.real[t];
           }
         }
       }
@@ -427,7 +427,7 @@ public:
         auto const &var = varList1.vars[varID];
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
-          auto &field = varsData[tsID][varID][levelID];
+          auto &field = varDataList[tsID][varID][levelID];
           if (field.hasData())
           {
             cdo_def_field(streamID2, varID, levelID);

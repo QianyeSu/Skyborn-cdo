@@ -114,7 +114,7 @@ print_attr_special_global(int vlistID, const char *argument)
 }
 
 static void
-print_attr_special(const char *varName, const CdoVars &cdoVars, int vlistID, int varOrGlobal, const char *argument)
+print_attr_special(const char *varName, CdoVars const &cdoVars, int vlistID, int varOrGlobal, const char *argument)
 {
   auto const &var = cdoVars[varOrGlobal];
   auto stdname = cdo::inq_key_string(vlistID, varOrGlobal, CDI_KEY_STDNAME);
@@ -122,6 +122,8 @@ print_attr_special(const char *varName, const CdoVars &cdoVars, int vlistID, int
   double addoffset = 0.0, scalefactor = 1.0;
   auto haveAddoffset = (cdiInqKeyFloat(vlistID, varOrGlobal, CDI_KEY_ADDOFFSET, &addoffset) == CDI_NOERR);
   auto haveScalefactor = (cdiInqKeyFloat(vlistID, varOrGlobal, CDI_KEY_SCALEFACTOR, &scalefactor) == CDI_NOERR);
+  double missval = 0.0;
+  auto haveMissval = (cdiInqKeyFloat(vlistID, varOrGlobal, CDI_KEY_MISSVAL, &missval) == CDI_NOERR);
 
   if (argument)
   {
@@ -129,8 +131,10 @@ print_attr_special(const char *varName, const CdoVars &cdoVars, int vlistID, int
       std::fprintf(stdout, "%s@standard_name = \"%s\"\n", varName, stdname.c_str());
     if (var.longname.size() && wildcard_match("long_name", argument))
       std::fprintf(stdout, "%s@long_name = \"%s\"\n", varName, var.longname.c_str());
-    if (var.units.size() && wildcard_match("units", argument)) std::fprintf(stdout, "%s@units = \"%s\"\n", varName, var.units.c_str());
-    if (wildcard_match("missing_value", argument)) std::fprintf(stdout, "%s@missing_value = %g\n", varName, var.missval);
+    if (var.units.size() && wildcard_match("units", argument))
+      std::fprintf(stdout, "%s@units = \"%s\"\n", varName, var.units.c_str());
+    if (haveMissval && wildcard_match("missing_value", argument))
+      std::fprintf(stdout, "%s@missing_value = %g\n", varName, var.missval);
     if (haveAddoffset && wildcard_match("add_offset", argument)) std::fprintf(stdout, "%s@add_offset = %g\n", varName, addoffset);
     if (haveScalefactor && wildcard_match("scale_factor", argument))
       std::fprintf(stdout, "%s@scale_factor = %g\n", varName, scalefactor);
@@ -140,14 +144,14 @@ print_attr_special(const char *varName, const CdoVars &cdoVars, int vlistID, int
     if (stdname.size()) std::fprintf(stdout, "%s@standard_name = \"%s\"\n", varName, stdname.c_str());
     if (var.longname.size()) std::fprintf(stdout, "%s@long_name = \"%s\"\n", varName, var.longname.c_str());
     if (var.units.size()) std::fprintf(stdout, "%s@units = \"%s\"\n", varName, var.units.c_str());
-    std::fprintf(stdout, "%s@missing_value = %g\n", varName, var.missval);
+    if (haveMissval) std::fprintf(stdout, "%s@missing_value = %g\n", varName, var.missval);
     if (haveAddoffset) std::fprintf(stdout, "%s@add_offset = %g\n", varName, addoffset);
     if (haveScalefactor) std::fprintf(stdout, "%s@scale_factor = %g\n", varName, scalefactor);
   }
 }
 
 static void
-print_attributes(const char *varName, const CdoVars &cdoVars, int vlistID, int varOrGlobal, int natts, const char *argument)
+print_attributes(const char *varName, CdoVars const &cdoVars, int vlistID, int varOrGlobal, int natts, const char *argument)
 {
   if (varOrGlobal != CDI_GLOBAL) print_attr_special(varName, cdoVars, vlistID, varOrGlobal, argument);
 
@@ -209,16 +213,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Showattribute> registration = RegisterEntry<Showattribute>();
-
-private:
-  int SHOWATTRIBUTE{}, SHOWATTSVAR{};
-
-  CdoStreamID streamID{};
-  int operatorID{};
-  int vlistID{};
-
-  VarList varList{};
+  inline static auto registration = RegisterEntry<Showattribute>();
 
 public:
   void
@@ -228,21 +223,14 @@ public:
     if (this_is_the_only_process()) { cdiDefGlobal("READ_CELL_CORNERS", false); }
     if (this_is_the_only_process()) { cdiDefGlobal("READ_CELL_CENTER", false); }
 
-    SHOWATTRIBUTE = module.get_id("showattribute");
-    SHOWATTSVAR = module.get_id("showattsvar");
+    auto SHOWATTRIBUTE = module.get_id("showattribute");
+    auto SHOWATTSVAR = module.get_id("showattsvar");
 
-    operatorID = cdo_operator_id();
+    auto operatorID = cdo_operator_id();
 
-    streamID = cdo_open_read(0);
-    vlistID = cdo_stream_inq_vlist(streamID);
-
-    varList = VarList(vlistID);
-  }
-
-  void
-  run() override
-  {
-    auto numVars = varList.numVars();
+    auto streamID = cdo_open_read(0);
+    auto vlistID = cdo_stream_inq_vlist(streamID);
+    auto varList = VarList(vlistID);
 
     auto numArgs = cdo_operator_argc();
     if (numArgs == 0)
@@ -250,6 +238,7 @@ public:
       if (operatorID == SHOWATTSVAR) { check_varname_and_print(varList, vlistID, nullptr, nullptr); }
       else
       {
+        auto numVars = varList.numVars();
         for (int varID = 0; varID < numVars; ++varID)
         {
           auto const &var = varList.vars[varID];
@@ -305,11 +294,17 @@ public:
         }
       }
     }
+
+    cdo_stream_close(streamID);
+  }
+
+  void
+  run() override
+  {
   }
 
   void
   close() override
   {
-    cdo_stream_close(streamID);
   }
 };

@@ -27,7 +27,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertfillmiss> registration = RegisterEntry<Vertfillmiss>();
+  inline static auto registration = RegisterEntry<Vertfillmiss>();
 
 private:
   CdoStreamID streamID1;
@@ -146,8 +146,8 @@ public:
   void
   run() override
   {
-    FieldVector2D varsData;
-    field2D_init(varsData, varList1);
+    FieldVector2D varDataList;
+    field2D_init(varDataList, varList1);
 
     auto numVars = varList1.numVars();
     int tsID = 0;
@@ -162,7 +162,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[varID][levelID];
+        auto &field = varDataList[varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -173,8 +173,8 @@ public:
         if (numLevels > 1)
         {
           size_t numMissVals = 0;
-          for (int levelID = 0; levelID < numLevels; ++levelID) { numMissVals += varsData[varID][levelID].numMissVals; }
-          if (numMissVals > 0) fillmiss(varID, varsData[varID]);
+          for (int levelID = 0; levelID < numLevels; ++levelID) { numMissVals += varDataList[varID][levelID].numMissVals; }
+          if (numMissVals > 0) fillmiss(varID, varDataList[varID]);
         }
       }
 
@@ -182,7 +182,7 @@ public:
       {
         for (int levelID = 0; levelID < varList1.vars[varID].nlevels; ++levelID)
         {
-          auto &field = varsData[varID][levelID];
+          auto &field = varDataList[varID][levelID];
           if (field.hasData())
           {
             cdo_def_field(streamID2, varID, levelID);

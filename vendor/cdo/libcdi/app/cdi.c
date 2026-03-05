@@ -753,14 +753,14 @@ main(int argc, char *argv[])
   int numWorkerOut = 0;
   char varname[CDI_MAX_NAME];
   char paramstr[32];
-  char *queryNames[256];
+  const char *queryNames[256];
   int numQueryNames = 0;
-  size_t queryCellidx[256];
-  int numQueryCellidx = 0;
-  int queryLevidx[256];
-  int numQueryLevidx = 0;
-  int queryStepidx[256];
-  int numQueryStepidx = 0;
+  size_t queryCells[256];
+  int numQueryCells = 0;
+  int queryLayers[256];
+  int numQueryLayers = 0;
+  int querySteps[256];
+  int numQuerySteps = 0;
 
   Progname = strrchr(argv[0], '/');
   if (Progname == 0)
@@ -774,14 +774,14 @@ main(int argc, char *argv[])
     switch (c)
     {
       case 'b': setDefaultDataType(optarg); break;
-      case 'C': queryCellidx[numQueryCellidx++] = (size_t) atol(optarg); break;
+      case 'C': queryCells[numQueryCells++] = (size_t) atol(optarg); break;
       case 'd': Debug = 1; break;
       case 'E': cdiDefGlobal("ECCODES_GRIB1", true); break;
       case 'f': setDefaultFileType(optarg); break;
       case 'h': usage(); exit(0);
       case 'i': numWorkerIn = atoi(optarg); break;
       case 'o': numWorkerOut = atoi(optarg); break;
-      case 'L': queryLevidx[numQueryLevidx++] = atoi(optarg); break;
+      case 'L': queryLayers[numQueryLayers++] = atoi(optarg); break;
       case 'l': Longinfo = 1; break;
       case 'M': cdiDefGlobal("HAVE_MISSVAL", 1); break;
       case 'm': Move = 1; break;
@@ -790,7 +790,7 @@ main(int argc, char *argv[])
       case 'R': cdiDefGlobal("REGULARGRID", 1); break;
       case 'r': Field = 1; break;
       case 'X': Variable = 1; break;
-      case 'S': queryStepidx[numQueryStepidx++] = atoi(optarg); break;
+      case 'S': querySteps[numQuerySteps++] = atoi(optarg); break;
       case 's': Shortinfo = 1; break;
       case 'T': preScan = true; break;
       case 't': rTable = optarg; break;
@@ -840,15 +840,15 @@ main(int argc, char *argv[])
     int taxisID2 = CDI_UNDEFID;
     int vlistID2 = CDI_UNDEFID;
 
-    bool useQuery = (numQueryNames > 0) || (numQueryCellidx > 0) || (numQueryLevidx > 0) || (numQueryStepidx > 0);
-    CdiQuery *query = NULL;
+    bool useQuery = (numQueryNames > 0) || (numQueryCells > 0) || (numQueryLayers > 0) || (numQuerySteps > 0);
+    struct CdiQuery *query = NULL;
     if (useQuery)
     {
       query = cdiQueryCreate();
       if (numQueryNames) cdiQuerySetNames(query, numQueryNames, queryNames);
-      if (numQueryCellidx) cdiQuerySetCellidx(query, numQueryCellidx, queryCellidx);
-      if (numQueryLevidx) cdiQuerySetLevidx(query, numQueryLevidx, queryLevidx);
-      if (numQueryStepidx) cdiQuerySetStepidx(query, numQueryStepidx, queryStepidx);
+      if (numQueryCells) cdiQuerySetCells(query, numQueryCells, queryCells);
+      if (numQueryLayers) cdiQuerySetLayers(query, numQueryLayers, queryLayers);
+      if (numQuerySteps) cdiQuerySetSteps(query, numQuerySteps, querySteps);
       if (Debug) cdiQueryPrint(query);
     }
 
@@ -1072,7 +1072,7 @@ main(int argc, char *argv[])
     streamClose(streamID1);
   }
 
-  for (int i = 0; i < numQueryNames; ++i) free(queryNames[i]);
+  for (int i = 0; i < numQueryNames; ++i) free((void *) queryNames[i]);
 
   if (wTable) tableWrite(wTable, itableID);
 

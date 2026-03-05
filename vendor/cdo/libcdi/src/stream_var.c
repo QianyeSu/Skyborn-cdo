@@ -16,26 +16,30 @@
 #include "cdi_int.h"
 
 static void
-streamvar_init_recordtable(stream_t *streamptr, int varID, int isub)
+record_init(sleveltable_t *record)
 {
-  streamptr->vars[varID].recordTable[isub].nlevs = 0;
-  streamptr->vars[varID].recordTable[isub].recordID = NULL;
-  streamptr->vars[varID].recordTable[isub].lindex = NULL;
+  record->nlevs = 0;
+  record->recordID = NULL;
+  record->lindex = NULL;
 }
 
 static void
-streamvar_init_entry(stream_t *streamptr, int varID)
+var_init(svarinfo_t *var)
 {
-  streamptr->vars[varID].ncvarid = CDI_UNDEFID;
-  streamptr->vars[varID].defmiss = false;
+#ifdef HAVE_LIBNETCDF
+  var->cdfCache = NULL;
+#endif
+  var->recordTable = NULL;
 
-  streamptr->vars[varID].subtypeSize = 0;
-  streamptr->vars[varID].recordTable = NULL;
+  var->ncvarid = CDI_UNDEFID;
+  var->defmiss = false;
 
-  streamptr->vars[varID].gridID = CDI_UNDEFID;
-  streamptr->vars[varID].zaxisID = CDI_UNDEFID;
-  streamptr->vars[varID].tsteptype = CDI_UNDEFID;
-  streamptr->vars[varID].subtypeID = CDI_UNDEFID;
+  var->subtypeSize = 0;
+
+  var->gridID = CDI_UNDEFID;
+  var->zaxisID = CDI_UNDEFID;
+  var->tsteptype = CDI_UNDEFID;
+  var->subtypeID = CDI_UNDEFID;
 }
 
 static int
@@ -88,7 +92,7 @@ streamvar_new_entry(stream_t *streamptr)
   streamptr->varsAllocated = streamvarSize;
   streamptr->vars = streamvar;
 
-  streamvar_init_entry(streamptr, varID);
+  var_init(&streamptr->vars[varID]);
 
   streamptr->vars[varID].isUsed = true;
 
@@ -107,9 +111,10 @@ allocate_record_table_entry(stream_t *streamptr, int varID, int subID, int nlevs
     lindex[levID] = levID;
   }
 
-  streamptr->vars[varID].recordTable[subID].nlevs = nlevs;
-  streamptr->vars[varID].recordTable[subID].recordID = level;
-  streamptr->vars[varID].recordTable[subID].lindex = lindex;
+  sleveltable_t *record = &streamptr->vars[varID].recordTable[subID];
+  record->nlevs = nlevs;
+  record->recordID = level;
+  record->lindex = lindex;
 }
 
 int
@@ -122,25 +127,25 @@ stream_new_var(stream_t *streamptr, int gridID, int zaxisID, int tilesetID)
 
   streamptr->nvars++;
 
-  streamptr->vars[varID].gridID = gridID;
-  streamptr->vars[varID].zaxisID = zaxisID;
+  svarinfo_t *var = &streamptr->vars[varID];
+  var->gridID = gridID;
+  var->zaxisID = zaxisID;
 
   int nsub = 1;
   if (tilesetID != CDI_UNDEFID) nsub = subtypeInqSize(tilesetID); /* e.g. no of tiles */
   if (CDI_Debug) Message("varID %d: create %d tiles with %d level(s), zaxisID=%d", varID, nsub, nlevs, zaxisID);
-  streamptr->vars[varID].recordTable = (sleveltable_t *) Malloc((size_t) nsub * sizeof(sleveltable_t));
-  if (streamptr->vars[varID].recordTable == NULL) SysError("Allocation of leveltable failed!");
-  streamptr->vars[varID].subtypeSize = nsub;
+  var->recordTable = (sleveltable_t *) Malloc((size_t) nsub * sizeof(sleveltable_t));
+  if (var->recordTable == NULL) SysError("Allocation of leveltable failed!");
+  var->subtypeSize = nsub;
 
   for (int isub = 0; isub < nsub; isub++)
   {
-    streamvar_init_recordtable(streamptr, varID, isub);
+    record_init(&streamptr->vars[varID].recordTable[isub]);
     allocate_record_table_entry(streamptr, varID, isub, nlevs);
-    if (CDI_Debug)
-      Message("streamptr->vars[varID].recordTable[isub].recordID[0]=%d", streamptr->vars[varID].recordTable[isub].recordID[0]);
+    if (CDI_Debug) Message("streamptr->vars[varID].recordTable[isub].recordID[0]=%d", var->recordTable[isub].recordID[0]);
   }
 
-  streamptr->vars[varID].subtypeID = tilesetID;
+  var->subtypeID = tilesetID;
 
   return varID;
 }

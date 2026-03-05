@@ -487,7 +487,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { -1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Info> registration = RegisterEntry<Info>();
+  inline static auto registration = RegisterEntry<Info>();
 
   int operfunc{};
 

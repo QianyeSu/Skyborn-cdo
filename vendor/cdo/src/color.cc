@@ -277,7 +277,7 @@ cpt_read(std::FILE *fp, CPT *cpt)
     if (color_model != CMYK && !(nread == 4 || nread == 8))
       error = 1; /* HSV or RGB should result in 8 fields, gray, patterns, or skips in 4 */
 
-    cpt->lut[n].z_low = atof(T0);
+    cpt->lut[n].z_low = std::atof(T0);
     cpt->lut[n].skip = false;
     if (T1[0] == '-')
     { /* Skip this slice */
@@ -286,7 +286,7 @@ cpt_read(std::FILE *fp, CPT *cpt)
         std::fprintf(stderr, "%s: z-slice to skip not in [z0 - z1 -] format!\n", __func__);
         return (READERR);
       }
-      cpt->lut[n].z_high = atof(T2);
+      cpt->lut[n].z_high = std::atof(T2);
       cpt->lut[n].skip = true;                                                        /* Don't paint this slice if possible*/
       for (i = 0; i < 3; ++i) cpt->lut[n].rgb_low[i] = cpt->lut[n].rgb_high[i] = 255; /* If you must, use page color */
     }
@@ -299,14 +299,14 @@ cpt_read(std::FILE *fp, CPT *cpt)
     { /* Shades, RGB, HSV, or CMYK */
       if (nread == 4)
       { /* gray shades */
-        cpt->lut[n].z_high = atof(T2);
-        cpt->lut[n].rgb_low[0] = cpt->lut[n].rgb_low[1] = cpt->lut[n].rgb_low[2] = irint(atof(T1));
-        cpt->lut[n].rgb_high[0] = cpt->lut[n].rgb_high[1] = cpt->lut[n].rgb_high[2] = irint(atof(T3));
+        cpt->lut[n].z_high = std::atof(T2);
+        cpt->lut[n].rgb_low[0] = cpt->lut[n].rgb_low[1] = cpt->lut[n].rgb_low[2] = irint(std::atof(T1));
+        cpt->lut[n].rgb_high[0] = cpt->lut[n].rgb_high[1] = cpt->lut[n].rgb_high[2] = irint(std::atof(T3));
         if (cpt->lut[n].rgb_low[0] < 0 || cpt->lut[n].rgb_high[0] < 0) error++;
       }
       else if (color_model == CMYK)
       {
-        cpt->lut[n].z_high = atof(T5);
+        cpt->lut[n].z_high = std::atof(T5);
         std::snprintf(option, sizeof(option), "%s/%s/%s/%s", T1, T2, T3, T4);
         if (getrgb(option, cpt->lut[n].rgb_low, color_model)) error++;
         std::snprintf(option, sizeof(option), "%s/%s/%s/%s", T6, T7, T8, T9);
@@ -314,7 +314,7 @@ cpt_read(std::FILE *fp, CPT *cpt)
       }
       else
       { /* RGB or HSV */
-        cpt->lut[n].z_high = atof(T4);
+        cpt->lut[n].z_high = std::atof(T4);
         std::snprintf(option, sizeof(option), "%s/%s/%s", T1, T2, T3);
         if (getrgb(option, cpt->lut[n].rgb_low, color_model)) error++;
         std::snprintf(option, sizeof(option), "%s/%s/%s", T5, T6, T7);
@@ -391,7 +391,7 @@ cpt_write(std::FILE *fp, const CPT &cpt)
   for (n = 0; n < cpt.ncolors; ++n)
   {
     std::fprintf(fp, "%g\t%d\t%d\t%d\t%g\t%d\t%d\t%d\n", cpt.lut[n].z_low, cpt.lut[n].rgb_low[0], cpt.lut[n].rgb_low[1],
-            cpt.lut[n].rgb_low[2], cpt.lut[n].z_high, cpt.lut[n].rgb_high[0], cpt.lut[n].rgb_high[1], cpt.lut[n].rgb_high[2]);
+                 cpt.lut[n].rgb_low[2], cpt.lut[n].z_high, cpt.lut[n].rgb_high[0], cpt.lut[n].rgb_high[1], cpt.lut[n].rgb_high[2]);
   }
 
   for (k = 0; k < 3; ++k)
@@ -422,9 +422,9 @@ cpt_write_c(std::FILE *fp, const CPT &cpt, const char *name)
   for (n = 0; n < cpt.ncolors; ++n)
   {
     std::fprintf(fp, "  { %7g, %7g, %7g, {%3d, %3d, %3d}, {%3d, %3d, %3d}, {%3d, %3d, %3d}, %d, %d},\n", cpt.lut[n].z_low,
-            cpt.lut[n].z_high, cpt.lut[n].i_dz, cpt.lut[n].rgb_low[0], cpt.lut[n].rgb_low[1], cpt.lut[n].rgb_low[2],
-            cpt.lut[n].rgb_high[0], cpt.lut[n].rgb_high[1], cpt.lut[n].rgb_high[2], cpt.lut[n].rgb_diff[0], cpt.lut[n].rgb_diff[1],
-            cpt.lut[n].rgb_diff[2], cpt.lut[n].annot, cpt.lut[n].skip);
+                 cpt.lut[n].z_high, cpt.lut[n].i_dz, cpt.lut[n].rgb_low[0], cpt.lut[n].rgb_low[1], cpt.lut[n].rgb_low[2],
+                 cpt.lut[n].rgb_high[0], cpt.lut[n].rgb_high[1], cpt.lut[n].rgb_high[2], cpt.lut[n].rgb_diff[0],
+                 cpt.lut[n].rgb_diff[1], cpt.lut[n].rgb_diff[2], cpt.lut[n].annot, cpt.lut[n].skip);
   }
   std::fprintf(fp, "};\n");
 

@@ -48,7 +48,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Tstepcount> registration = RegisterEntry<Tstepcount>();
+  inline static auto registration = RegisterEntry<Tstepcount>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
@@ -91,7 +91,7 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
     CdiDateTime vDateTime{};
 
     int tsID = 0;
@@ -101,16 +101,16 @@ public:
       if (numFields == 0) break;
 
       constexpr size_t NALLOC_INC = 1024;
-      if ((size_t) tsID >= varsData.size()) varsData.resize(varsData.size() + NALLOC_INC);
+      if ((size_t) tsID >= varDataList.size()) varDataList.resize(varDataList.size() + NALLOC_INC);
 
       vDateTime = taxisInqVdatetime(taxisID1);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -141,21 +141,21 @@ public:
           {
             auto &v = fields[ompthID].vec_f;
             v.resize(nts);
-            for (int t = 0; t < nts; ++t) v[t] = varsData[t][varID][levelID].vec_f[i];
+            for (int t = 0; t < nts; ++t) v[t] = varDataList[t][varID][levelID].vec_f[i];
 
             auto count = tstepcount(nts, (float) missval, v, (float) refval);
 
-            varsData[0][varID][levelID].vec_f[i] = count;
+            varDataList[0][varID][levelID].vec_f[i] = count;
           }
           else
           {
             auto &v = fields[ompthID].vec_d;
             v.resize(nts);
-            for (int t = 0; t < nts; ++t) v[t] = varsData[t][varID][levelID].vec_d[i];
+            for (int t = 0; t < nts; ++t) v[t] = varDataList[t][varID][levelID].vec_d[i];
 
             auto count = tstepcount(nts, missval, v, refval);
 
-            varsData[0][varID][levelID].vec_d[i] = count;
+            varDataList[0][varID][levelID].vec_d[i] = count;
           }
         }
       }
@@ -169,7 +169,7 @@ public:
       for (int levelID = 0; levelID < varList1.vars[varID].nlevels; ++levelID)
       {
         cdo_def_field(streamID2, varID, levelID);
-        auto &field1 = varsData[0][varID][levelID];
+        auto &field1 = varDataList[0][varID][levelID];
         field_num_mv(field1);
         cdo_write_field(streamID2, field1);
       }

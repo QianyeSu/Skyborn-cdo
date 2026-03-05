@@ -61,21 +61,21 @@ static size_t
 get_num_input_bits(int datatype)
 {
   // clang-format off
-  if      (datatype == CDI_DATATYPE_INT8  ) return 8;
-  else if (datatype == CDI_DATATYPE_UINT8 ) return 8;
-  else if (datatype == CDI_DATATYPE_INT16 ) return 16;
-  else if (datatype == CDI_DATATYPE_UINT16) return 16;
-  else if (datatype == CDI_DATATYPE_INT32 ) return 32;
-  else if (datatype == CDI_DATATYPE_UINT32) return 32;
-  else if (datatype == CDI_DATATYPE_FLT32 ) return 32;
-  else if (datatype == CDI_DATATYPE_FLT64 ) return 64;
-  else if (datatype == CDI_DATATYPE_PACK8 ) return 8;
-  else if (datatype == CDI_DATATYPE_PACK16) return 16;
-  else if (datatype == CDI_DATATYPE_PACK32) return 24;
-  else if (datatype == CDI_DATATYPE_PACK  ) return 8;        // unknown
-  else if (datatype > 0 && datatype <= 32 ) return datatype; // Number of packed bits in GRIB
-  else                                      return 64;
+  if (datatype == CDI_DATATYPE_INT8  ) return 8;
+  if (datatype == CDI_DATATYPE_UINT8 ) return 8;
+  if (datatype == CDI_DATATYPE_INT16 ) return 16;
+  if (datatype == CDI_DATATYPE_UINT16) return 16;
+  if (datatype == CDI_DATATYPE_INT32 ) return 32;
+  if (datatype == CDI_DATATYPE_UINT32) return 32;
+  if (datatype == CDI_DATATYPE_FLT32 ) return 32;
+  if (datatype == CDI_DATATYPE_FLT64 ) return 64;
+  if (datatype == CDI_DATATYPE_PACK8 ) return 8;
+  if (datatype == CDI_DATATYPE_PACK16) return 16;
+  if (datatype == CDI_DATATYPE_PACK32) return 24;
+  if (datatype == CDI_DATATYPE_PACK  ) return 8;        // unknown
+  if (datatype > 0 && datatype <= 32 ) return datatype; // Number of packed bits in GRIB
   // clang-format on
+  return 64;
 }
 
 static size_t
@@ -202,7 +202,8 @@ print_vars_info(int operfunc, bool ensembleInfo, VarList const &varList, int vli
     else if (operfunc == func_code) std::fprintf(stdout, " %4d %4d", tabnum, var.code);
     else                            std::fprintf(stdout, "%-14s", paramstr);
     // clang-format on
-    if (xsInfo && Options::cdoVerbose && operfunc == func_name && var.units.size()) std::fprintf(stdout, " [%s]", var.units.c_str());
+    if (xsInfo && Options::cdoVerbose && operfunc == func_name && var.units.size())
+      std::fprintf(stdout, " [%s]", var.units.c_str());
     // reset_text_color(stdout);
 
     if (Options::cdoVerbose)
@@ -335,7 +336,7 @@ print_time_info_xs(int ntsteps, int taxisID, CdoStreamID streamID)
       std::fprintf(stdout, " to %s", datetime_to_string(vDateTimeLast).c_str());
       if (timeIncrement0.period)
         std::fprintf(stdout, " by %d %s%s", (int) timeIncrement0.period, time_units_cstr(timeIncrement0.units),
-                (timeIncrement0.period != 1) ? "s" : "");
+                     (timeIncrement0.period != 1) ? "s" : "");
     }
     std::fprintf(stdout, "\n");
 
@@ -397,7 +398,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { -1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Sinfo> registration = RegisterEntry<Sinfo>();
+  inline static auto registration = RegisterEntry<Sinfo>();
 
 private:
   int operfunc{ 0 };
@@ -444,7 +445,7 @@ public:
       std::fprintf(stdout, " Levels Num    Points Num Dtype");
       if (xsInfo) std::fprintf(stdout, " Mtype");
       std::fprintf(stdout, " : %s",
-              (operfunc == func_name) ? "Parameter name" : ((operfunc == func_code) ? "Table Code" : "Parameter ID"));
+                   (operfunc == func_name) ? "Parameter name" : ((operfunc == func_code) ? "Table Code" : "Parameter ID"));
 
       if (Options::cdoVerbose) std::fprintf(stdout, " : Chunkspec");
       reset_text_color(stdout);
@@ -463,10 +464,8 @@ public:
         {
           auto const &var = varList.vars[varID];
 
-          if (var.isConstant)
-            numFieldsConst += var.nlevels;
-          else
-            numFieldsVar += var.nlevels;
+          if (var.isConstant) { numFieldsConst += var.nlevels; }
+          else { numFieldsVar += var.nlevels; }
 
           auto size = var.nlevels * var.gridsize * var.nwpv;
           numValues += size;

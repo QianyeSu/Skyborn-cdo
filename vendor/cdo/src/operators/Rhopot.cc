@@ -153,7 +153,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Rhopot> registration = RegisterEntry<Rhopot>();
+  inline static auto registration = RegisterEntry<Rhopot>();
 
   int zaxisID{};
   int toID = -1, saoID = -1, thoID = -1;

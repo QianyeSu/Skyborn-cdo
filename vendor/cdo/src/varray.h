@@ -57,7 +57,7 @@ const auto binary_op_MUL = [](double x, double y) noexcept { return x * y; };
 const auto binary_op_DIV = [](double x, double y) noexcept { return x / y; };
 // clang-format on
 
-// #define CHECK_UNUSED_VECTOR 1
+//#define CHECK_UNUSED_VECTOR 1
 
 #ifdef CHECK_UNUSED_VECTOR
 // clang-format off

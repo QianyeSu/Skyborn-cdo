@@ -60,7 +60,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, OBASE, NoRestriction },
   };
-  inline static RegisterEntry<Intyear> registration = RegisterEntry<Intyear>();
+  inline static auto registration = RegisterEntry<Intyear>();
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
 

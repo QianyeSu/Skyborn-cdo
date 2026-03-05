@@ -137,7 +137,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Spectrum> registration = RegisterEntry<Spectrum>();
+  inline static auto registration = RegisterEntry<Spectrum>();
 
   CdoStreamID streamID1;
   CdoStreamID streamID2;
@@ -170,7 +170,7 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
     std::vector<CdiDateTime> vDateTimes;
 
     int nalloc = 0;
@@ -187,18 +187,18 @@ public:
         constexpr int NALLOC_INC = 1024;
         nalloc += NALLOC_INC;
         vDateTimes.resize(nalloc);
-        varsData.resize(nalloc);
+        varDataList.resize(nalloc);
       }
 
       vDateTimes[tsID] = taxisInqVdatetime(taxisID1);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
         auto const &var = varList1.vars[varID];
-        auto &varData = varsData[tsID][varID][levelID];
+        auto &varData = varDataList[tsID][varID][levelID];
         varData.resize(var.gridsize);
         cdo_read_field(streamID1, varData);
 
@@ -236,8 +236,8 @@ public:
 
     int nfreq = seg_l / 2 + 1;
 
-    FieldVector3D varsData2(nfreq);
-    for (int freq = 0; freq < nfreq; freq++) field2D_init(varsData2[freq], varList1, FIELD_VEC);
+    FieldVector3D varDataList2(nfreq);
+    for (int freq = 0; freq < nfreq; freq++) field2D_init(varDataList2[freq], varList1, FIELD_VEC);
 
     Varray<double> array1(nts);
     Varray<double> array2(nfreq);
@@ -276,13 +276,13 @@ public:
       {
         for (size_t i = 0; i < var.gridsize; ++i)
         {
-          for (tsID = 0; tsID < nts; ++tsID) array1[tsID] = varsData[tsID][varID][levelID].vec_d[i];
+          for (tsID = 0; tsID < nts; ++tsID) array1[tsID] = varDataList[tsID][varID][levelID].vec_d[i];
 
           for (int freq = 0; freq < nfreq; freq++) array2[freq] = 0;
 
           spectrum(nts, array1.data(), array2.data(), real.data(), imag.data(), window.data(), wssum, detrend, seg_n, seg_l);
 
-          for (int freq = 0; freq < nfreq; freq++) varsData2[freq][varID][levelID].vec_d[i] = array2[freq];
+          for (int freq = 0; freq < nfreq; freq++) varDataList2[freq][varID][levelID].vec_d[i] = array2[freq];
         }
       }
     }
@@ -297,7 +297,7 @@ public:
         auto const &var = varList1.vars[varID];
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
-          auto &varData2 = varsData2[tsID][varID][levelID];
+          auto &varData2 = varDataList2[tsID][varID][levelID];
           if (!varData2.empty())
           {
             varData2.numMissVals = 0;

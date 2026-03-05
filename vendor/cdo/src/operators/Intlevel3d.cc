@@ -155,7 +155,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Intlevel3d> registration = RegisterEntry<Intlevel3d>();
+  inline static auto registration = RegisterEntry<Intlevel3d>();
   int INTLEVEL3D{}, INTLEVELX3D{};
 
   CdoStreamID streamID1{};
@@ -293,8 +293,8 @@ public:
     std::vector<bool> processVars(numVars);
     std::vector<bool> interpVars(numVars, false);              // marker for variables to be interpolated
     std::vector<std::vector<size_t>> varnumMissVals(numVars);  // can for missing values of arbitrary variables
-    Field3DVector vardata1(numVars);
-    Field3DVector vardata2(numVars);
+    Field3DVector varDataList1(numVars);
+    Field3DVector varDataList2(numVars);
 
     auto maxLevels = std::max(nlevi, nlevo);
     for (int varID = 0; varID < numVars; ++varID)
@@ -302,9 +302,9 @@ public:
       auto const &var1 = varList1.vars[varID];
       auto zaxisID = var1.zaxisID;
       auto gridsize = var1.gridsize;
-      auto nlevel = var1.nlevels;
+      auto numLevels = var1.nlevels;
 
-      vardata1[varID].init(var1);
+      varDataList1[varID].init(var1);
 
       /*  variabls for interpolation:
        *  * have the required vertical axis, i.e. the correct number of levels (nlevi)
@@ -315,12 +315,12 @@ public:
       if (interpVars[varID])
       {
         varnumMissVals[varID].resize(maxLevels, 0);
-        vardata2[varID].init(varList3.vars[varID]);
+        varDataList2[varID].init(varList3.vars[varID]);
       }
       else
       {
-        varnumMissVals[varID].resize(nlevel);
-        if (Options::cdoVerbose) cdo_print("Ignore variable %s (levels=%d gridsize=%zu)!", var1.name, nlevel, gridsize);
+        varnumMissVals[varID].resize(numLevels);
+        if (Options::cdoVerbose) cdo_print("Ignore variable %s (levels=%d gridsize=%zu)!", var1.name, numLevels, gridsize);
       }
     }
 
@@ -346,7 +346,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
         processVars[varID] = true;
       }
 
@@ -359,13 +359,13 @@ public:
           auto gridsize = var1.gridsize;
           auto missval = var1.missval;
 
-          vert_interp_lev3d(gridsize, nlevi, missval, vardata1[varID], vardata2[varID], nlevo, lev_idx, lev_wgt);
+          vert_interp_lev3d(gridsize, nlevi, missval, varDataList1[varID], varDataList2[varID], nlevo, lev_idx, lev_wgt);
 
           for (int levelID = 0; levelID < nlevo; ++levelID)
           {
             auto offset = gridsize * levelID;
             auto func = [&](auto const &v) { varnumMissVals[varID][levelID] = array_num_mv(gridsize, &v[offset], missval); };
-            field_operation(func, vardata2[varID]);
+            field_operation(func, varDataList2[varID]);
           }
         }
         else
@@ -382,7 +382,7 @@ public:
           for (int levelID = 0; levelID < varList3.vars[varID].nlevels; ++levelID)
           {
             cdo_def_field(streamID3, varID, levelID);
-            cdo_write_field(streamID3, interpVars[varID] ? vardata2[varID] : vardata1[varID], levelID,
+            cdo_write_field(streamID3, interpVars[varID] ? varDataList2[varID] : varDataList1[varID], levelID,
                             varnumMissVals[varID][levelID]);
           }
         }
@@ -399,6 +399,7 @@ public:
       tsID++;
     }
   }
+
   void
   close() override
   {

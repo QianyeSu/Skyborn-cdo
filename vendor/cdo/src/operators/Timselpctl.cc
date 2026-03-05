@@ -36,7 +36,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timselpctl> registration = RegisterEntry<Timselpctl>();
+  inline static auto registration = RegisterEntry<Timselpctl>();
 
   CdoStreamID streamID1;
   int taxisID1{ CDI_UNDEFID };

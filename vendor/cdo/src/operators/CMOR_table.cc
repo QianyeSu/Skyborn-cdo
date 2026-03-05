@@ -113,7 +113,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 0, NoRestriction },
   };
-  inline static RegisterEntry<CMOR_table> registration = RegisterEntry<CMOR_table>();
+  inline static auto registration = RegisterEntry<CMOR_table>();
 
 public:
   void

@@ -144,41 +144,41 @@ void yac_compute_overlap_buf_free();
 void yac_correct_weights (size_t N, double * weight);
 
 /**
- * Generate a yac circle
+ * Generate a YAC circle
  *
  * @param[in]  a             point a
  * @param[in]  b             point b
  * @param[in]  type          typ of edge connecting points a and b
  * @param[in]  edge_ordering ordering of the points a and b
- * @param[out] circle        yac circle
+ * @param[out] circle        YAC circle
  */
 void yac_circle_generate(
   double const * a, double const * b, enum yac_edge_type type,
   int edge_ordering, struct yac_circle * circle);
 
 /**
- * Compare routine for yac circles (first by type and second parameters
+ * Compare routine for YAC circles (first by type and second parameters
  *                                  of the circle, if types are identical)
  *
- * @param[in] a yac circle a
- * @param[in] b yac circle b
+ * @param[in] a YAC circle a
+ * @param[in] b YAC circle b
  * @returns -1, 0, or 1 depending on the circles (lat circles always come last)
  */
 int yac_circle_compare(void const * a, void const * b);
 
 /**
- * Determines whether the provided yac circle contains the north pole
- * @param[in] circle yac circle
+ * Determines whether the provided YAC circle contains the north pole
+ * @param[in] circle YAC circle
  * @return 1 if the circle contains the north pole, 0 otherwise
  */
 int yac_circle_contains_north_pole(struct yac_circle * circle);
 
 /**
  * Determines whether a given point is on the "inside"-side of a plane
- * defined by the given yac circle
+ * defined by the given YAC circle
  *
  * @param[in] point  point to be checked
- * @param[in] circle yac circle
+ * @param[in] circle YAC circle
  * @returns  0 if the point is not inside\n
  *           1 if the point is inside\n
  *           2 if the point is on the plane
@@ -186,11 +186,11 @@ int yac_circle_contains_north_pole(struct yac_circle * circle);
 int yac_circle_point_is_inside(
   double const point[3], struct yac_circle * circle);
 
-/** Compares the distances of two points to a given yac circle
+/** Compares the distances of two points to a given YAC circle
  *
  * @param[in] a      point a
  * @param[in] b      point b
- * @param[in] circle yac circle
+ * @param[in] circle YAC circle
  * @returns -1 if point a is closer to the circle than point b\n
  *           0 if point a and b have the same distance to the circle\n
  *           1 if point b is closer to the circle than point a

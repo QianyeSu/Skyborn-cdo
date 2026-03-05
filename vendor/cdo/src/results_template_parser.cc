@@ -41,7 +41,7 @@ results_template_parser(void *node, const char *varname)
     {
       if (DBG_MSG) printf("Version %s \n", value);
 
-      if (atof(value) > 3.0f) return 1;
+      if (std::atof(value) > 3.0f) return 1;
     }
   }
 

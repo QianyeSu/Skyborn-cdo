@@ -33,10 +33,10 @@ get_datatype(char *buffer)
     {
       auto type = buffer[slen - 1];
       // clang-format off
-      if      (type == 's') dtype = 999;
-      else if (type == 'd') dtype = CDI_DATATYPE_FLT64;
-      else if (type == 'i') dtype = CDI_DATATYPE_INT32;
-      else cdo_abort("Attribute type '%c' not supported!", type);
+      if      (type == 's') { dtype = 999; }
+      else if (type == 'd') { dtype = CDI_DATATYPE_FLT64; }
+      else if (type == 'i') { dtype = CDI_DATATYPE_INT32; }
+      else { cdo_abort("Attribute type '%c' not supported!", type); }
       // clang-format on
       buffer[slen - 2] = 0;
     }
@@ -51,7 +51,6 @@ split_var_attr(std::string const &key, int delimiter)
   std::string varName, attName;
 
   auto sz = key.find_first_of(delimiter);
-
   if (sz == std::string::npos) { attName = key; }
   else
   {
@@ -193,7 +192,7 @@ find_attribute(int cdiID, int varID, std::string const &attrName, int &dtype)
     if      (attrName == "long_name")     attrValues.push_back(var.longname);
     else if (attrName == "standard_name") attrValues.push_back(stdname);
     else if (attrName == "units")         attrValues.push_back(var.units);
-    else if (attrName == "param")         attrValues.push_back(param_to_string(var.param));
+    else if (attrName == "param")         attrValues.push_back(param_to_string_zerofilled(var.param));
     else if (attrName == "code")          attrValues.push_back(std::to_string(var.code));
     else if (attrName == "table")         attrValues.push_back(std::to_string(table));
     else if (attrName == "missing_value") attrValues.push_back(std::to_string(var.missval));
@@ -247,7 +246,9 @@ delete_attribute(int cdiID, int varID, std::string const &attName, std::string c
   if (status != CDI_NOERR)  // check CDI keys
   {
     if (attName == "long_name") { cdiDeleteKey(cdiID, varID, CDI_KEY_LONGNAME); }
+    else if (attName == "standard_name") { cdiDeleteKey(cdiID, varID, CDI_KEY_STDNAME); }
     else if (attName == "units") { cdiDeleteKey(cdiID, varID, CDI_KEY_UNITS); }
+    // else if (attName == "missing_value") { cdiDeleteKey(cdiID, varID, CDI_KEY_MISSVAL); }
     else
     {
       bool foundAtt = false;
@@ -259,7 +260,6 @@ delete_attribute(int cdiID, int varID, std::string const &attName, std::string c
         int len;
         char name[CDI_MAX_NAME];
         cdiInqAtt(cdiID, varID, attnum, name, &type, &len);
-
         if (wildcard_match(name, attName))
         {
           foundAtt = true;
@@ -297,12 +297,9 @@ set_attribute(int cdiID, int varID, std::string const &attName, int dtype, std::
     std::vector<char> outvalue(len);
     for (int i = 0; i < len; ++i)
     {
-      if (i > 0 && value[i - 1] == '\\' && value[i] == 'n')
-        outvalue[outlen - 1] = '\n';
-      else if (i > 0 && value[i - 1] == '\\' && value[i] == '"')
-        outvalue[outlen - 1] = '\"';
-      else
-        outvalue[outlen++] = value[i];
+      if (i > 0 && value[i - 1] == '\\' && value[i] == 'n') { outvalue[outlen - 1] = '\n'; }
+      else if (i > 0 && value[i - 1] == '\\' && value[i] == '"') { outvalue[outlen - 1] = '\"'; }
+      else { outvalue[outlen++] = value[i]; }
     }
     cdiDefAttTxt(cdiID, varID, attName.c_str(), outlen, outvalue.data());
   }
@@ -348,9 +345,7 @@ set_attributes(KVList const &kvlist, int vlistID)
         }
 
         auto const &values = useAttrValues ? attrValues : kv.values;
-
         if (dtype == -1) dtype = literals_find_datatype(values.size(), values);
-
         for (auto varID : varIDs) set_attribute(cdiID, varID, attName, dtype, values);
       }
     }
@@ -365,14 +360,14 @@ public:
     .name = "Setattribute",
     // clang-format off
     .operators = { { "setattribute", 0, 0, "attributes", SetattributeHelp },
-                   { "delattribute", 0, 0, "attributes" } },
+                   { "delattribute", 0, 0, "attributes", SetattributeHelp } },
     // clang-format on
     .aliases = {},
     .mode = EXPOSED,     // Module mode: 0:intern 1:extern
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setattribute> registration = RegisterEntry<Setattribute>();
+  inline static auto registration = RegisterEntry<Setattribute>();
 
 private:
   CdoStreamID streamID1{};
@@ -404,7 +399,7 @@ public:
     if (operatorID == DELATTRIBUTE)
     {
       for (auto &attr : attrList)
-        if (attr.back() != '=') attr.push_back('=');
+        if (attr.back() != '=') { attr.push_back('='); }
     }
 
     PMList pmlist;

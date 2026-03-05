@@ -37,7 +37,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ydayarith> registration = RegisterEntry<Ydayarith>();
+  inline static auto registration = RegisterEntry<Ydayarith>();
 
 private:
   VarList varList1;
@@ -91,7 +91,7 @@ public:
   run() override
   {
     constexpr int MaxDays = 373;  //~31*12
-    FieldVector2D varsData2[MaxDays];
+    FieldVector2D varDataList2[MaxDays];
     Field field;
 
     int tsID = 0;
@@ -108,19 +108,19 @@ public:
         cdo_error("Day of year %d out of range (date=%s)!", dayOfYear, date_to_string(vDateTime.date));
         return;
       }
-      if (varsData2[dayOfYear].size() > 0)
+      if (varDataList2[dayOfYear].size() > 0)
       {
         cdo_error("Day of year index %d already allocated (date=%s)! Each day of year must only exist once", dayOfYear,
                   date_to_string(vDateTime.date));
         return;
       }
 
-      field2D_init(varsData2[dayOfYear], varList2, FIELD_VEC | FIELD_NAT);
+      field2D_init(varDataList2[dayOfYear], varList2, FIELD_VEC | FIELD_NAT);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID2);
-        cdo_read_field(streamID2, varsData2[dayOfYear][varID][levelID]);
+        cdo_read_field(streamID2, varDataList2[dayOfYear][varID][levelID]);
       }
 
       tsID++;
@@ -140,7 +140,7 @@ public:
         cdo_error("Day of year %d out of range (date=%s)!", dayOfYear, date_to_string(vDateTime.date));
         return;
       }
-      if (varsData2[dayOfYear].size() == 0)
+      if (varDataList2[dayOfYear].size() == 0)
       {
         cdo_error("Day of year index %d not found (date=%s)!", dayOfYear, date_to_string(vDateTime.date));
         return;
@@ -155,7 +155,7 @@ public:
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
 
-        field2_function(field, varsData2[dayOfYear][varID][levelID], operfunc);
+        field2_function(field, varDataList2[dayOfYear][varID][levelID], operfunc);
 
         cdo_def_field(streamID3, varID, levelID);
         cdo_write_field(streamID3, field);

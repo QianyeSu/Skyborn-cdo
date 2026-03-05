@@ -132,10 +132,10 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ensstat> registration = RegisterEntry<Ensstat>();
+  inline static auto registration = RegisterEntry<Ensstat>();
 
 private:
-  int operfunc{ 0 };
+  int operFunc{ 0 };
   double pn{ 0 };
 
   std::vector<EnsFile> ensFileList;
@@ -156,9 +156,9 @@ public:
   init() override
   {
     auto operatorID = cdo_operator_id();
-    operfunc = cdo_operator_f1(operatorID);
+    operFunc = cdo_operator_f1(operatorID);
 
-    auto lpctl = (operfunc == FieldFunc_Pctl);
+    auto lpctl = (operFunc == FieldFunc_Pctl);
 
     auto argc = cdo_operator_argc();
     auto nargc = argc;
@@ -251,9 +251,8 @@ public:
     if (Options::CDO_task) fieldVector[1].resize(numFiles);
 
     int fieldNum = 0;
-    int numFields0;
-    do
-    {
+    int numFields0{};
+    do {
       numFields0 = cdo_stream_inq_timestep(ensFileList[0].streamID, tsID);
 
       for (int k = 1; k < numFiles; ++k)
@@ -307,7 +306,7 @@ public:
         if (Options::CDO_task) workerThread->wait();
 
         std::function<void()> ensstat_task = std::bind(ensstat, std::cref(ensFileList), std::ref(fields), streamID2, varID, levelID,
-                                                       std::ref(workFields), std::ref(array2), std::ref(count2), operfunc, pn);
+                                                       std::ref(workFields), std::ref(array2), std::ref(count2), operFunc, pn);
 
         Options::CDO_task ? workerThread->doAsync(ensstat_task) : ensstat_task();
 

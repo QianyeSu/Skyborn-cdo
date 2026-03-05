@@ -26,8 +26,11 @@
 #include "serialize.h"
 #include "zaxis.h"
 
-#define LevelUp 1
-#define LevelDown 2
+enum
+{
+  LevelUp = 1,
+  LevelDown = 2
+};
 
 // clang-format off
 static const struct
@@ -152,8 +155,7 @@ zaxisNewEntry(int id)
   zaxis_t *zaxisptr = (zaxis_t *) Malloc(sizeof(zaxis_t));
   zaxis_init(zaxisptr);
 
-  if (id == CDI_UNDEFID)
-    zaxisptr->self = reshPut(zaxisptr, &zaxisOps);
+  if (id == CDI_UNDEFID) { zaxisptr->self = reshPut(zaxisptr, &zaxisOps); }
   else
   {
     zaxisptr->self = id;

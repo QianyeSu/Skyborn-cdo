@@ -32,6 +32,8 @@ void varDefKeyString(int varID, int key, const char *string);
 
 void varDefOptGribInt(int varID, int tile_index, long lval, const char *keyword);
 void varDefOptGribDbl(int varID, int tile_index, double dval, const char *keyword);
+void varDefOptGribIntArr(int varID, int tile_index, const long *larr, size_t arr_len, const char *keyword);
+void varDefOptGribDblArr(int varID, int tile_index, const double *darr, size_t arr_len, const char *keyword);
 int varOptGribNentries(int varID);
 
 bool zaxis_compare(int zaxisID, int zaxistype, int nlevels, const double *levels, const double *lbounds, const double *ubounds,

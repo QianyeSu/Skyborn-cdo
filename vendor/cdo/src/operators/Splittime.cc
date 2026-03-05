@@ -62,7 +62,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Splittime> registration = RegisterEntry<Splittime>();
+  inline static auto registration = RegisterEntry<Splittime>();
 
 private:
   int SPLITMON{}, SPLITSEAS{};

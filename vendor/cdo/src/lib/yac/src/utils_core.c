@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <limits.h>
 #include <sys/stat.h>
 
 #include "utils_core.h"

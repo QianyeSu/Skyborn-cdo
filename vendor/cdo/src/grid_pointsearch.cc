@@ -30,17 +30,14 @@ set_pointsearch_method(std::string const &methodStr)
   // clang-format on
 }
 
-static std::string
+static const char *
 get_methodStr(UnstructMethod method)
 {
-  std::string methodStr{ "unknown" };
-  // clang-format off
-  if      (method == UnstructMethod::kdtree)     methodStr = "kdtree";
-  else if (method == UnstructMethod::nanoflann)  methodStr = "nanoflann";
-  else if (method == UnstructMethod::spherepart) methodStr = "spherepart";
-  else if (method == UnstructMethod::full)       methodStr = "full";
-  // clang-format on
-  return methodStr;
+  if (method == UnstructMethod::kdtree) return "kdtree";
+  if (method == UnstructMethod::nanoflann) return "nanoflann";
+  if (method == UnstructMethod::spherepart) return "spherepart";
+  if (method == UnstructMethod::full) return "full";
+  return "unknown";
 }
 
 static void
@@ -69,7 +66,7 @@ pointsearch_create_unstruct(GridPointsearch &gps, Varray<double> const &lons, Va
   auto &params = gps.params;
   params.isCurve = (numPoints != 1 && numPoints == params.dims[0] * params.dims[1]);
 
-  if (unstructMethod != UnstructMethod::undefined) gps.unstructMethod = unstructMethod;
+  if (unstructMethod != UnstructMethod::undefined) { gps.unstructMethod = unstructMethod; }
   if (Options::cdoVerbose) cdo_print("Point search method: %s", get_methodStr(gps.unstructMethod));
 
   auto method = gps.unstructMethod;

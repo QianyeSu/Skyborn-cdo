@@ -308,7 +308,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Bitrounding> registration = RegisterEntry<Bitrounding>();
+  inline static auto registration = RegisterEntry<Bitrounding>();
 
   CdoStreamID streamID1;
   int taxisID1{ CDI_UNDEFID };

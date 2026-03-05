@@ -26,12 +26,14 @@ set cdoCmpl = (\
 -netcdf_hdr_pad \
 -no_history \
 -no_remap_weights \
+-nofile \
 -operators \
 -operators_no_output \
 -pedantic \
 -percentile \
 -precision \
 -print_filename \
+-query \
 -reduce_dim \
 -remap_weights \
 -remove_chunkspec \
@@ -775,6 +777,7 @@ splitcode \
 splitdate \
 splitdatetime \
 splitday \
+splitensemble \
 splitgrid \
 splithour \
 splitlevel \
@@ -800,6 +803,7 @@ sub \
 subc \
 subgrid \
 subtrend \
+symmetrize \
 szip \
 tan \
 tee \
@@ -859,10 +863,14 @@ vardes \
 varquot2test \
 varrms \
 varsavg \
+varskurt \
 varsmax \
 varsmean \
+varsmedian \
 varsmin \
+varspctl \
 varsrange \
+varsskew \
 varsstd \
 varsstd1 \
 varssum \

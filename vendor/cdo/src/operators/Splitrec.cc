@@ -31,7 +31,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Splitrec> registration = RegisterEntry<Splitrec>();
+  inline static auto registration = RegisterEntry<Splitrec>();
 
   CdoStreamID streamID1{};
   int vlistID1{ CDI_UNDEFID };

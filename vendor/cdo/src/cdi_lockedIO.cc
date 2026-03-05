@@ -31,9 +31,9 @@ stream_open_read_locked(const char *const p_filename)
 void
 stream_close_locked(int p_fileID)
 {
-  if (Threading::cdoLockIO) cthread_mutex_lock(streamMutex);
+  open_lock();
   streamClose(p_fileID);
-  if (Threading::cdoLockIO) cthread_mutex_unlock(streamMutex);
+  open_unlock();
 }
 
 void

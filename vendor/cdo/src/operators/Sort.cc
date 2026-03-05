@@ -18,13 +18,13 @@
 #include "process_int.h"
 #include "param_conversion.h"
 #include "cdo_zaxis.h"
+#include "field_functions.h"
 
 namespace
 {
 struct LevInfo
 {
   int levelID{};
-  size_t numMissVals{};
   double level{};
 };
 
@@ -40,22 +40,27 @@ struct VarInfo
 }  // namespace
 
 static void
-setNmiss(int varID, int levelID, int numVars, std::vector<VarInfo> &varsInfo, size_t numMissVals)
+varInfo_init(VarInfo &varInfo, int &varID, int levelID, CdoVar const &var)
 {
-  int varIndex = 0;
-  for (; varIndex < numVars; varIndex++)
-    if (varsInfo[varIndex].varID == varID) break;
+  varInfo.varID = varID;
+  varInfo.code = var.code;
+  varInfo.param = param_to_string_zerofilled(var.param);
+  varInfo.name = var.name;
+  varInfo.levInfo[levelID].levelID = levelID;
+  varInfo.levInfo[levelID].level = cdo_zaxis_inq_level(var.zaxisID, levelID);
+}
 
-  if (varIndex == numVars) cdo_abort("Internal problem; varID not found!");
-
-  auto numLevels = varsInfo[varIndex].numLevels;
-  int levIndex = 0;
-  for (; levIndex < numLevels; levIndex++)
-    if (varsInfo[varIndex].levInfo[levIndex].levelID == levelID) break;
-
-  if (levIndex == numLevels) cdo_abort("Internal problem; levelID not found!");
-
-  varsInfo[varIndex].levInfo[levIndex].numMissVals = numMissVals;
+static void
+varsInfo_print(std::vector<VarInfo> const &varsInfo, std::string const &txt)
+{
+  int numVars = (int) varsInfo.size();
+  for (int varID = 0; varID < numVars; varID++)
+  {
+    auto const &varInfo = varsInfo[varID];
+    for (int levelID = 0; levelID < varInfo.numLevels; ++levelID)
+      printf("%s: %d %s %d %d %d %g\n", txt.c_str(), varID, varInfo.name.c_str(), varInfo.code, varInfo.numLevels,
+             varInfo.levInfo[levelID].levelID, varInfo.levInfo[levelID].level);
+  }
 }
 
 class Sort : public Process
@@ -70,7 +75,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Sort> registration = RegisterEntry<Sort>();
+  inline static auto registration = RegisterEntry<Sort>();
 
   int SORTCODE{}, SORTPARAM{}, SORTNAME{}, SORTLEVEL{};
   bool compareLess = true;
@@ -111,12 +116,9 @@ public:
     taxisID2 = taxisDuplicate(taxisID1);
     vlistDefTaxis(vlistID2, taxisID2);
     /*
-    if ( operatorID == SORTCODE )
-        vlistSortCode(vlistID2);
-     else if ( operatorID == SORTNAME )
-        ;
-     else if ( operatorID == SORTLEVEL )
-        ;
+    if ( operatorID == SORTCODE ) { vlistSortCode(vlistID2); }
+    else if ( operatorID == SORTNAME ) { ; }
+    else if ( operatorID == SORTLEVEL ) { ; }
     */
     if (operatorID == SORTLEVEL)
     {
@@ -146,7 +148,6 @@ public:
   run() override
   {
     auto numVars = varList1.numVars();
-
     std::vector<VarInfo> varsInfo(numVars);
     for (auto const &var : varList1.vars)
     {
@@ -154,8 +155,8 @@ public:
       varsInfo[var.ID].levInfo.resize(var.nlevels);
     }
 
-    Varray2D<double> vardata(numVars);
-    for (auto const &var : varList1.vars) { vardata[var.ID].resize(var.gridsize * var.nlevels); }
+    FieldVector2D varDataList;
+    field2D_init(varDataList, varList1, FIELD_VEC | FIELD_NAT);
 
     int tsID = 0;
     while (true)
@@ -171,37 +172,14 @@ public:
         auto [varID, levelID] = cdo_inq_field(streamID1);
         auto const &var = varList1.vars[varID];
 
-        if (tsID == 0)
-        {
-          auto &varInfo = varsInfo[varID];
-          varInfo.varID = varID;
-          varInfo.code = var.code;
-          varInfo.param = param_to_string(var.param);
-          varInfo.name = var.name;
-          varInfo.levInfo[levelID].levelID = levelID;
-          varInfo.levInfo[levelID].level = cdo_zaxis_inq_level(var.zaxisID, levelID);
-        }
+        if (tsID == 0) { varInfo_init(varsInfo[varID], varID, levelID, var); }
 
-        auto offset = var.gridsize * levelID;
-        auto single = &vardata[varID][offset];
-
-        size_t numMissVals;
-        cdo_read_field(streamID1, single, &numMissVals);
-
-        setNmiss(varID, levelID, numVars, varsInfo, numMissVals);
-        // varsInfo[varID].levInfo[levelID].numMissVals = numMissVals;
+        cdo_read_field(streamID1, varDataList[varID][levelID]);
       }
 
       if (tsID == 0)
       {
-        if (Options::cdoVerbose)
-          for (int varID = 0; varID < numVars; varID++)
-          {
-            auto const &varInfo = varsInfo[varID];
-            for (int levelID = 0; levelID < varInfo.numLevels; ++levelID)
-              printf("sort in: %d %s %d %d %d %g\n", varID, varInfo.name.c_str(), varInfo.code, varInfo.numLevels,
-                     varInfo.levInfo[levelID].levelID, varInfo.levInfo[levelID].level);
-          }
+        if (Options::cdoVerbose) { varsInfo_print(varsInfo, "sort in"); }
 
         if (operatorID == SORTCODE) { std::ranges::sort(varsInfo, {}, &VarInfo::code); }
         else if (operatorID == SORTPARAM) { std::ranges::sort(varsInfo, {}, &VarInfo::param); }
@@ -215,14 +193,7 @@ public:
           }
         }
 
-        if (Options::cdoVerbose)
-          for (int varID = 0; varID < numVars; varID++)
-          {
-            auto const &varInfo = varsInfo[varID];
-            for (int levelID = 0; levelID < varInfo.numLevels; ++levelID)
-              printf("sort out: %d %s %d %d %d %g\n", varID, varInfo.name.c_str(), varInfo.code, varInfo.numLevels,
-                     varInfo.levInfo[levelID].levelID, varInfo.levInfo[levelID].level);
-          }
+        if (Options::cdoVerbose) { varsInfo_print(varsInfo, "sort out"); }
       }
 
       for (int varID = 0; varID < numVars; varID++)
@@ -232,15 +203,10 @@ public:
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
           auto levelID2 = varInfo.levInfo[levelID].levelID;
-          auto numMissVals = varInfo.levInfo[levelID].numMissVals;
-
           if (tsID == 0 || !var.isConstant)
           {
-            auto offset = var.gridsize * levelID2;
-            auto single = &vardata[varInfo.varID][offset];
-
             cdo_def_field(streamID2, varInfo.varID, levelID);
-            cdo_write_field(streamID2, single, numMissVals);
+            cdo_write_field(streamID2, varDataList[varInfo.varID][levelID2]);
           }
         }
       }

@@ -1,10 +1,10 @@
 ! This file was automatically generated, don't edit!
 !
-! Fortran interface for CDI library version 2.5.4
+! Fortran interface for CDI library version 2.6.0
 !
 ! Author:
 ! -------
-! Uwe Schulzweida, MPI-MET, Hamburg,   October 2025
+! Uwe Schulzweida, MPI-MET, Hamburg,   February 2026
 !
 
 !
@@ -1381,6 +1381,22 @@
 !                                     DOUBLEPRECISION value)
       EXTERNAL        vlistDefVarDblKey
 
+!                     vlistDefVarIntArrKey
+!                                    (INTEGER         vlistID,
+!                                     INTEGER         varID,
+!                                     CHARACTER*(*)   name,
+!                                     INTEGER         values,
+!                                     INTEGER         nvalues)
+      EXTERNAL        vlistDefVarIntArrKey
+
+!                     vlistDefVarDblArrKey
+!                                    (INTEGER         vlistID,
+!                                     INTEGER         varID,
+!                                     CHARACTER*(*)   name,
+!                                     DOUBLEPRECISION values,
+!                                     INTEGER         nvalues)
+      EXTERNAL        vlistDefVarDblArrKey
+
       INTEGER         vlistHasVarKey
 !                                    (INTEGER         vlistID,
 !                                     INTEGER         varID,
@@ -1921,9 +1937,9 @@
 !                                    (INTEGER         gridID)
       EXTERNAL        gridInqYinc
 
-      INTEGER         gridIsCircular
+      INTEGER         gridIsCyclic
 !                                    (INTEGER         gridID)
-      EXTERNAL        gridIsCircular
+      EXTERNAL        gridIsCyclic
 
       INTEGER         gridInqTrunc
 !                                    (INTEGER         gridID)

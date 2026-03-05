@@ -188,7 +188,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timstat> registration = RegisterEntry<Timstat>();
+  inline static auto registration = RegisterEntry<Timstat>();
 
 private:
   static const TimeStat timestatDate{ TimeStat::MEAN };
@@ -217,10 +217,9 @@ private:
   void
   create_diag_stream(int operatorID, int vlistID1, int numVars)
   {
-    char fileName[8192];
-    std::strcpy(fileName, cdo_operator_name(operatorID));
-    std::strcat(fileName, "_");
-    std::strcat(fileName, cdo_get_stream_name(1));
+    std::string fileName{ cdo_operator_name(operatorID) };
+    fileName += "_";
+    fileName += cdo_get_stream_name(1);
     streamID3 = open_write(fileName);
 
     vlistID3 = vlistDuplicate(vlistID1);

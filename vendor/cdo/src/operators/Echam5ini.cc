@@ -784,7 +784,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Echam5ini_import> registration = RegisterEntry<Echam5ini_import>();
+  inline static auto registration = RegisterEntry<Echam5ini_import>();
 
 public:
   void
@@ -806,7 +806,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, OnlyFirst },
   };
-  inline static RegisterEntry<Echam5ini_export> registration = RegisterEntry<Echam5ini_export>();
+  inline static auto registration = RegisterEntry<Echam5ini_export>();
 
 public:
   void

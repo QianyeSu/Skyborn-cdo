@@ -19,8 +19,8 @@ struct grid_type
   int gridID{};
   long size{};
   long numCorners{};
-  Varray<double> cell_corner_lon{};
-  Varray<double> cell_corner_lat{};
+  Varray<double> cellCornerLon{};
+  Varray<double> cellCornerLat{};
 };
 
 struct cellsearch_type
@@ -60,13 +60,13 @@ grid_new(int gridID, const char *txt)
   grid->numCorners = (gridInqType(grid->gridID) == GRID_UNSTRUCTURED) ? gridInqNvertex(grid->gridID) : 4;
 
   // printf("%s grid size %ld nv %ld\n", txt, grid->size, grid->numCorners);
-  grid->cell_corner_lon.resize(grid->numCorners * grid->size);
-  grid->cell_corner_lat.resize(grid->numCorners * grid->size);
-  gridInqXbounds(grid->gridID, grid->cell_corner_lon.data());
-  gridInqYbounds(grid->gridID, grid->cell_corner_lat.data());
+  grid->cellCornerLon.resize(grid->numCorners * grid->size);
+  grid->cellCornerLat.resize(grid->numCorners * grid->size);
+  gridInqXbounds(grid->gridID, grid->cellCornerLon.data());
+  gridInqYbounds(grid->gridID, grid->cellCornerLat.data());
 
-  cdo_grid_to_radian(gridID, CDI_XAXIS, grid->cell_corner_lon, "grid corner lon");
-  cdo_grid_to_radian(gridID, CDI_YAXIS, grid->cell_corner_lat, "grid corner lat");
+  cdo_grid_to_radian(gridID, CDI_XAXIS, grid->cellCornerLon, "grid corner lon");
+  cdo_grid_to_radian(gridID, CDI_YAXIS, grid->cellCornerLat, "grid corner lat");
 
   if (lgrid_destroy) gridDestroy(gridID);
 
@@ -148,7 +148,7 @@ cellsearch_new(grid_type *srcGrid, grid_type *tgtGrid)
 
   cellsearch->src_cell_bound_box.resize(4 * srcGrid->size);
 
-  boundbox_from_corners(srcGrid->size, srcGrid->numCorners, srcGrid->cell_corner_lon, srcGrid->cell_corner_lat,
+  boundbox_from_corners(srcGrid->size, srcGrid->numCorners, srcGrid->cellCornerLon, srcGrid->cellCornerLat,
                         cellsearch->src_cell_bound_box);
 
   return cellsearch;
@@ -168,7 +168,7 @@ search_cells(cellsearch_type const *cellsearch, long tgtCellIndex, long *srchInd
   auto const &src_cell_bound_box = cellsearch->src_cell_bound_box;
 
   float tgt_cell_bound_box[4];
-  boundbox_from_corners1r(tgtCellIndex, tgtGrid->numCorners, tgtGrid->cell_corner_lon, tgtGrid->cell_corner_lat,
+  boundbox_from_corners1r(tgtCellIndex, tgtGrid->numCorners, tgtGrid->cellCornerLon, tgtGrid->cellCornerLat,
                           tgt_cell_bound_box);
 
   auto bound_box_lat1 = tgt_cell_bound_box[0];
@@ -231,7 +231,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 0, NoRestriction },
   };
-  inline static RegisterEntry<Gridsearch> registration = RegisterEntry<Gridsearch>();
+  inline static auto registration = RegisterEntry<Gridsearch>();
   int TESTPOINTSEARCH, TESTCELLSEARCH;
   int operatorID;
 

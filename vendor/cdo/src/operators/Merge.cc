@@ -120,7 +120,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Merge> registration = RegisterEntry<Merge>();
+  inline static auto registration = RegisterEntry<Merge>();
 
   CdoStreamID streamID2{};
   int numMerge{};
@@ -246,7 +246,7 @@ public:
       if (tsID == 1)
       {
         for (int im = 0; im < numMerge; ++im)
-          if (numFieldsList[im] == 0 && numStepsList[im] == 1) vlistIDs[im] = -1;
+          if (numFieldsList[im] == 0 && numStepsList[im] == 1) { vlistIDs[im] = -1; }
       }
 
       if (numFieldsList[taxisIndex] == 0)

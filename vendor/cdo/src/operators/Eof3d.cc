@@ -58,7 +58,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 2, OnlyFirst },
   };
-  inline static RegisterEntry<Eof3d> registration = RegisterEntry<Eof3d>();
+  inline static auto registration = RegisterEntry<Eof3d>();
 
   size_t temp_size = 0, npack = 0;
   bool missval_warning = false;

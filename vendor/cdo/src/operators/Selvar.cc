@@ -59,7 +59,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Selvar> registration = RegisterEntry<Selvar>();
+  inline static auto registration = RegisterEntry<Selvar>();
 
 private:
   CdoStreamID streamID1{};
@@ -88,10 +88,10 @@ public:
 
     dataIsUnchanged = data_is_unchanged();
 
-#define INVERTS_SELECTION(id) (cdo_operator_f2(id) & 1)
-#define TAKES_STRINGS(id) (cdo_operator_f2(id) & 2)
-#define TAKES_INTEGERS(id) (cdo_operator_f2(id) & 4)
-#define TAKES_FLOATS(id) (cdo_operator_f2(id) & 8)
+    auto INVERTS_SELECTION = [](auto id) { return cdo_operator_f2(id) & 1; };
+    auto TAKES_STRINGS = [](auto id) { return cdo_operator_f2(id) & 2; };
+    auto TAKES_INTEGERS = [](auto id) { return cdo_operator_f2(id) & 4; };
+    auto TAKES_FLOATS = [](auto id) { return cdo_operator_f2(id) & 8; };
 
     auto SELPARAM = module.get_id("selparam");
     auto SELCODE = module.get_id("selcode");
@@ -254,6 +254,7 @@ public:
       }
     }
 
+    static int warnLevel{ 4 };
     for (int isel = 0; isel < nsel; isel++)
     {
       if (selfound[isel] == false)
@@ -263,7 +264,12 @@ public:
         else if (operatorID == SELPARAM || operatorID == DELPARAM) cdo_warning("Parameter %s not found!", argList[isel]);
         else if (operatorID == SELNAME || operatorID == DELNAME) cdo_warning("Variable name %s not found!", argList[isel]);
         else if (operatorID == SELSTDNAME) cdo_warning("Variable with standard name %s not found!", argList[isel]);
-        else if (operatorID == SELLEVEL) cdo_warning("Level %g not found!", fltarr[isel]);
+        else if (operatorID == SELLEVEL)
+        {
+          if (warnLevel > 0) cdo_warning("Level %g not found!", fltarr[isel]);
+          else if (warnLevel >= 0) cdo_warning("... more level not found!", fltarr[isel]);
+          warnLevel--;
+        }
         else if (operatorID == SELLEVIDX) cdo_warning("Level index %d not found!", intarr[isel]);
         else if (operatorID == SELGRID && argsAreNumeric) cdo_warning("Grid %d not found!", intarr[isel]);
         else if (operatorID == SELGRID && !argsAreNumeric) cdo_warning("Grid name %s not found!", argList[isel]);

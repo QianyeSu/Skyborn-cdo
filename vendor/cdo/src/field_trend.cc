@@ -89,7 +89,7 @@ sub_trend(double zj, Field &field1, Field const &field2, Field const &field3)
 }
 
 void
-calc_trend_param(const FieldVector3D &work, Field &paramA, Field &paramB, int varID, int levelID)
+calc_trend_param(FieldVector3D const &work, Field &paramA, Field &paramB, int varID, int levelID)
 {
   auto gridsize = paramA.size;
   auto missval1 = paramA.missval;

@@ -189,14 +189,14 @@ bilinear_remap(Varray<T> const &srcArray, const double (&wgt)[4], const size_t (
 
 template <typename T1, typename T2>
 static void
-intlinarr2(double mv, int lonIsCircular, size_t nxm, size_t nym, Varray<T1> const &varray1, Varray<double> const &xm,
+intlinarr2(double mv, int lonIsCyclic, size_t nxm, size_t nym, Varray<T1> const &varray1, Varray<double> const &xm,
            Varray<double> const &ym, size_t gridsize2, Varray<T2> &varray2, Varray<double> const &x, Varray<double> const &y)
 {
   T1 missval = mv;
   auto nlon1 = nxm;
   std::atomic<size_t> atomicCount{ 0 };
 
-  if (lonIsCircular) nlon1--;
+  if (lonIsCyclic) nlon1--;
   size_t gridsize1 = nlon1 * nym;
   Vmask gridMask1(gridsize1);
   for (size_t i = 0; i < gridsize1; ++i) gridMask1[i] = !fp_is_equal(varray1[i], missval);
@@ -222,7 +222,7 @@ intlinarr2(double mv, int lonIsCircular, size_t nxm, size_t nym, Varray<T1> cons
     auto lfound = rect_grid_search(ii, jj, plon, y[i], nxm, nym, xm, ym);
     if (lfound)
     {
-      size_t iix = (lonIsCircular && ii == (nxm - 1)) ? 0 : ii;
+      size_t iix = (lonIsCyclic && ii == (nxm - 1)) ? 0 : ii;
       srcIndices[0] = (jj - 1) * nlon1 + (ii - 1);
       srcIndices[1] = (jj - 1) * nlon1 + (iix);
       srcIndices[2] = (jj) *nlon1 + (ii - 1);
@@ -272,7 +272,7 @@ intgrid_bil(Field const &field1, Field &field2)
   auto nlon1 = gridInqXsize(gridID1);
   auto nlat1 = gridInqYsize(gridID1);
 
-  int lonIsCircular = 0;
+  int lonIsCyclic = 0;
 
   bool isGeorefGrid = true;
   if (grid_is_distance_generic(gridID1) && grid_is_distance_generic(gridID2)) isGeorefGrid = false;
@@ -281,8 +281,8 @@ intgrid_bil(Field const &field1, Field &field2)
   {
     if (!gridHasCoordinates(gridID1)) cdo_abort("Source grid has no coordinate values!");
 
-    lonIsCircular = gridIsCircular(gridID1);
-    if (lonIsCircular) nlon1 += 1;
+    lonIsCyclic = gridIsCyclic(gridID1);
+    if (lonIsCyclic) nlon1 += 1;
   }
 
   Varray<double> lons1(nlon1), lats1(nlat1);
@@ -291,7 +291,7 @@ intgrid_bil(Field const &field1, Field &field2)
 
   if (isGeorefGrid)
   {
-    if (lonIsCircular) lons1[nlon1 - 1] = 0;
+    if (lonIsCyclic) lons1[nlon1 - 1] = 0;
 
     static bool doCheck = true;
     if (doCheck)
@@ -304,7 +304,7 @@ intgrid_bil(Field const &field1, Field &field2)
     cdo_grid_to_radian(gridID1, CDI_XAXIS, lons1, "grid1 center lon");
     cdo_grid_to_radian(gridID1, CDI_YAXIS, lats1, "grid1 center lat");
 
-    if (lonIsCircular) lons1[nlon1 - 1] = lons1[0] + 2 * M_PI;
+    if (lonIsCyclic) lons1[nlon1 - 1] = lons1[0] + 2 * M_PI;
   }
 
   auto xsize2 = gridInqXsize(gridID2);
@@ -350,7 +350,7 @@ intgrid_bil(Field const &field1, Field &field2)
   if (field2.grid != gridID2) gridDestroy(gridID2);
 
   auto func = [&](auto &v1, auto &v2)
-  { intlinarr2(missval, lonIsCircular, nlon1, nlat1, v1, lons1, lats1, gridsize2, v2, xvals2, yvals2); };
+  { intlinarr2(missval, lonIsCyclic, nlon1, nlat1, v1, lons1, lats1, gridsize2, v2, xvals2, yvals2); };
   field_operation2(func, field1, field2);
 
   field_num_mv(field2);

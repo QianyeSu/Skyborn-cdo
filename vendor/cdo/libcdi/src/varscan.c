@@ -73,40 +73,41 @@ typedef struct
   int opt_grib_nentries;                // current no. key-value pairs
   int opt_grib_kvpair_size;             // current allocated size
   opt_key_val_pair_t *opt_grib_kvpair;  // (optional) list of keyword/value pairs
-} vartable_t;
+} VarInfo;
 
-static vartable_t *vartable;
-static int varTableSize = 0;
-static int varTableUsed = 0;
+static VarInfo *varInfoList = NULL;
+static int varInfoListSize = 0;
+static int varInfoListUsed = 0;
 
 static void
 paramInitEntry(int varID, int param)
 {
-  vartable[varID].varID = varID;
-  vartable[varID].param = param;
-  vartable[varID].prec = 0;
-  vartable[varID].tsteptype = TSTEP_INSTANT;
-  varScanKeysInit(&vartable[varID].scanKeys);
-  vartable[varID].gridID = CDI_UNDEFID;
-  vartable[varID].zaxistype = 0;
-  vartable[varID].ltype1 = 0;
-  vartable[varID].ltype2 = -1;
-  vartable[varID].hasBounds = 0;
-  vartable[varID].level_sf = 0;
-  vartable[varID].level_unit = 0;
-  vartable[varID].recordTable = NULL;
-  vartable[varID].nsubtypes_alloc = 0;
-  vartable[varID].nsubtypes = 0;
-  vartable[varID].instID = CDI_UNDEFID;
-  vartable[varID].modelID = CDI_UNDEFID;
-  vartable[varID].tableID = CDI_UNDEFID;
-  cdiInitKeys(&vartable[varID].keys);
-  vartable[varID].comptype = CDI_COMPRESS_NONE;
-  vartable[varID].complevel = 1;
-  vartable[varID].lmissval = false;
-  vartable[varID].missval = 0;
-  vartable[varID].name = NULL;
-  vartable[varID].tiles = NULL;
+  VarInfo *var = &varInfoList[varID];
+  var->varID = varID;
+  var->param = param;
+  var->prec = 0;
+  var->tsteptype = TSTEP_INSTANT;
+  varScanKeysInit(&(var->scanKeys));
+  var->gridID = CDI_UNDEFID;
+  var->zaxistype = 0;
+  var->ltype1 = 0;
+  var->ltype2 = -1;
+  var->hasBounds = 0;
+  var->level_sf = 0;
+  var->level_unit = 0;
+  var->recordTable = NULL;
+  var->nsubtypes_alloc = 0;
+  var->nsubtypes = 0;
+  var->instID = CDI_UNDEFID;
+  var->modelID = CDI_UNDEFID;
+  var->tableID = CDI_UNDEFID;
+  cdiInitKeys(&(var->keys));
+  var->comptype = CDI_COMPRESS_NONE;
+  var->complevel = 1;
+  var->lmissval = false;
+  var->missval = 0;
+  var->name = NULL;
+  var->tiles = NULL;
 }
 
 // Test if a variable specified by the given meta-data has already been registered in "vartable".
@@ -114,20 +115,21 @@ static int
 varGetEntry(int param, int gridID, int zaxistype, int ltype1, int tsteptype, const char *name, const VarScanKeys *scanKeys,
             const var_tile_t *tiles)
 {
-  for (int varID = 0; varID < varTableSize; ++varID)
+  for (int varID = 0; varID < varInfoListSize; ++varID)
   {
+    VarInfo *var = &varInfoList[varID];
     // testing for "param" implicitly checks if we are beyond the current vartable size:
-    if (vartable[varID].param == param)
+    if (var->param == param)
     {
       int no_of_tiles = tiles ? tiles->numberOfTiles : -1;
-      int vt_no_of_tiles = vartable[varID].tiles ? subtypeGetGlobalDataP(vartable[varID].tiles, SUBTYPE_ATT_NUMBER_OF_TILES) : -1;
-      if ((vartable[varID].zaxistype == zaxistype) && (vartable[varID].ltype1 == ltype1) && (vartable[varID].tsteptype == tsteptype)
-          && (scanKeys == NULL || varScanKeysIsEqual(&vartable[varID].scanKeys, scanKeys)) && (vartable[varID].gridID == gridID)
+      int vt_no_of_tiles = var->tiles ? subtypeGetGlobalDataP(var->tiles, SUBTYPE_ATT_NUMBER_OF_TILES) : -1;
+      if ((var->zaxistype == zaxistype) && (var->ltype1 == ltype1) && (var->tsteptype == tsteptype)
+          && (scanKeys == NULL || varScanKeysIsEqual(&var->scanKeys, scanKeys)) && (var->gridID == gridID)
           && (vt_no_of_tiles == no_of_tiles))
       {
-        if (name && name[0] && vartable[varID].name && vartable[varID].name[0])
+        if (name && name[0] && var->name && var->name[0])
         {
-          if (str_is_equal(name, vartable[varID].name)) return varID;
+          if (str_is_equal(name, var->name)) return varID;
         }
         else { return varID; }
       }
@@ -142,37 +144,38 @@ varFree(void)
 {
   if (CDI_Debug) Message("call to varFree");
 
-  for (int varID = 0; varID < varTableUsed; ++varID)
+  for (int varID = 0; varID < varInfoListUsed; ++varID)
   {
-    if (vartable[varID].recordTable)
+    VarInfo *var = &varInfoList[varID];
+    if (var->recordTable)
     {
-      for (int isub = 0; isub < vartable[varID].nsubtypes_alloc; isub++) Free(vartable[varID].recordTable[isub].levelTable);
-      Free(vartable[varID].recordTable);
+      for (int isub = 0; isub < var->nsubtypes_alloc; isub++) Free(var->recordTable[isub].levelTable);
+      Free(var->recordTable);
     }
 
-    if (vartable[varID].name) Free(vartable[varID].name);
-    if (vartable[varID].tiles) subtypeDestroyPtr(vartable[varID].tiles);
+    if (var->name) Free(var->name);
+    if (var->tiles) subtypeDestroyPtr(var->tiles);
 
-    cdi_keys_t *keysp = &(vartable[varID].keys);
+    cdi_keys_t *keysp = &(var->keys);
     cdiDeleteVarKeys(keysp);
 
-    if (vartable[varID].opt_grib_kvpair)
+    if (var->opt_grib_kvpair)
     {
-      for (int i = 0; i < vartable[varID].opt_grib_nentries; i++)
+      for (int i = 0; i < var->opt_grib_nentries; i++)
       {
-        if (vartable[varID].opt_grib_kvpair[i].keyword) Free(vartable[varID].opt_grib_kvpair[i].keyword);
+        if (var->opt_grib_kvpair[i].keyword) Free(var->opt_grib_kvpair[i].keyword);
       }
-      Free(vartable[varID].opt_grib_kvpair);
+      Free(var->opt_grib_kvpair);
     }
-    vartable[varID].opt_grib_nentries = 0;
-    vartable[varID].opt_grib_kvpair_size = 0;
-    vartable[varID].opt_grib_kvpair = NULL;
+    var->opt_grib_nentries = 0;
+    var->opt_grib_kvpair_size = 0;
+    var->opt_grib_kvpair = NULL;
   }
 
-  if (vartable) Free(vartable);
-  vartable = NULL;
-  varTableSize = 0;
-  varTableUsed = 0;
+  if (varInfoList) Free(varInfoList);
+  varInfoList = NULL;
+  varInfoListSize = 0;
+  varInfoListUsed = 0;
 
   if (Vct) Free(Vct);
   Vct = NULL;
@@ -183,8 +186,9 @@ varFree(void)
 static int
 tileGetEntry(int varID, int tile_index)
 {
-  for (int isub = 0; isub < vartable[varID].nsubtypes; isub++)
-    if (vartable[varID].recordTable[isub].subtypeIndex == tile_index) return isub;
+  VarInfo *var = &varInfoList[varID];
+  for (int isub = 0; isub < var->nsubtypes; isub++)
+    if (var->recordTable[isub].subtypeIndex == tile_index) return isub;
   return CDI_UNDEFID;
 }
 
@@ -192,47 +196,47 @@ tileGetEntry(int varID, int tile_index)
 static int
 tileNewEntry(int varID)
 {
+  VarInfo *var = &varInfoList[varID];
   int tileID = 0;
-  if (vartable[varID].nsubtypes_alloc == 0)
+  if (var->nsubtypes_alloc == 0)
   {
     /* create table for the first time. */
-    vartable[varID].nsubtypes_alloc = 2;
-    vartable[varID].nsubtypes = 0;
-    vartable[varID].recordTable = (subtypetable_t *) Malloc((size_t) vartable[varID].nsubtypes_alloc * sizeof(subtypetable_t));
-    if (vartable[varID].recordTable == NULL) SysError("Allocation of leveltable failed!");
+    var->nsubtypes_alloc = 2;
+    var->nsubtypes = 0;
+    var->recordTable = (subtypetable_t *) Malloc((size_t) var->nsubtypes_alloc * sizeof(subtypetable_t));
+    if (var->recordTable == NULL) SysError("Allocation of leveltable failed!");
 
-    for (int isub = 0; isub < vartable[varID].nsubtypes_alloc; isub++)
+    for (int isub = 0; isub < var->nsubtypes_alloc; isub++)
     {
-      vartable[varID].recordTable[isub].levelTable = NULL;
-      vartable[varID].recordTable[isub].levelTableSize = 0;
-      vartable[varID].recordTable[isub].nlevels = 0;
-      vartable[varID].recordTable[isub].subtypeIndex = CDI_UNDEFID;
+      var->recordTable[isub].levelTable = NULL;
+      var->recordTable[isub].levelTableSize = 0;
+      var->recordTable[isub].nlevels = 0;
+      var->recordTable[isub].subtypeIndex = CDI_UNDEFID;
     }
   }
   else
   {
     /* data structure large enough; find a free entry. */
-    while (tileID < vartable[varID].nsubtypes_alloc)
+    while (tileID < var->nsubtypes_alloc)
     {
-      if (vartable[varID].recordTable[tileID].levelTable == NULL) break;
+      if (var->recordTable[tileID].levelTable == NULL) break;
       tileID++;
     }
   }
 
   /* If the table overflows, double its size. */
-  if (tileID == vartable[varID].nsubtypes_alloc)
+  if (tileID == var->nsubtypes_alloc)
   {
-    tileID = vartable[varID].nsubtypes_alloc;
-    vartable[varID].nsubtypes_alloc *= 2;
-    vartable[varID].recordTable = (subtypetable_t *) Realloc(vartable[varID].recordTable,
-                                                             (size_t) vartable[varID].nsubtypes_alloc * sizeof(subtypetable_t));
-    if (vartable[varID].recordTable == NULL) SysError("Reallocation of leveltable failed");
-    for (int isub = tileID; isub < vartable[varID].nsubtypes_alloc; isub++)
+    tileID = var->nsubtypes_alloc;
+    var->nsubtypes_alloc *= 2;
+    var->recordTable = (subtypetable_t *) Realloc(var->recordTable, (size_t) var->nsubtypes_alloc * sizeof(subtypetable_t));
+    if (var->recordTable == NULL) SysError("Reallocation of leveltable failed");
+    for (int isub = tileID; isub < var->nsubtypes_alloc; isub++)
     {
-      vartable[varID].recordTable[isub].levelTable = NULL;
-      vartable[varID].recordTable[isub].levelTableSize = 0;
-      vartable[varID].recordTable[isub].nlevels = 0;
-      vartable[varID].recordTable[isub].subtypeIndex = CDI_UNDEFID;
+      var->recordTable[isub].levelTable = NULL;
+      var->recordTable[isub].levelTableSize = 0;
+      var->recordTable[isub].nlevels = 0;
+      var->recordTable[isub].subtypeIndex = CDI_UNDEFID;
     }
   }
 
@@ -242,9 +246,10 @@ tileNewEntry(int varID)
 static int
 levelNewEntry(int varID, int level1, int level2, int tileID)
 {
+  VarInfo *var = &varInfoList[varID];
   int levelID = 0;
-  int levelTableSize = vartable[varID].recordTable[tileID].levelTableSize;
-  leveltable_t *levelTable = vartable[varID].recordTable[tileID].levelTable;
+  int levelTableSize = var->recordTable[tileID].levelTableSize;
+  leveltable_t *levelTable = var->recordTable[tileID].levelTable;
 
   // Look for a free slot in levelTable. (Create the table the first time through).
   if (!levelTableSize)
@@ -269,9 +274,9 @@ levelNewEntry(int varID, int level1, int level2, int tileID)
   levelTable[levelID].level2 = level2;
   levelTable[levelID].lindex = levelID;
 
-  vartable[varID].recordTable[tileID].nlevels = levelID + 1;
-  vartable[varID].recordTable[tileID].levelTableSize = levelTableSize;
-  vartable[varID].recordTable[tileID].levelTable = levelTable;
+  var->recordTable[tileID].nlevels = levelID + 1;
+  var->recordTable[tileID].levelTableSize = levelTableSize;
+  var->recordTable[tileID].levelTable = levelTable;
 
   return levelID;
 }
@@ -284,43 +289,43 @@ paramNewEntry(int param)
   int varID = 0;
 
   // Look for a free slot in vartable. (Create the table the first time through).
-  if (!varTableSize)
+  if (!varInfoListSize)
   {
-    varTableSize = 2;
-    vartable = (vartable_t *) Malloc((size_t) varTableSize * sizeof(vartable_t));
-    if (vartable == NULL)
+    varInfoListSize = 2;
+    varInfoList = (VarInfo *) Malloc((size_t) varInfoListSize * sizeof(VarInfo));
+    if (varInfoList == NULL)
     {
-      Message("varTableSize = %d", varTableSize);
+      Message("varTableSize = %d", varInfoListSize);
       SysError("Allocation of vartable failed");
     }
 
-    for (int i = 0; i < varTableSize; i++)
+    for (int i = 0; i < varInfoListSize; i++)
     {
-      vartable[i].param = UNDEF_PARAM;
-      vartable[i].opt_grib_kvpair = NULL;
-      vartable[i].opt_grib_kvpair_size = 0;
-      vartable[i].opt_grib_nentries = 0;
+      varInfoList[i].param = UNDEF_PARAM;
+      varInfoList[i].opt_grib_kvpair = NULL;
+      varInfoList[i].opt_grib_kvpair_size = 0;
+      varInfoList[i].opt_grib_nentries = 0;
     }
   }
   else
   {
-    while (varID < varTableSize)
+    while (varID < varInfoListSize)
     {
-      if (vartable[varID].param == UNDEF_PARAM) break;
+      if (varInfoList[varID].param == UNDEF_PARAM) break;
       varID++;
     }
   }
 
   // If the table overflows, double its size.
-  if (varID == varTableSize)
+  if (varID == varInfoListSize)
   {
-    vartable = (vartable_t *) Realloc(vartable, (size_t) (varTableSize *= 2) * sizeof(vartable_t));
-    for (int i = varID; i < varTableSize; i++)
+    varInfoList = (VarInfo *) Realloc(varInfoList, (size_t) (varInfoListSize *= 2) * sizeof(VarInfo));
+    for (int i = varID; i < varInfoListSize; i++)
     {
-      vartable[i].param = UNDEF_PARAM;
-      vartable[i].opt_grib_kvpair = NULL;
-      vartable[i].opt_grib_kvpair_size = 0;
-      vartable[i].opt_grib_nentries = 0;
+      varInfoList[i].param = UNDEF_PARAM;
+      varInfoList[i].opt_grib_kvpair = NULL;
+      varInfoList[i].opt_grib_kvpair_size = 0;
+      varInfoList[i].opt_grib_nentries = 0;
     }
   }
 
@@ -331,7 +336,7 @@ paramNewEntry(int param)
 
 // Append tile set to a subtype. Return index of the new tile (i.e. the "entry->self" value).
 static int
-varInsertTileSubtype(vartable_t *vptr, const var_tile_t *tiles)
+varInsertTileSubtype(VarInfo *vptr, const var_tile_t *tiles)
 {
   if (tiles == NULL) return 0;
 
@@ -372,48 +377,51 @@ varAddRecord(int recID, int param, int gridID, int zaxistype, int hasBounds, int
 
   if (varID == CDI_UNDEFID)
   {
-    varTableUsed++;
+    varInfoListUsed++;
     varID = paramNewEntry(param);
-    vartable[varID].gridID = gridID;
-    vartable[varID].zaxistype = zaxistype;
-    vartable[varID].ltype1 = ltype1;
-    vartable[varID].ltype2 = ltype2;
-    vartable[varID].hasBounds = hasBounds;
-    vartable[varID].level_sf = level_sf;
-    vartable[varID].level_unit = level_unit;
-    vartable[varID].tsteptype = tsteptype;
-    if (scanKeys) vartable[varID].scanKeys = *scanKeys;
+    VarInfo *var = &varInfoList[varID];
+    var->gridID = gridID;
+    var->zaxistype = zaxistype;
+    var->ltype1 = ltype1;
+    var->ltype2 = ltype2;
+    var->hasBounds = hasBounds;
+    var->level_sf = level_sf;
+    var->level_unit = level_unit;
+    var->tsteptype = tsteptype;
+    if (scanKeys) var->scanKeys = *scanKeys;
 
-    if (name && name[0]) vartable[varID].name = strdup(name);
+    if (name && name[0]) var->name = strdup(name);
   }
   else
   {
     char paramstr[32];
     cdiParamToString(param, paramstr, sizeof(paramstr));
 
-    if (vartable[varID].gridID != gridID)
+    VarInfo *var = &varInfoList[varID];
+    if (var->gridID != gridID)
     {
       Message("param = %s gridID = %d", paramstr, gridID);
       Error("horizontal grid must not change for same parameter!");
     }
-    if (vartable[varID].zaxistype != zaxistype)
+    if (var->zaxistype != zaxistype)
     {
       Message("param = %s zaxistype = %d", paramstr, zaxistype);
       Error("zaxistype must not change for same parameter!");
     }
   }
 
-  if (prec > vartable[varID].prec) vartable[varID].prec = prec;
+  VarInfo *var = &varInfoList[varID];
+  if (prec > var->prec) var->prec = prec;
 
   // append current tile to tile subtype info.
-  int this_tile = varInsertTileSubtype(&vartable[varID], tiles);
+  int this_tile = varInsertTileSubtype(&varInfoList[varID], tiles);
   int tileID = tileGetEntry(varID, this_tile);
   if (tile_index) (*tile_index) = this_tile;
   if (tileID == CDI_UNDEFID)
   {
     tileID = tileNewEntry((int) varID);
-    vartable[varID].recordTable[tileID].subtypeIndex = this_tile;
-    vartable[varID].nsubtypes++;
+    var->recordTable[tileID].subtypeIndex = this_tile;
+    var->nsubtypes++;
   }
 
   // append current level to level table info
@@ -421,7 +429,7 @@ varAddRecord(int recID, int param, int gridID, int zaxistype, int hasBounds, int
   if (CDI_Debug)
     Message("vartable[%d].recordTable[%d].levelTable[%d].recID = %d; level1,2=%d,%d", varID, tileID, levelID, recID, level1,
             level2);
-  vartable[varID].recordTable[tileID].levelTable[levelID].recID = recID;
+  var->recordTable[tileID].levelTable[levelID].recID = recID;
 
   *pvarID = (int) varID;
   *plevelID = levelID;
@@ -474,7 +482,7 @@ varCopyKeys(int vlistID, int varID)
 {
   vlist_t *vlistptr = vlist_to_pointer(vlistID);
   cdiInitKeys(&vlistptr->vars[varID].keys);
-  cdiCopyVarKeys(&vartable[varID].keys, &vlistptr->vars[varID].keys);
+  cdiCopyVarKeys(&(varInfoList[varID].keys), &(vlistptr->vars[varID].keys));
 }
 /*
 struct cdi_generate_varinfo
@@ -495,8 +503,8 @@ cdi_generate_vars(stream_t *streamptr)
 {
   int vlistID = streamptr->vlistID;
 
-  int *varids = (int *) Malloc((size_t) varTableUsed * sizeof(int));
-  for (int varID = 0; varID < varTableUsed; varID++) varids[varID] = (int) varID;
+  int *varids = (int *) Malloc((size_t) varInfoListUsed * sizeof(int));
+  for (int varID = 0; varID < varInfoListUsed; varID++) varids[varID] = (int) varID;
   /*
     if (streamptr->sortname)
       {
@@ -523,55 +531,56 @@ cdi_generate_vars(stream_t *streamptr)
           }
       }
   */
-  for (int index = 0; index < varTableUsed; index++)
+  for (int index = 0; index < varInfoListUsed; index++)
   {
     int varid = varids[index];
+    VarInfo *var = &varInfoList[varid];
 
-    int gridID = vartable[varid].gridID;
-    int param = vartable[varid].param;
-    int ltype1 = vartable[varid].ltype1;
-    int ltype2 = vartable[varid].ltype2;
-    int zaxistype = vartable[varid].zaxistype;
+    int gridID = var->gridID;
+    int param = var->param;
+    int ltype1 = var->ltype1;
+    int ltype2 = var->ltype2;
+    int zaxistype = var->zaxistype;
     if (ltype1 == 0 && zaxistype == ZAXIS_GENERIC && cdiDefaultLeveltype != -1) zaxistype = cdiDefaultLeveltype;
-    int hasBounds = vartable[varid].hasBounds;
-    int prec = vartable[varid].prec;
-    int instID = vartable[varid].instID;
-    int modelID = vartable[varid].modelID;
-    int tableID = vartable[varid].tableID;
-    int tsteptype = vartable[varid].tsteptype;
-    int comptype = vartable[varid].comptype;
+    int hasBounds = var->hasBounds;
+    int prec = var->prec;
+    int instID = var->instID;
+    int modelID = var->modelID;
+    int tableID = var->tableID;
+    int tsteptype = var->tsteptype;
+    int comptype = var->comptype;
 
-    double level_sf = (vartable[varid].level_sf != 0) ? (1.0 / vartable[varid].level_sf) : 1;
+    double level_sf = (var->level_sf != 0) ? (1.0 / var->level_sf) : 1;
 
     /* consistency check: test if all subtypes have the same levels: */
-    int nlevels = vartable[varid].recordTable[0].nlevels;
-    for (int isub = 1; isub < vartable[varid].nsubtypes; isub++)
+    int nlevels = var->recordTable[0].nlevels;
+    for (int isub = 1; isub < var->nsubtypes; isub++)
     {
-      if (vartable[varid].recordTable[isub].nlevels != nlevels)
+      if (var->recordTable[isub].nlevels != nlevels)
       {
         fprintf(stderr,
                 "var \"%s\": isub = %d / %d :: "
                 "nlevels = %d, vartable[varid].recordTable[isub].nlevels = %d\n",
-                vartable[varid].name, isub, vartable[varid].nsubtypes, nlevels, vartable[varid].recordTable[isub].nlevels);
+                var->name, isub, var->nsubtypes, nlevels, var->recordTable[isub].nlevels);
         Error("zaxis size must not change for same parameter!");
       }
 
-      const leveltable_t *t1 = vartable[varid].recordTable[isub - 1].levelTable;
-      const leveltable_t *t2 = vartable[varid].recordTable[isub].levelTable;
+      const leveltable_t *t1 = var->recordTable[isub - 1].levelTable;
+      const leveltable_t *t2 = var->recordTable[isub].levelTable;
       for (int ilev = 0; ilev < nlevels; ilev++)
         if ((t1[ilev].level1 != t2[ilev].level1) || (t1[ilev].level2 != t2[ilev].level2) || (t1[ilev].lindex != t2[ilev].lindex))
         {
           fprintf(stderr,
                   "var \"%s\", varID=%d: isub = %d / %d :: "
                   "nlevels = %d, vartable[varid].recordTable[isub].nlevels = %d\n",
-                  vartable[varid].name, varid, isub, vartable[varid].nsubtypes, nlevels, vartable[varid].recordTable[isub].nlevels);
+                  var->name, varid, isub, var->nsubtypes, nlevels, var->recordTable[isub].nlevels);
           Message("t1[ilev].level1=%d / t2[ilev].level1=%d", t1[ilev].level1, t2[ilev].level1);
           Message("t1[ilev].level2=%d / t2[ilev].level2=%d", t1[ilev].level2, t2[ilev].level2);
           Message("t1[ilev].lindex=%d / t2[ilev].lindex=%d", t1[ilev].lindex, t2[ilev].lindex);
           Error("zaxis type must not change for same parameter!");
         }
     }
-    leveltable_t *levelTable = vartable[varid].recordTable[0].levelTable;
+    leveltable_t *levelTable = var->recordTable[0].levelTable;
 
     if (ltype1 == 0 && zaxistype == ZAXIS_GENERIC && nlevels == 1 && levelTable[0].level1 == 0) zaxistype = ZAXIS_SURFACE;
 
@@ -638,7 +647,7 @@ cdi_generate_vars(stream_t *streamptr)
     }
 
     const char **cvals = NULL;
-    const char *unitptr = cdiUnitNamePtr(vartable[varid].level_unit);
+    const char *unitptr = cdiUnitNamePtr(var->level_unit);
     int zaxisID = varDefZaxis(vlistID, zaxistype, nlevels, dlevels, cvals, 0, dlevels1, dlevels2, (int) Vctsize, Vct, NULL, NULL,
                               unitptr, 0, 0, ltype1, ltype2);
 
@@ -656,11 +665,11 @@ cdi_generate_vars(stream_t *streamptr)
 
     // define new subtype for tile set
     int tilesetID = CDI_UNDEFID;
-    if (vartable[varid].tiles) tilesetID = vlistDefTileSubtype(vlistID, vartable[varid].tiles);
+    if (var->tiles) tilesetID = vlistDefTileSubtype(vlistID, var->tiles);
 
     // generate new variable
-    int varID = stream_new_var(streamptr, gridID, zaxisID, tilesetID);
-    varID = vlistDefVarTiles(vlistID, gridID, zaxisID, TIME_VARYING, tilesetID);
+    (void) stream_new_var(streamptr, gridID, zaxisID, tilesetID);
+    int varID = vlistDefVarTiles(vlistID, gridID, zaxisID, TIME_VARYING, tilesetID);
 
     vlistDefVarTsteptype(vlistID, varID, tsteptype);
     vlistDefVarParam(vlistID, varID, param);
@@ -669,20 +678,20 @@ cdi_generate_vars(stream_t *streamptr)
 
     varCopyKeys(vlistID, varID);
 
-    if (vartable[varid].lmissval) vlistDefVarMissval(vlistID, varID, vartable[varid].missval);
-    if (vartable[varid].name) cdiDefKeyString(vlistID, varID, CDI_KEY_NAME, vartable[varid].name);
+    if (var->lmissval) vlistDefVarMissval(vlistID, varID, var->missval);
+    if (var->name) cdiDefKeyString(vlistID, varID, CDI_KEY_NAME, var->name);
 
     vlist_t *vlistptr = vlist_to_pointer(vlistID);
-    for (int i = 0; i < vartable[varid].opt_grib_nentries; i++)
+    for (int i = 0; i < var->opt_grib_nentries; i++)
     {
       resize_opt_grib_entries(&vlistptr->vars[varID], vlistptr->vars[varID].opt_grib_nentries + 1);
       vlistptr->vars[varID].opt_grib_nentries += 1;
       int idx = vlistptr->vars[varID].opt_grib_nentries - 1;
 
-      vlistptr->vars[varID].opt_grib_kvpair[idx] = vartable[varid].opt_grib_kvpair[i];
+      vlistptr->vars[varID].opt_grib_kvpair[idx] = var->opt_grib_kvpair[i];
       vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = NULL;
-      if (vartable[varid].opt_grib_kvpair[i].keyword)
-        vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = strdup(vartable[varid].opt_grib_kvpair[i].keyword);
+      if (var->opt_grib_kvpair[i].keyword)
+        vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = strdup(var->opt_grib_kvpair[i].keyword);
       vlistptr->vars[varID].opt_grib_kvpair[i].update = true;
     }
     // note: if the key is not defined, we do not throw an error!
@@ -718,16 +727,17 @@ cdi_generate_vars(stream_t *streamptr)
     if (tableID != CDI_UNDEFID) vlistDefVarTable(vlistID, varID, tableID);
   }
 
-  for (int index = 0; index < varTableUsed; index++)
+  for (int index = 0; index < varInfoListUsed; index++)
   {
     int varid = varids[index];
-    int nlevels = vartable[varid].recordTable[0].nlevels;
+    VarInfo *var = &varInfoList[varid];
+    int nlevels = var->recordTable[0].nlevels;
 
-    int nsub = (vartable[varid].nsubtypes >= 0) ? vartable[varid].nsubtypes : 0;
+    int nsub = (var->nsubtypes >= 0) ? var->nsubtypes : 0;
     for (int isub = 0; isub < nsub; isub++)
     {
       sleveltable_t *streamRecordTable = streamptr->vars[index].recordTable + isub;
-      leveltable_t *vartableLevelTable = vartable[varid].recordTable[isub].levelTable;
+      leveltable_t *vartableLevelTable = var->recordTable[isub].levelTable;
       for (int levelID = 0; levelID < nlevels; levelID++)
       {
         streamRecordTable->recordID[levelID] = vartableLevelTable[levelID].recID;
@@ -948,69 +958,69 @@ varDefZaxis(int vlistID, int zaxistype, int nlevels, const double *levels, const
 void
 varDefMissval(int varID, double missval)
 {
-  vartable[varID].lmissval = true;
-  vartable[varID].missval = missval;
+  varInfoList[varID].lmissval = true;
+  varInfoList[varID].missval = missval;
 }
 
 void
 varDefCompType(int varID, int comptype)
 {
-  if (vartable[varID].comptype == CDI_COMPRESS_NONE) vartable[varID].comptype = comptype;
+  if (varInfoList[varID].comptype == CDI_COMPRESS_NONE) varInfoList[varID].comptype = comptype;
 }
 
 void
 varDefCompLevel(int varID, int complevel)
 {
-  vartable[varID].complevel = complevel;
+  varInfoList[varID].complevel = complevel;
 }
 
 int
 varInqInst(int varID)
 {
-  return vartable[varID].instID;
+  return varInfoList[varID].instID;
 }
 
 void
 varDefInst(int varID, int instID)
 {
-  vartable[varID].instID = instID;
+  varInfoList[varID].instID = instID;
 }
 
 int
 varInqModel(int varID)
 {
-  return vartable[varID].modelID;
+  return varInfoList[varID].modelID;
 }
 
 void
 varDefModel(int varID, int modelID)
 {
-  vartable[varID].modelID = modelID;
+  varInfoList[varID].modelID = modelID;
 }
 
 int
 varInqTable(int varID)
 {
-  return vartable[varID].tableID;
+  return varInfoList[varID].tableID;
 }
 
 void
 varDefTable(int varID, int tableID)
 {
-  vartable[varID].tableID = tableID;
+  varInfoList[varID].tableID = tableID;
 }
 
 void
 varDefKeyInt(int varID, int key, int value)
 {
-  cdi_keys_t *keysp = &(vartable[varID].keys);
+  cdi_keys_t *keysp = &(varInfoList[varID].keys);
   cdiDefVarKeyInt(keysp, key, value);
 }
 
 void
 varDefKeyBytes(int varID, int key, const unsigned char *bytes, int length)
 {
-  cdi_keys_t *keysp = &(vartable[varID].keys);
+  cdi_keys_t *keysp = &(varInfoList[varID].keys);
   cdiDefVarKeyBytes(keysp, key, bytes, length);
 }
 
@@ -1018,14 +1028,14 @@ void
 varDefKeyString(int varID, int key, const char *string)
 {
   int length = (int) strlen(string) + 1;
-  cdi_keys_t *keysp = &(vartable[varID].keys);
+  cdi_keys_t *keysp = &(varInfoList[varID].keys);
   cdiDefVarKeyBytes(keysp, key, (const unsigned char *) string, length);
 }
 
 #ifdef HAVE_LIBGRIB_API
 // Resizes and initializes opt_grib_kvpair data structure.
 static void
-resize_vartable_opt_grib_entries(vartable_t *var, int nentries)
+resize_vartable_opt_grib_entries(VarInfo *var, int nentries)
 {
   if (var->opt_grib_kvpair_size < nentries)
   {
@@ -1039,6 +1049,8 @@ resize_vartable_opt_grib_entries(vartable_t *var, int nentries)
     {
       tmp[i].int_val = 0;
       tmp[i].dbl_val = 0;
+      tmp[i].int_arr = 0;
+      tmp[i].dbl_arr = 0;
       tmp[i].update = false;
       tmp[i].keyword = NULL;
     }  // for
@@ -1053,28 +1065,30 @@ resize_vartable_opt_grib_entries(vartable_t *var, int nentries)
 void
 varDefOptGribInt(int varID, int tile_index, long lval, const char *keyword)
 {
+  VarInfo *var = &varInfoList[varID];
+
   int idx = -1;
-  for (int i = 0; i < vartable[varID].opt_grib_nentries; i++)
+  for (int i = 0; i < var->opt_grib_nentries; i++)
   {
-    if (str_is_equal(keyword, vartable[varID].opt_grib_kvpair[i].keyword) && (vartable[varID].opt_grib_kvpair[i].data_type == t_int)
-        && (vartable[varID].opt_grib_kvpair[i].subtype_index == tile_index))
+    if (str_is_equal(keyword, var->opt_grib_kvpair[i].keyword) && (var->opt_grib_kvpair[i].data_type == t_int)
+        && (var->opt_grib_kvpair[i].subtype_index == tile_index))
       idx = i;
   }
 
   if (idx == -1)
   {
-    resize_vartable_opt_grib_entries(&vartable[varID], vartable[varID].opt_grib_nentries + 1);
-    vartable[varID].opt_grib_nentries += 1;
-    idx = vartable[varID].opt_grib_nentries - 1;
+    resize_vartable_opt_grib_entries(&varInfoList[varID], var->opt_grib_nentries + 1);
+    var->opt_grib_nentries += 1;
+    idx = var->opt_grib_nentries - 1;
   }
   else
   {
-    if (vartable[varID].opt_grib_kvpair[idx].keyword) Free(vartable[varID].opt_grib_kvpair[idx].keyword);
+    if (var->opt_grib_kvpair[idx].keyword) Free(var->opt_grib_kvpair[idx].keyword);
   }
-  vartable[varID].opt_grib_kvpair[idx].data_type = t_int;
-  vartable[varID].opt_grib_kvpair[idx].int_val = (int) lval;
-  vartable[varID].opt_grib_kvpair[idx].keyword = strdup(keyword);
-  vartable[varID].opt_grib_kvpair[idx].subtype_index = tile_index;
+  var->opt_grib_kvpair[idx].data_type = t_int;
+  var->opt_grib_kvpair[idx].int_val = (int) lval;
+  var->opt_grib_kvpair[idx].keyword = strdup(keyword);
+  var->opt_grib_kvpair[idx].subtype_index = tile_index;
 }
 #endif
 
@@ -1082,38 +1096,137 @@ varDefOptGribInt(int varID, int tile_index, long lval, const char *keyword)
 void
 varDefOptGribDbl(int varID, int tile_index, double dval, const char *keyword)
 {
+  VarInfo *var = &varInfoList[varID];
   int idx = -1;
-  for (int i = 0; i < vartable[varID].opt_grib_nentries; i++)
+  for (int i = 0; i < var->opt_grib_nentries; i++)
   {
-    if (str_is_equal(keyword, vartable[varID].opt_grib_kvpair[i].keyword)
-        && (vartable[varID].opt_grib_kvpair[i].data_type == t_double)
-        && (vartable[varID].opt_grib_kvpair[i].subtype_index == tile_index))
+    if (str_is_equal(keyword, var->opt_grib_kvpair[i].keyword) && (var->opt_grib_kvpair[i].data_type == t_double)
+        && (var->opt_grib_kvpair[i].subtype_index == tile_index))
       idx = i;
   }
 
   if (idx == -1)
   {
-    resize_vartable_opt_grib_entries(&vartable[varID], vartable[varID].opt_grib_nentries + 1);
-    vartable[varID].opt_grib_nentries += 1;
-    idx = vartable[varID].opt_grib_nentries - 1;
+    resize_vartable_opt_grib_entries(&varInfoList[varID], var->opt_grib_nentries + 1);
+    var->opt_grib_nentries += 1;
+    idx = var->opt_grib_nentries - 1;
   }
   else
   {
-    if (vartable[varID].opt_grib_kvpair[idx].keyword) Free(vartable[varID].opt_grib_kvpair[idx].keyword);
+    if (var->opt_grib_kvpair[idx].keyword) Free(var->opt_grib_kvpair[idx].keyword);
   }
-  vartable[varID].opt_grib_kvpair[idx].data_type = t_double;
-  vartable[varID].opt_grib_kvpair[idx].dbl_val = dval;
-  vartable[varID].opt_grib_kvpair[idx].keyword = strdup(keyword);
-  vartable[varID].opt_grib_kvpair[idx].subtype_index = tile_index;
+  var->opt_grib_kvpair[idx].data_type = t_double;
+  var->opt_grib_kvpair[idx].dbl_val = dval;
+  var->opt_grib_kvpair[idx].keyword = strdup(keyword);
+  var->opt_grib_kvpair[idx].subtype_index = tile_index;
 }
+#endif
+
+#ifdef HAVE_LIBGRIB_API
+void
+varDefOptGribIntArr(int varID, int tile_index, const long *larr, size_t arr_len, const char *keyword)
+{
+  VarInfo *var = &varInfoList[varID];
+  int idx = -1;
+
+  // Search for an existing entry with the same keyword and tile_index
+  for (int i = 0; i < var->opt_grib_nentries; i++)
+  {
+    if (str_is_equal(keyword, var->opt_grib_kvpair[i].keyword) && (var->opt_grib_kvpair[i].data_type == t_intarr)
+        && (var->opt_grib_kvpair[i].subtype_index == tile_index))
+    {
+      idx = i;
+      break;
+    }
+  }
+
+  // If entry not found, create a new one
+  if (idx == -1)
+  {
+    resize_vartable_opt_grib_entries(&varInfoList[varID], var->opt_grib_nentries + 1);
+    var->opt_grib_nentries += 1;
+    idx = var->opt_grib_nentries - 1;
+  }
+  else
+  {
+    // Free existing keyword and array
+    if (var->opt_grib_kvpair[idx].keyword) Free(var->opt_grib_kvpair[idx].keyword);
+    if (var->opt_grib_kvpair[idx].int_arr) Free(var->opt_grib_kvpair[idx].int_arr);
+  }
+
+  // Assign keyword, data type, and tile index
+  var->opt_grib_kvpair[idx].data_type = t_intarr;
+  var->opt_grib_kvpair[idx].keyword = strdup(keyword);
+  var->opt_grib_kvpair[idx].subtype_index = tile_index;
+
+  // Allocate memory for integer array
+  var->opt_grib_kvpair[idx].arr_len = arr_len;
+  if (arr_len > 0)
+  {
+    var->opt_grib_kvpair[idx].int_arr = (int *) Malloc(arr_len * sizeof(int));
+    for (size_t i = 0; i < arr_len; i++)
+    {
+      var->opt_grib_kvpair[idx].int_arr[i] = (int) larr[i];  // convert long to int
+    }
+  }
+  else { var->opt_grib_kvpair[idx].int_arr = NULL; }
+}
+#endif
+
+#ifdef HAVE_LIBGRIB_API
+void
+varDefOptGribDblArr(int varID, int tile_index, const double *darr, size_t arr_len, const char *keyword)
+{
+  VarInfo *var = &varInfoList[varID];
+  int idx = -1;
+
+  // Search for an existing entry with the same keyword and tile_index
+  for (int i = 0; i < var->opt_grib_nentries; i++)
+  {
+    if (str_is_equal(keyword, var->opt_grib_kvpair[i].keyword) && (var->opt_grib_kvpair[i].data_type == t_doublearr)
+        && (var->opt_grib_kvpair[i].subtype_index == tile_index))
+    {
+      idx = i;
+      break;
+    }
+  }
+
+  // If entry not found, create a new one
+  if (idx == -1)
+  {
+    resize_vartable_opt_grib_entries(&varInfoList[varID], var->opt_grib_nentries + 1);
+    var->opt_grib_nentries += 1;
+    idx = var->opt_grib_nentries - 1;
+  }
+  else
+  {
+    // Free existing keyword and array
+    if (var->opt_grib_kvpair[idx].keyword) Free(var->opt_grib_kvpair[idx].keyword);
+    if (var->opt_grib_kvpair[idx].dbl_arr) Free(var->opt_grib_kvpair[idx].dbl_arr);
+  }
+
+  // Assign keyword, data type, and tile index
+  var->opt_grib_kvpair[idx].data_type = t_doublearr;
+  var->opt_grib_kvpair[idx].keyword = strdup(keyword);
+  var->opt_grib_kvpair[idx].subtype_index = tile_index;
+
+  // Allocate memory for double array
+  var->opt_grib_kvpair[idx].arr_len = arr_len;
+  if (arr_len > 0)
+  {
+    var->opt_grib_kvpair[idx].dbl_arr = (double *) Malloc(arr_len * sizeof(double));
+    for (size_t i = 0; i < arr_len; i++) { var->opt_grib_kvpair[idx].dbl_arr[i] = darr[i]; }
+  }
+  else { var->opt_grib_kvpair[idx].dbl_arr = NULL; }
+}
+
 #endif
 
 #ifdef HAVE_LIBGRIB_API
 int
 varOptGribNentries(int varID)
 {
-  int nentries = vartable[varID].opt_grib_nentries;
-  return nentries;
+  return varInfoList[varID].opt_grib_nentries;
 }
 #endif
 

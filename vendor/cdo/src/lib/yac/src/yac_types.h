@@ -11,14 +11,22 @@
 #include <stddef.h>
 
 #ifdef YAC_FOR_CDO
+
+// Global index type for YAC
 typedef size_t yac_int;
-#define XT_INT_MAX SIZE_MAX
+#define YAC_INT_MAX SIZE_MAX
+
 #else
-#include <yaxt.h>
-// idxtype from yaxt as global id type in yac
-typedef Xt_int yac_int;
-#define yac_int_dt Xt_int_dt
-#endif
+
+#include "yac_config.h"
+
+// Global index type for YAC
+typedef YAC_INT yac_int;
+
+// MPI Datatype for integers of type yac_int
+#define yac_int_dt YAC_INT_MPIDT
+
+#endif // YAC_FOR_CDO
 
 // types for 3D coordinate arrays
 typedef double(*yac_coordinate_pointer)[3];

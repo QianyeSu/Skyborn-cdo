@@ -110,7 +110,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Inttime> registration = RegisterEntry<Inttime>();
+  inline static auto registration = RegisterEntry<Inttime>();
 
   CdiDateTime sDateTime{};
   int incrPeriod = 0, incrUnits = 3600, timeUnits = TUNIT_HOUR;
@@ -163,9 +163,9 @@ public:
   run() override
   {
     Field field3;
-    FieldVector2D varsData[2];
-    field2D_init(varsData[0], varList1, FIELD_VEC | FIELD_NAT);
-    field2D_init(varsData[1], varList1, FIELD_VEC | FIELD_NAT);
+    FieldVector2D varDataList[2];
+    field2D_init(varDataList[0], varList1, FIELD_VEC | FIELD_NAT);
+    field2D_init(varDataList[1], varList1, FIELD_VEC | FIELD_NAT);
 
     auto maxFields = varList1.maxFields();
     std::vector<FieldInfo> fieldInfoList(maxFields);
@@ -189,7 +189,7 @@ public:
     for (int fieldID = 0; fieldID < numFields; ++fieldID)
     {
       auto [varID, levelID] = cdo_inq_field(streamID1);
-      auto &field = varsData[curFirst][varID][levelID];
+      auto &field = varDataList[curFirst][varID][levelID];
       cdo_read_field(streamID1, field);
     }
 
@@ -222,7 +222,7 @@ public:
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
         fieldInfoList[fieldID].set(varID, levelID);
-        auto &field = varsData[curSecond][varID][levelID];
+        auto &field = varDataList[curSecond][varID][levelID];
         cdo_read_field(streamID1, field);
       }
 
@@ -254,8 +254,8 @@ public:
           {
             auto [varID, levelID] = fieldInfoList[fieldID].get();
 
-            auto const &field1 = varsData[curFirst][varID][levelID];
-            auto const &field2 = varsData[curSecond][varID][levelID];
+            auto const &field1 = varDataList[curFirst][varID][levelID];
+            auto const &field2 = varDataList[curSecond][varID][levelID];
 
             field3.init(varList1.vars[varID]);
 

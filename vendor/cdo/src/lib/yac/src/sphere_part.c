@@ -13,9 +13,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <float.h>
+#include <limits.h>
 
 #include "sphere_part.h"
-#include "geometry.h"
 #include "interval_tree.h"
 #include "utils_core.h"
 #include "ensure_array_size.h"
@@ -173,11 +173,11 @@ static inline void compute_gc_norm_vector(
   }
 }
 
-static void swap_partition_data(struct temp_partition_data *a, struct temp_partition_data *b) 
-{ 
-  struct temp_partition_data temp = *a; 
-  *a = *b; 
-  *b = temp; 
+static void swap_partition_data(struct temp_partition_data *a, struct temp_partition_data *b)
+{
+  struct temp_partition_data temp = *a;
+  *a = *b;
+  *b = temp;
 }
 
 static size_t swap_node_type(struct temp_partition_data *part_data, size_t i, int node_type, size_t begin, size_t end)
@@ -623,7 +623,7 @@ static struct point_id_xyz *
   dummy.coordinate_xyz[1] = INT32_MAX;
   dummy.coordinate_xyz[2] = INT32_MAX;
   struct point_id_xyz_int32 * prev = &dummy, * curr = points_int32;
-  yac_int prev_id = XT_INT_MAX;
+  yac_int prev_id = YAC_INT_MAX;
   size_t new_num_points = 0;
   for (size_t i = 0; i < num_unmasked_points; ++i, ++curr) {
 

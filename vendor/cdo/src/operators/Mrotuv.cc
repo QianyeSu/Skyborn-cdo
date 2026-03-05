@@ -188,7 +188,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 2, NoRestriction },
   };
-  inline static RegisterEntry<Mrotuv> registration = RegisterEntry<Mrotuv>();
+  inline static auto registration = RegisterEntry<Mrotuv>();
 
 private:
   size_t numMissVals1 = 0, numMissVals2 = 0;

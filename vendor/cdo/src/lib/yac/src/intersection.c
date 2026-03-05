@@ -793,7 +793,7 @@ int yac_intersect_vec (
       case (YAC_LAT_CIRCLE_EDGE):
         ret_value =
           yac_pxlat_vec(
-            point[edge_a_is_point], 
+            point[edge_a_is_point],
             edge[edge_a_is_point][0], edge[edge_a_is_point][1], p, q);
         break;
       default:
@@ -801,7 +801,7 @@ int yac_intersect_vec (
       case (YAC_GREAT_CIRCLE_EDGE):
         ret_value =
           yac_pxgc_vec(
-            point[edge_a_is_point], 
+            point[edge_a_is_point],
             edge[edge_a_is_point][0], edge[edge_a_is_point][1], p, q);
         break;
     }

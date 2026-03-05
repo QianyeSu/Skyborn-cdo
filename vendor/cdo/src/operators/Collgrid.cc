@@ -573,7 +573,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Collgrid> registration = RegisterEntry<Collgrid>();
+  inline static auto registration = RegisterEntry<Collgrid>();
 
   int nxblocks{ -1 };
 

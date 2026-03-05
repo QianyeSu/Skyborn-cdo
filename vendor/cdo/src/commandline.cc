@@ -21,28 +21,25 @@ initCommandLine(void)
 
   CDO_CommandLine.resize(maxlen);
 
-  char *pargv;
   size_t offset = 0;
   for (int iarg = 0; iarg < gargc; iarg++)
+  {
+    char *pargv;
+    if (iarg == 0)
     {
-      if (iarg == 0)
-        {
-          pargv = strrchr(gargv[0], '/');
-          if (pargv == 0)
-            pargv = gargv[0];
-          else
-            pargv++;
-        }
-      else
-        pargv = gargv[iarg];
-
-      auto len = std::strlen(pargv);
-      if (offset + len + 1 > maxlen) break;
-      std::memcpy(&CDO_CommandLine[offset], pargv, len);
-      offset += len;
-      CDO_CommandLine[offset] = ' ';
-      offset++;
+      pargv = std::strrchr(gargv[0], '/');
+      if (pargv == 0) { pargv = gargv[0]; }
+      else { pargv++; }
     }
+    else { pargv = gargv[iarg]; }
+
+    auto len = std::strlen(pargv);
+    if (offset + len + 1 > maxlen) break;
+    std::memcpy(&CDO_CommandLine[offset], pargv, len);
+    offset += len;
+    CDO_CommandLine[offset] = ' ';
+    offset++;
+  }
 
   CDO_CommandLine[offset - 1] = '\0';
 }
@@ -56,10 +53,10 @@ command_line(void)
   static bool init = false;
 
   if (!init)
-    {
-      initCommandLine();
-      init = true;
-    }
+  {
+    initCommandLine();
+    init = true;
+  }
 
   return CDO_CommandLine.data();
 }

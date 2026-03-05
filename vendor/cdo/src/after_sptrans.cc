@@ -15,13 +15,9 @@
 #include "gaussian_latitudes.h"
 
 // phcs - Compute values of Legendre polynomials and their meridional derivatives
-static void
+static void  // __attribute__((noinline))
 phcs(bool needHnm, double *pnm, double *hnm, long waves, double pmu, double *ztemp1, double *ztemp2)
 {
-  long jnmjk;
-  double zcospar, zsinpar, zcosfak, zsinfak;
-  double zq, zwm2, zw, zwq, zq2m1, zwm2q2, z2q2, zcnm, zdnm, zenm;
-
   auto twowaves = waves << 1;
 
   auto zcos2 = std::sqrt(1.0 - pmu * pmu);
@@ -35,15 +31,15 @@ phcs(bool needHnm, double *pnm, double *hnm, long waves, double pmu, double *zte
     auto zsqp = 1.0 / std::sqrt((double) (jn + jn * jn));
     zan *= std::sqrt(1.0 - 1.0 / (4 * jn * jn));
 
-    zcospar = std::cos(lat * jn);
-    zsinpar = std::sin(lat * jn) * jn * zsqp;
-    zcosfak = 1.0;
+    auto zcospar = std::cos(lat * jn);
+    auto zsinpar = std::sin(lat * jn) * jn * zsqp;
+    auto zcosfak = 1.0;
 
     for (long jk = 2; jk < jn; jk += 2)
     {
-      jnmjk = jn - jk;
+      auto jnmjk = jn - jk;
       zcosfak *= (jk - 1.0) * (jn + jnmjk + 2.0) / (jk * (jn + jnmjk + 1.0));
-      zsinfak = zcosfak * zsqp * (double) jnmjk;
+      auto zsinfak = zcosfak * zsqp * (double) jnmjk;
       zcospar += zcosfak * std::cos(lat * jnmjk);
       zsinpar += zsinfak * std::sin(lat * jnmjk);
     }
@@ -93,16 +89,16 @@ phcs(bool needHnm, double *pnm, double *hnm, long waves, double pmu, double *zte
 #endif
     for (long jn = 1; jn < (twowaves - jm); jn++)
     {
-      zq = jm + jm + jn - 1;
-      zwm2 = zq + jn;
-      zw = zwm2 + 2.0;
-      zwq = zw * zq;
-      zq2m1 = zq * zq - 1.0;
-      zwm2q2 = zwm2 * zq2m1;
-      z2q2 = zq2m1 * 2;
-      zcnm = std::sqrt((zwq * (zq - 2.0)) / (zwm2q2 - z2q2));
-      zdnm = std::sqrt((zwq * (jn + 1.0)) / zwm2q2);
-      zenm = std::sqrt(zw * jn / ((zq + 1.0) * zwm2));
+      double zq = jm + jm + jn - 1;
+      double zwm2 = zq + jn;
+      double zw = zwm2 + 2.0;
+      double zwq = zw * zq;
+      double zq2m1 = zq * zq - 1.0;
+      double zwm2q2 = zwm2 * zq2m1;
+      double z2q2 = zq2m1 * 2;
+      double zcnm = std::sqrt((zwq * (zq - 2.0)) / (zwm2q2 - z2q2));
+      double zdnm = std::sqrt((zwq * (jn + 1.0)) / zwm2q2);
+      double zenm = std::sqrt(zw * jn / ((zq + 1.0) * zwm2));
       pnm[jn] = zcnm * ztemp1[jn] - pmu * (zdnm * ztemp1[jn + 1] - zenm * pnm[jn - 1]);
       if (needHnm) hnm[jn] = (jm + jn) * pmu * pnm[jn] - std::sqrt(zw * jn * (zq + 1) / zwm2) * pnm[jn - 1];
     }
@@ -166,11 +162,12 @@ after_legini_full(long ntr, long nlat, double *restrict poli, double *restrict p
     for (long jm = 0; jm < waves; ++jm)
       for (long jn = 0; jn < (waves - jm); ++jn)
       {
-        if (poli) poli[jsp] = pnm[jm * waves + jn] * 2.0;
-        if (pold) pold[jsp] = pnm[jm * waves + jn] * zgwt;
-        if (pdev) pdev[jsp] = hnm[jm * waves + jn] * 2.0 * zradsqrtgmusqr;
-        if (pol2) pol2[jsp] = hnm[jm * waves + jn] * zgwt * zrafgmusqr;
-        if (pol3) pol3[jsp] = pnm[jm * waves + jn] * zgwt * jm * zrafgmusqr;
+        auto k = jm * waves + jn;
+        if (poli) { poli[jsp] = pnm[k] * 2.0; }
+        if (pold) { pold[jsp] = pnm[k] * zgwt; }
+        if (pdev) { pdev[jsp] = hnm[k] * 2.0 * zradsqrtgmusqr; }
+        if (pol2) { pol2[jsp] = hnm[k] * zgwt * zrafgmusqr; }
+        if (pol3) { pol3[jsp] = pnm[k] * zgwt * zrafgmusqr * jm; }
         jsp += nlat;
       }
   }

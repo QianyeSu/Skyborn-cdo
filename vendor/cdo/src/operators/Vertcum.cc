@@ -16,8 +16,6 @@
 
 #include "process_int.h"
 
-#define IS_SURFACE_LEVEL(zaxisID) (zaxisInqType(zaxisID) == ZAXIS_SURFACE && zaxisInqSize(zaxisID) == 1)
-
 static void
 add_vars_mv(size_t gridsize, double missval, Varray<double> const &var1, Varray<double> const &var2, Varray<double> &var3)
 {
@@ -48,7 +46,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertcum> registration = RegisterEntry<Vertcum>();
+  inline static auto registration = RegisterEntry<Vertcum>();
 
   int VERTCUMHL;
   int nlevshl = 0;
@@ -138,17 +136,17 @@ public:
   {
     auto numVars = varList1.numVars();
     std::vector<std::vector<size_t>> varnumMissVals(numVars);
-    Varray3D<double> vardata1(numVars);
-    Varray3D<double> vardata2(numVars);
+    Varray3D<double> varDataList1(numVars);
+    Varray3D<double> varDataList2(numVars);
     for (int varID = 0; varID < numVars; ++varID)
     {
       auto const &var1 = varList1.vars[varID];
       auto const &var2 = varList2.vars[varID];
       varnumMissVals[varID].resize(var1.nlevels);
-      vardata1[varID].resize(var1.nlevels);
-      vardata2[varID].resize(var2.nlevels);
-      for (int levelID = 0; levelID < var1.nlevels; ++levelID) vardata1[varID][levelID].resize(var1.gridsize);
-      for (int levelID = 0; levelID < var2.nlevels; ++levelID) vardata2[varID][levelID].resize(var2.gridsize);
+      varDataList1[varID].resize(var1.nlevels);
+      varDataList2[varID].resize(var2.nlevels);
+      for (int levelID = 0; levelID < var1.nlevels; ++levelID) varDataList1[varID][levelID].resize(var1.gridsize);
+      for (int levelID = 0; levelID < var2.nlevels; ++levelID) varDataList2[varID][levelID].resize(var2.gridsize);
     }
 
     int tsID = 0;
@@ -163,7 +161,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, &vardata1[varID][levelID][0], &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, &varDataList1[varID][levelID][0], &varnumMissVals[varID][levelID]);
       }
 
       for (int varID = 0; varID < numVars; ++varID)
@@ -175,27 +173,29 @@ public:
 
         if (operatorID == VERTCUMHL && nlevs2 == nlevshl)
         {
-          for (size_t i = 0; i < gridsize; ++i) vardata2[varID][0][i] = 0;
+          for (size_t i = 0; i < gridsize; ++i) varDataList2[varID][0][i] = 0;
         }
         else
         {
-          for (size_t i = 0; i < gridsize; ++i) vardata2[varID][0][i] = vardata1[varID][0][i];
+          for (size_t i = 0; i < gridsize; ++i) varDataList2[varID][0][i] = varDataList1[varID][0][i];
         }
 
         for (int levelID = 1; levelID < nlevs2; ++levelID)
         {
           if (operatorID == VERTCUMHL && nlevs2 == nlevshl)
-            add_vars_mv(gridsize, missval, vardata1[varID][levelID - 1], vardata2[varID][levelID - 1], vardata2[varID][levelID]);
+            add_vars_mv(gridsize, missval, varDataList1[varID][levelID - 1], varDataList2[varID][levelID - 1],
+                        varDataList2[varID][levelID]);
           else
-            add_vars_mv(gridsize, missval, vardata1[varID][levelID], vardata2[varID][levelID - 1], vardata2[varID][levelID]);
+            add_vars_mv(gridsize, missval, varDataList1[varID][levelID], varDataList2[varID][levelID - 1],
+                        varDataList2[varID][levelID]);
         }
 
         if (operatorID == VERTCUMHL && nlevs2 == nlevshl)
         {
-          auto const &var1data = vardata2[varID][nlevs2 - 1];
+          auto const &var1data = varDataList2[varID][nlevs2 - 1];
           for (int levelID = 0; levelID < nlevs2; ++levelID)
           {
-            auto &var2data = vardata2[varID][levelID];
+            auto &var2data = varDataList2[varID][levelID];
             for (size_t i = 0; i < gridsize; ++i)
             {
               if (is_not_equal(var1data[i], 0))
@@ -215,7 +215,7 @@ public:
         auto nlevs2 = var2.nlevels;
         for (int levelID = 0; levelID < nlevs2; ++levelID)
         {
-          auto &single = vardata2[varID][levelID];
+          auto &single = varDataList2[varID][levelID];
           auto numMissVals = varray_num_mv(gridsize, single, missval);
           cdo_def_field(streamID2, varID, levelID);
           cdo_write_field(streamID2, single.data(), numMissVals);

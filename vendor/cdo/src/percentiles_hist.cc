@@ -16,7 +16,7 @@
 #include "percentiles.h"
 #include "percentiles_hist.h"
 
-#define FLT_CAPACITY(n, s) ((int) (((n) * (s)) / sizeof(float)))
+auto FLT_CAPACITY = [](auto n, auto s) { return (int) (((n) * (s)) / sizeof(float)); };
 #define FLT_PTR(p) ((float *) (p))
 #define INT_PTR(p) ((unsigned int *) (p))
 #define SHR_PTR(p) ((unsigned short *) (p))
@@ -28,8 +28,7 @@ histGetEnvNumBins()
   constexpr int NBINS_MINIMUM = 11;
 
   auto const *str = getenv("CDO_PCTL_NBINS");
-
-  return (str != nullptr) ? std::max(atoi(str), NBINS_MINIMUM) : NBINS_DEFAULT;
+  return (str != nullptr) ? std::max(std::atoi(str), NBINS_MINIMUM) : NBINS_DEFAULT;
 }
 
 template <typename T>
@@ -244,10 +243,7 @@ histGetPercentile(const HistogramEntry &hist, double p)
 
     return hist.min + bin * hist.step;
   }
-  else
-  {
-    return percentile(FLT_PTR(hist.ptr), hist.nsamp, p);
-  }
+  else { return percentile(FLT_PTR(hist.ptr), hist.nsamp, p); }
 }
 
 void

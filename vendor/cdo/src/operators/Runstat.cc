@@ -49,7 +49,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Runstat> registration = RegisterEntry<Runstat>();
+  inline static auto registration = RegisterEntry<Runstat>();
 
 private:
   bool runstat_nomiss = false;
@@ -63,7 +63,7 @@ private:
 
   int ndates{};
 
-  bool varsData2needed{};
+  bool varDataList2needed{};
 
   cdo::StepStat3D stepStat{};
 
@@ -84,7 +84,7 @@ public:
 
     stepStat.init(operfunc);
 
-    varsData2needed = (stepStat.lvarstd || stepStat.lrange);
+    varDataList2needed = (stepStat.lvarstd || stepStat.lrange);
 
     operator_input_arg("number of timesteps");
     operator_check_argc(1);
@@ -121,7 +121,7 @@ public:
     {
       field2D_init(stepStat.samp(its), varList1, !runstat_nomiss ? FIELD_VEC : 0);
       field2D_init(stepStat.var1(its), varList1, FIELD_VEC | VARS_MEMTYPE);
-      field2D_init(stepStat.var2(its), varList1, varsData2needed ? FIELD_VEC : 0);
+      field2D_init(stepStat.var2(its), varList1, varDataList2needed ? FIELD_VEC : 0);
     }
   }
 
@@ -180,11 +180,12 @@ public:
         {
           imask.resize(fieldsize);
 
-          auto func = [&](auto const &v, std::decay_t<decltype(v[0])> missval)
+          auto func = [&](auto const &v, auto n, auto mv)
           {
-            for (size_t i = 0; i < fieldsize; ++i) { imask[i] = fp_is_not_equal(v[i], missval); }
+            std::decay_t<decltype(v[0])> missval = mv;
+            for (size_t i = 0; i < n; ++i) { imask[i] = fp_is_not_equal(v[i], missval); }
           };
-          field_operation(func, rvar1, rvar1.missval);
+          field_operation(func, rvar1, rvar1.size, rvar1.missval);
 
           for (size_t i = 0; i < fieldsize; ++i) rsamp.vec_d[i] = (double) imask[i];
 
@@ -257,13 +258,13 @@ public:
 
       stepStat.var1(ndates) = stepStat.var1(0);
       if (!runstat_nomiss) stepStat.samp(ndates) = stepStat.samp(0);
-      if (varsData2needed) stepStat.var2(ndates) = stepStat.var2(0);
+      if (varDataList2needed) stepStat.var2(ndates) = stepStat.var2(0);
 
       for (int inp = 0; inp < ndates; ++inp)
       {
         stepStat.var1(inp) = stepStat.var1(inp + 1);
         if (!runstat_nomiss) stepStat.samp(inp) = stepStat.samp(inp + 1);
-        if (varsData2needed) stepStat.var2(inp) = stepStat.var2(inp + 1);
+        if (varDataList2needed) stepStat.var2(inp) = stepStat.var2(inp + 1);
       }
     }
   }

@@ -26,14 +26,11 @@ void
 cdf_create(const char *path, int cmode, int *ncidp)
 {
   int status = nc_create(path, cmode, ncidp);
-
   if (CDF_Debug || status != NC_NOERR) Message("ncid=%d  mode=%d  file=%s", *ncidp, cmode, path);
-
   if (status != NC_NOERR) Error("%s: %s", path, nc_strerror(status));
 
   int oldfill;
   status = nc_set_fill(*ncidp, NC_NOFILL, &oldfill);
-
   if (status != NC_NOERR) Error("%s: %s", path, nc_strerror(status));
 }
 
@@ -347,24 +344,20 @@ cdf_put_var_float(int ncid, int varid, const float *fp)
 static const char *
 cdf_var_type(nc_type xtype)
 {
-  const char *ctype = "unknown";
+  if (xtype == NC_BYTE) return "NC_BYTE";
+  if (xtype == NC_CHAR) return "NC_CHAR";
+  if (xtype == NC_SHORT) return "NC_SHORT";
+  if (xtype == NC_INT) return "NC_INT";
+  if (xtype == NC_FLOAT) return "NC_FLOAT";
+  if (xtype == NC_DOUBLE) return "NC_DOUBLE";
+  if (xtype == NC_UBYTE) return "NC_UBYTE";
+  if (xtype == NC_LONG) return "NC_LONG";
+  if (xtype == NC_USHORT) return "NC_USHORT";
+  if (xtype == NC_UINT) return "NC_UINT";
+  if (xtype == NC_INT64) return "NC_INT64";
+  if (xtype == NC_UINT64) return "NC_UINT64";
 
-  // clang-format off
-  if      (xtype == NC_BYTE  )  ctype = "NC_BYTE";
-  else if (xtype == NC_CHAR  )  ctype = "NC_CHAR";
-  else if (xtype == NC_SHORT )  ctype = "NC_SHORT";
-  else if (xtype == NC_INT   )  ctype = "NC_INT";
-  else if (xtype == NC_FLOAT )  ctype = "NC_FLOAT";
-  else if (xtype == NC_DOUBLE)  ctype = "NC_DOUBLE";
-  else if (xtype == NC_UBYTE )  ctype = "NC_UBYTE";
-  else if (xtype == NC_LONG  )  ctype = "NC_LONG";
-  else if (xtype == NC_USHORT)  ctype = "NC_USHORT";
-  else if (xtype == NC_UINT  )  ctype = "NC_UINT";
-  else if (xtype == NC_INT64 )  ctype = "NC_INT64";
-  else if (xtype == NC_UINT64)  ctype = "NC_UINT64";
-  // clang-format on
-
-  return ctype;
+  return "unknown";
 }
 
 static void
@@ -458,9 +451,18 @@ cdf_get_vara(int ncid, int varid, const size_t start[], const size_t count[], vo
 }
 
 void
-cdf_get_vara_int(int ncid, int varid, const size_t start[], const size_t count[], int *dp)
+cdf_get_vara_int(int ncid, int varid, const size_t start[], const size_t count[], int *ip)
 {
-  int status = nc_get_vara_int(ncid, varid, start, count, dp);
+  int status = nc_get_vara_int(ncid, varid, start, count, ip);
+  if (CDF_Debug || status != NC_NOERR) Message("ncid=%d  varid=%d", ncid, varid);
+  if (status != NC_NOERR) Error("%s", nc_strerror(status));
+}
+
+void
+cdf_get_vara_int64(int ncid, int varid, const size_t start[], const size_t count[], int64_t *ip)
+{
+  long long *llp = (long long *) ip;
+  int status = nc_get_vara_longlong(ncid, varid, start, count, llp);
   if (CDF_Debug || status != NC_NOERR) Message("ncid=%d  varid=%d", ncid, varid);
   if (status != NC_NOERR) Error("%s", nc_strerror(status));
 }
@@ -721,21 +723,11 @@ cdf_def_var_chunking(int ncid, int varid, int storage, const size_t *chunksizesp
 size_t
 cdf_xtype_to_numbytes(nc_type xtype)
 {
-  size_t numBytes = 8;
+  if (xtype == NC_BYTE || xtype == NC_CHAR || xtype == NC_UBYTE) return 1;
+  if (xtype == NC_SHORT || xtype == NC_USHORT) return 2;
+  if (xtype == NC_INT || xtype == NC_FLOAT || xtype == NC_LONG || xtype == NC_UINT) return 4;
 
-  // clang-format off
-  if      (xtype == NC_BYTE  )  numBytes = 1;
-  else if (xtype == NC_CHAR  )  numBytes = 1;
-  else if (xtype == NC_SHORT )  numBytes = 2;
-  else if (xtype == NC_INT   )  numBytes = 4;
-  else if (xtype == NC_FLOAT )  numBytes = 4;
-  else if (xtype == NC_UBYTE )  numBytes = 1;
-  else if (xtype == NC_USHORT)  numBytes = 2;
-  else if (xtype == NC_LONG  )  numBytes = 4;
-  else if (xtype == NC_UINT  )  numBytes = 4;
-  // clang-format on
-
-  return numBytes;
+  return 8;
 }
 
 #endif

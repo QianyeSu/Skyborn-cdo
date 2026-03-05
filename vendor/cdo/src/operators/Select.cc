@@ -14,6 +14,7 @@
 #include <cdi.h>
 
 #include "cdo_options.h"
+#include "cdo_rlimit.h"
 #include "process_int.h"
 #include "cdo_zaxis.h"
 #include "datetime.h"
@@ -41,21 +42,21 @@ dom_to_string(CdiDate date)
 }
 
 static void
-write_const_vars(CdoStreamID streamID2, VarList const &varList, Varray2D<double> &varsData2)
+write_const_vars(CdoStreamID streamID2, VarList const &varList, Varray2D<double> &varDataList2)
 {
   for (auto const &var : varList.vars)
   {
-    if (varsData2[var.ID].size())
+    if (varDataList2[var.ID].size())
     {
       for (int levelID2 = 0; levelID2 < var.nlevels; ++levelID2)
       {
-        auto pdata = &varsData2[var.ID][var.gridsize * levelID2];
+        auto pdata = &varDataList2[var.ID][var.gridsize * levelID2];
         auto numMissVals = array_num_mv(var.gridsize, pdata, var.missval);
         cdo_def_field(streamID2, var.ID, levelID2);
         cdo_write_field(streamID2, pdata, numMissVals);
       }
-      varsData2[var.ID].clear();
-      varsData2[var.ID].shrink_to_fit();
+      varDataList2[var.ID].clear();
+      varDataList2[var.ID].shrink_to_fit();
     }
   }
 }
@@ -152,7 +153,7 @@ public:
     .constraints = { 1, 1, NoRestriction },
   };
 #endif
-  inline static RegisterEntry<Select> registration = RegisterEntry<Select>();
+  inline static auto registration = RegisterEntry<Select>();
 
 private:
   int SELECT{}, DELETE{};
@@ -172,6 +173,9 @@ public:
     DELETE = module.get_id("delete");
 
     dataIsUnchanged = data_is_unchanged();
+
+    auto numFiles = cdo_stream_cnt() - 1;
+    cdo::set_numfiles(numFiles + 8);  // needed only if apply is used on input files
 
     operatorID = cdo_operator_id();
 
@@ -210,7 +214,7 @@ public:
     int numStepsOut = 0;
     bool doTimeSel = false;
     std::vector<bool> processVars;
-    Varray2D<double> varsData2;
+    Varray2D<double> varDataList2;
 
     SelectInfo selInfo(kvlist);
 
@@ -265,7 +269,6 @@ public:
       if (Options::cdoVerbose) cdo_print("Process file: %s", cdo_get_stream_name(fileIdx));
 
       auto streamID1 = cdo_open_read(fileIdx);
-
       auto vlistID1 = cdo_stream_inq_vlist(streamID1);
       auto taxisID1 = vlistInqTaxis(vlistID1);
 
@@ -538,7 +541,7 @@ public:
         return;
       }
 
-      if (copyConstVars) varsData2.resize(numVars2);
+      if (copyConstVars) varDataList2.resize(numVars2);
 
       auto stopReading = false;
       int tsID1 = 0;
@@ -665,7 +668,7 @@ public:
 
               auto varID2 = vlistFindVar(vlistID2, varID);
               auto levelID2 = vlistFindLevel(vlistID2, varID, levelID);
-              if (copyConstVars && tsID2 == 0) write_const_vars(streamID2, varList2, varsData2);
+              if (copyConstVars && tsID2 == 0) write_const_vars(streamID2, varList2, varDataList2);
 
               cdo_def_field(streamID2, varID2, levelID2);
               if (dataIsUnchanged) { cdo_copy_field(streamID1, streamID2); }
@@ -678,7 +681,7 @@ public:
             }
           }
 
-          if (copyConstVars && tsID2 == 0) write_const_vars(streamID2, varList2, varsData2);
+          if (copyConstVars && tsID2 == 0) write_const_vars(streamID2, varList2, varDataList2);
 
           tsID2++;
         }
@@ -694,9 +697,9 @@ public:
               if (var.isConstant)
               {
                 auto levelID2 = vlistFindLevel(vlistID2, varID, levelID);
-                if (levelID == 0) varsData2[varID2].resize(var.gridsize * var.nlevels);
+                if (levelID == 0) varDataList2[varID2].resize(var.gridsize * var.nlevels);
                 size_t numMissVals;
-                cdo_read_field(streamID1, &varsData2[varID2][var.gridsize * levelID2], &numMissVals);
+                cdo_read_field(streamID1, &varDataList2[varID2][var.gridsize * levelID2], &numMissVals);
               }
             }
           }

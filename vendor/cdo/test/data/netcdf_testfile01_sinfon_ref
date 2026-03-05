@@ -3,7 +3,7 @@
      1 : unknown  unknown  v instant       1   1      2592   1  I16  : tem           
    Grid coordinates :
      1 : lonlat                   : points=2592 (72x36)
-                              lon : -177.5 to 177.5 by 5 [degrees_east]  circular
+                              lon : -177.5 to 177.5 by 5 [degrees_east]  cyclic
                               lat : 87.5 to -87.5 by -5 [degrees_north]
    Vertical coordinates :
      1 : surface                  : levels=1

@@ -1,0 +1,116 @@
+#! @PYTHON@
+
+from cdoTest import *
+import os
+
+CDOTESTDATA=os.getenv("CDOTESTDATA") or ""
+XTESTDIR=f'{CDOTESTDATA}/cdicache/'
+
+HAS_NETCDF=cdo_check_req("has-nc")
+
+test_module = TestModule();
+
+FILE="P1D_inst_r7_atm_t"
+NUM=4
+
+TEST=1
+for k in 0,1:
+    for i in range(1, NUM + 1):
+        if (not os.path.isdir(XTESTDIR)):
+            test_module.add_skip("test not enabled")
+            continue
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        IFILE=f'{XTESTDIR}/{FILE}{i}.nc4'
+        OFILE=f'{FILE}{i}_{TEST}_res'
+        RFILE=f'{XTESTDIR}/{FILE}1_{TEST}_ref'
+
+        t=TAPTest(f'TEST={TEST} CDI_CACHE_NC={k} CHUNK_SET={i}')
+        t.add(f'CDI_CACHE_NC={k} CDI_CACHE_INFO=1 {CDO} -f nc4 -timmean {IFILE} {OFILE}')
+        t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+TEST=2
+for k in 0,1:
+    for i in range(1, NUM + 1):
+        if (not os.path.isdir(XTESTDIR)):
+            test_module.add_skip("test not enabled")
+            continue
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        IFILE=f'{XTESTDIR}/{FILE}{i}.nc4'
+        OFILE=f'{FILE}{i}_{TEST}_res'
+        RFILE=f'{XTESTDIR}/{FILE}1_{TEST}_ref'
+
+        t=TAPTest(f'TEST={TEST} CDI_CACHE_NC={k} CHUNK_SET={i}')
+        t.add(f'CDI_CACHE_NC={k} CDI_CACHE_INFO=1 {CDO} -f nc4 -timmean -selgridcell,10000 -sellevel,8 {IFILE} {OFILE}')
+        t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+TEST=3
+for k in 0,1:
+    for i in range(1, NUM + 1):
+        if (not os.path.isdir(XTESTDIR)):
+            test_module.add_skip("test not enabled")
+            continue
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        IFILE=f'{XTESTDIR}/{FILE}{i}.nc4'
+        OFILE=f'{FILE}{i}_{TEST}_res'
+        RFILE=f'{XTESTDIR}/{FILE}1_{TEST}_ref'
+
+        t=TAPTest(f'TEST={TEST} CDI_CACHE_NC={k} CHUNK_SET={i}')
+        t.add(f'CDI_CACHE_NC={k} CDI_CACHE_INFO=1 {CDO} -f nc4 -timmean  -selgridcell,10000/20000 -sellevel,6/8 {IFILE} {OFILE}')
+        t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+TEST=4
+for k in 0,1:
+    for i in range(1, NUM + 1):
+        if (not os.path.isdir(XTESTDIR)):
+            test_module.add_skip("test not enabled")
+            continue
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        IFILE=f'{XTESTDIR}/{FILE}{i}.nc4'
+        OFILE=f'{FILE}{i}_{TEST}_res'
+        RFILE=f'{XTESTDIR}/{FILE}1_2_ref'
+
+        t=TAPTest(f'TEST={TEST} CDI_CACHE_NC={k} CHUNK_SET={i}')
+        t.add(f'CDI_CACHE_NC={k} CDI_CACHE_INFO=1 {CDO} -f nc4 -timmean  query:path={IFILE},cell=10000,layer=8 {OFILE}')
+        t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+TEST=5
+for k in 0,1:
+    for i in range(1, NUM + 1):
+        if (not os.path.isdir(XTESTDIR)):
+            test_module.add_skip("test not enabled")
+            continue
+        if (not HAS_NETCDF):
+            test_module.add_skip("NetCDF not enabled")
+            continue
+
+        IFILE=f'{XTESTDIR}/{FILE}{i}.nc4'
+        OFILE=f'{FILE}{i}_{TEST}_res'
+        RFILE=f'{XTESTDIR}/{FILE}1_3_ref'
+
+        t=TAPTest(f'TEST={TEST} CDI_CACHE_NC={k} CHUNK_SET={i}')
+        t.add(f'CDI_CACHE_NC={k} CDI_CACHE_INFO=1 {CDO} -f nc4 -timmean  query:path={IFILE},cell=10000/to/20000,layer=6/to/8 {OFILE}')
+        t.add(f'{CDO} --pedantic diff {OFILE} {RFILE}')
+        t.clean(OFILE)
+        test_module.add(t)
+
+test_module.run()

@@ -115,11 +115,11 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h
-CONFIG_CLEAN_FILES = cdoTest.py CDO_test.py.test Adisit.py.test \
-	Afterburner.py.test Arith.py.test Arithc.py.test \
-	Arith_extra.py.test Cat.py.test Change.py.test CMOR.py.test \
-	Collgrid.py.test Comp.py.test Compc.py.test Cond.py.test \
-	Cond2.py.test Condc.py.test Consecstat.py.test \
+CONFIG_CLEAN_FILES = cdoTest.py CDI_cache.py.test CDO_test.py.test \
+	Adisit.py.test Afterburner.py.test Arith.py.test \
+	Arithc.py.test Arith_extra.py.test Cat.py.test Change.py.test \
+	CMOR.py.test Collgrid.py.test Comp.py.test Compc.py.test \
+	Cond.py.test Cond2.py.test Condc.py.test Consecstat.py.test \
 	Copy_netcdf.py.test Dayarith.py.test Detrend.py.test \
 	Eca.py.test Enspctl.py.test Ensstat.py.test Ensstat2.py.test \
 	EOFcoeff.py.test EOF.py.test Etccdi.py.test Etccdi2.py.test \
@@ -384,12 +384,12 @@ TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 am__DIST_COMMON = $(srcdir)/Adisit.py.test.in \
 	$(srcdir)/Afterburner.py.test.in $(srcdir)/Arith.py.test.in \
 	$(srcdir)/Arith_extra.py.test.in $(srcdir)/Arithc.py.test.in \
-	$(srcdir)/CDO_test.py.test.in $(srcdir)/CMOR.py.test.in \
-	$(srcdir)/Cat.py.test.in $(srcdir)/Change.py.test.in \
-	$(srcdir)/Collgrid.py.test.in $(srcdir)/Comp.py.test.in \
-	$(srcdir)/Compc.py.test.in $(srcdir)/Cond.py.test.in \
-	$(srcdir)/Cond2.py.test.in $(srcdir)/Condc.py.test.in \
-	$(srcdir)/Consecstat.py.test.in \
+	$(srcdir)/CDI_cache.py.test.in $(srcdir)/CDO_test.py.test.in \
+	$(srcdir)/CMOR.py.test.in $(srcdir)/Cat.py.test.in \
+	$(srcdir)/Change.py.test.in $(srcdir)/Collgrid.py.test.in \
+	$(srcdir)/Comp.py.test.in $(srcdir)/Compc.py.test.in \
+	$(srcdir)/Cond.py.test.in $(srcdir)/Cond2.py.test.in \
+	$(srcdir)/Condc.py.test.in $(srcdir)/Consecstat.py.test.in \
 	$(srcdir)/Copy_netcdf.py.test.in $(srcdir)/Dayarith.py.test.in \
 	$(srcdir)/Detrend.py.test.in $(srcdir)/EOF.py.test.in \
 	$(srcdir)/EOFcoeff.py.test.in $(srcdir)/Eca.py.test.in \
@@ -654,15 +654,16 @@ AM_COLOR_TESTS = always
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
                   $(top_srcdir)/config/tap-driver.sh
 
-TESTS = cdoTest.py CDO_test.py.test Adisit.py.test Afterburner.py.test \
-	Arith.py.test Arithc.py.test Arith_extra.py.test Cat.py.test \
-	Change.py.test CMOR.py.test Collgrid.py.test Comp.py.test \
-	Compc.py.test Cond.py.test Cond2.py.test Condc.py.test \
-	Consecstat.py.test Copy_netcdf.py.test Dayarith.py.test \
-	Detrend.py.test EOF.py.test EOFcoeff.py.test Eca.py.test \
-	Enspctl.py.test Ensstat.py.test Ensstat2.py.test \
-	Etccdi.py.test Etccdi2.py.test Expr.py.test Extra.py.test \
-	File.py.test Filter.py.test Fldpctl.py.test Fldstat.py.test \
+TESTS = cdoTest.py CDI_cache.py.test CDO_test.py.test Adisit.py.test \
+	Afterburner.py.test Arith.py.test Arithc.py.test \
+	Arith_extra.py.test Cat.py.test Change.py.test CMOR.py.test \
+	Collgrid.py.test Comp.py.test Compc.py.test Cond.py.test \
+	Cond2.py.test Condc.py.test Consecstat.py.test \
+	Copy_netcdf.py.test Dayarith.py.test Detrend.py.test \
+	EOF.py.test EOFcoeff.py.test Eca.py.test Enspctl.py.test \
+	Ensstat.py.test Ensstat2.py.test Etccdi.py.test \
+	Etccdi2.py.test Expr.py.test Extra.py.test File.py.test \
+	Filter.py.test Fldpctl.py.test Fldstat.py.test \
 	Fldstat2.py.test Genweights.py.test Gradsdes.py.test \
 	Gridarea.py.test Gridboxstat.py.test Importcmsaf.py.test \
 	Intgrid.py.test Inttime.py.test Intyear.py.test \
@@ -727,6 +728,8 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 cdoTest.py: $(top_builddir)/config.status $(srcdir)/cdoTest.py.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+CDI_cache.py.test: $(top_builddir)/config.status $(srcdir)/CDI_cache.py.test.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 CDO_test.py.test: $(top_builddir)/config.status $(srcdir)/CDO_test.py.test.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@

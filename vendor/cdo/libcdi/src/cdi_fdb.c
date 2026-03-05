@@ -426,11 +426,11 @@ decode_keyvalue(int numItems, fdbKeyValueEntry *keyValueList, RecordInfoEntry *r
     {
       // printf("key <%s> value <%s>\n", keys[k], values[k]);
       // clang-format off
-          if      (!foundDate  && str_is_equal(keys[k], "date"))     { foundDate = true;  numKeyDate++;  rentry->date = atoi(values[k]); }
-          else if (!foundTime  && str_is_equal(keys[k], "time"))     { foundTime = true;  numKeyTime++;  rentry->time = atoi(values[k]); }
-          else if (!foundParam && str_is_equal(keys[k], "param"))    { foundParam = true; numKeyParam++; rentry->param = atoi(values[k]); }
-          else if (!foundLtype && str_is_equal(keys[k], "levtype"))  { foundLtype = true; numKeyLtype++; rentry->levtype = get_ilevtype(values[k]); }
-          else if (!foundLlist && str_is_equal(keys[k], "levelist")) { foundLlist = true; rentry->ilevel = atoi(values[k]); }
+      if      (!foundDate  && str_is_equal(keys[k], "date"))     { foundDate = true;  numKeyDate++;  rentry->date = atoi(values[k]); }
+      else if (!foundTime  && str_is_equal(keys[k], "time"))     { foundTime = true;  numKeyTime++;  rentry->time = atoi(values[k]); }
+      else if (!foundParam && str_is_equal(keys[k], "param"))    { foundParam = true; numKeyParam++; rentry->param = atoi(values[k]); }
+      else if (!foundLtype && str_is_equal(keys[k], "levtype"))  { foundLtype = true; numKeyLtype++; rentry->levtype = get_ilevtype(values[k]); }
+      else if (!foundLlist && str_is_equal(keys[k], "levelist")) { foundLlist = true; rentry->ilevel = atoi(values[k]); }
       // clang-format on
       if (foundDate && foundTime && foundParam && foundLtype && foundLlist) break;
     }
@@ -504,8 +504,8 @@ cdi_create_fdb_request(const char *filename)
   for (int k = 0; k < keyValue.numKeys; k++)
   {
     // clang-format off
-      if      (!expverDefined && str_is_equal(keyValue.keys[k], "expver")) expverDefined = true;
-      else if (!classDefined  && str_is_equal(keyValue.keys[k], "class")) classDefined = true;
+    if      (!expverDefined && str_is_equal(keyValue.keys[k], "expver")) expverDefined = true;
+    else if (!classDefined  && str_is_equal(keyValue.keys[k], "class")) classDefined = true;
     // clang-format on
 
     check_fdb_error(fdb_request_add1(request, keyValue.keys[k], keyValue.values[k]));

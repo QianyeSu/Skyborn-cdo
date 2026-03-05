@@ -70,9 +70,9 @@ recordNewEntry(stream_t *streamptr, int tsID)
   if (recordID == recordSize)
   {
     // clang-format off
-      if      (recordSize <= INT_MAX / 2) recordSize *= 2;
-      else if (recordSize < INT_MAX)      recordSize = INT_MAX;
-      else Error("Cannot handle this many records!\n");
+    if      (recordSize <= INT_MAX / 2) recordSize *= 2;
+    else if (recordSize < INT_MAX)      recordSize = INT_MAX;
+    else Error("Cannot handle this many records!\n");
     // clang-format on
     recinfo = (recinfo_t *) Realloc(recinfo, (size_t) recordSize * sizeof(recinfo_t));
     records = (record_t *) Realloc(records, (size_t) recordSize * sizeof(record_t));

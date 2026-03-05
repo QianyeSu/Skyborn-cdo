@@ -63,7 +63,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ymonarith> registration = RegisterEntry<Ymonarith>();
+  inline static auto registration = RegisterEntry<Ymonarith>();
 
   int operfunc;
   int opertype;
@@ -81,7 +81,7 @@ public:
   VarList varList1;
   VarList varList2;
   Field field;
-  FieldVector2D varsData2[MaxMonths];
+  FieldVector2D varDataList2[MaxMonths];
 
   void
   process_data(int tsID, int numFields, int mon)
@@ -95,7 +95,7 @@ public:
       field.init(varList1.vars[varID]);
       cdo_read_field(streamID1, field);
 
-      field2_function(field, varsData2[mon][varID][levelID], operfunc);
+      field2_function(field, varDataList2[mon][varID][levelID], operfunc);
 
       cdo_def_field(streamID3, varID, levelID);
       cdo_write_field(streamID3, field);
@@ -105,32 +105,32 @@ public:
   void
   load_data_from_stream(int mon, int numFields)
   {
-    field2D_init(varsData2[mon], varList2, FIELD_VEC | FIELD_NAT);
+    field2D_init(varDataList2[mon], varList2, FIELD_VEC | FIELD_NAT);
 
     while (numFields--)
     {
       auto [varID, levelID] = cdo_inq_field(streamID2);
-      cdo_read_field(streamID2, varsData2[mon][varID][levelID]);
+      cdo_read_field(streamID2, varDataList2[mon][varID][levelID]);
     }
   }
 
   void
   run_monthly()
   {
-    for (int numFields, tsID = 0; (numFields = cdo_stream_inq_timestep(streamID2, tsID)) != 0; tsID++)
+    for (int numFields = 0, tsID = 0; (numFields = cdo_stream_inq_timestep(streamID2, tsID)) != 0; tsID++)
     {
       auto mon = get_month_index(taxisInqVdatetime(taxisID2).date);
-      if (varsData2[mon].size())
+      if (varDataList2[mon].size())
         cdo_abort("%s already allocated! The second input file must contain monthly mean values for a maximum of one year.",
                   monthNames[mon]);
 
       load_data_from_stream(mon, numFields);
     }
 
-    for (int numFields, tsID = 0; (numFields = cdo_stream_inq_timestep(streamID1, tsID)) != 0; tsID++)
+    for (int numFields = 0, tsID = 0; (numFields = cdo_stream_inq_timestep(streamID1, tsID)) != 0; tsID++)
     {
       auto mon = get_month_index(taxisInqVdatetime(taxisID1).date);
-      if (varsData2[mon].size() == 0)
+      if (varDataList2[mon].size() == 0)
         cdo_abort("%s not found! The second input file must contain monthly mean values for a maximum of one year.",
                   monthNames[mon]);
 
@@ -146,7 +146,7 @@ public:
     {
       auto mon = get_month_index(taxisInqVdatetime(taxisID2).date);
       auto season = month_to_season(mon + 1);
-      if (varsData2[season].size()) cdo_abort("Season %s already allocated!", seasonNames[season]);
+      if (varDataList2[season].size()) cdo_abort("Season %s already allocated!", seasonNames[season]);
 
       load_data_from_stream(season, numFields);
     }
@@ -155,7 +155,7 @@ public:
     {
       auto mon = get_month_index(taxisInqVdatetime(taxisID1).date);
       auto season = month_to_season(mon + 1);
-      if (varsData2[season].size() == 0) cdo_abort("Season %s not found!", seasonNames[season]);
+      if (varDataList2[season].size() == 0) cdo_abort("Season %s not found!", seasonNames[season]);
 
       process_data(tsID, numFields, season);
     }

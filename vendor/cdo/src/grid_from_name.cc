@@ -18,6 +18,17 @@
 size_t gen_icosphere_coords(int subdivisions, bool withBounds, Varray<double> &xvals, Varray<double> &yvals,
                             Varray<double> &xbounds, Varray<double> &ybounds);
 
+namespace
+{
+struct LonLatInfo
+{
+  double lon1{ 0.0 };
+  double lon2{ 0.0 };
+  double lat1{ 0.0 };
+  double lat2{ 0.0 };
+};
+}  // namespace
+
 static void
 generate_grid_icosphere(GridDesciption &grid, std::string const &gridname)
 {
@@ -47,9 +58,12 @@ generate_grid_icosphere(GridDesciption &grid, std::string const &gridname)
 }
 
 static void
-generate_grid_zonal(GridDesciption &grid, std::string const &gridname, double inc, double lon1, double lon2, double lat1,
-                    double lat2)
+generate_grid_zonal(GridDesciption &grid, std::string const &gridname, double inc, LonLatInfo const &lonLatInfo)
 {
+  auto lon1 = lonLatInfo.lon1;
+  auto lon2 = lonLatInfo.lon2;
+  auto lat1 = lonLatInfo.lat1;
+  auto lat2 = lonLatInfo.lat2;
   int gridtype = GRID_LONLAT;
 
   char endChar = '?';
@@ -93,32 +107,35 @@ generate_grid_zonal(GridDesciption &grid, std::string const &gridname, double in
 }
 
 static void
-generate_grid_lonlat(GridDesciption &grid, std::string const &gridname, double inc, double lon1, double lon2, double lat1,
-                     double lat2)
+generate_grid_lonlat(GridDesciption &grid, std::string const &gridparams, double inc, LonLatInfo const &lonLatInfo)
 {
+  auto lon1 = lonLatInfo.lon1;
+  auto lon2 = lonLatInfo.lon2;
+  auto lat1 = lonLatInfo.lat1;
+  auto lat2 = lonLatInfo.lat2;
   int gridtype = GRID_LONLAT;
-  bool withBounds = true;
+  bool withBounds = false;
 
-  if (gridname.size())
+  if (gridparams.size())
   {
     char endChar = '?', gridChar = '?';
     double offset = 0.0, increment = 0.0;
     int addBounds = -1;
-    auto numVals = std::sscanf(gridname.c_str(), "%lf_%lf_%c%d%c", &offset, &increment, &gridChar, &addBounds, &endChar);
+    auto numVals = std::sscanf(gridparams.c_str(), "%lf_%lf_%c%d%c", &offset, &increment, &gridChar, &addBounds, &endChar);
     // printf("%s: %d lonlat%g_%lf_%c%d<%c>\n", gridname.c_str(), numVals, offset, increment, gridChar, addBounds, endChar);
 
     if (numVals == 0)
     {
-      numVals = std::sscanf(gridname.c_str(), "_%lf_%c%d%c", &increment, &gridChar, &addBounds, &endChar);
+      numVals = std::sscanf(gridparams.c_str(), "_%lf_%c%d%c", &increment, &gridChar, &addBounds, &endChar);
       // printf("%s: %d lonlat_%lf_%c%d<%c>\n", gridname.c_str(), numVals, increment, gridChar, addBounds, endChar);
       if (numVals < 1 || numVals > 3) return;
     }
 
     if (numVals < 1 || numVals > 5) return;
-    if (gridChar != '?' && gridChar != 'c' && gridChar != 'u') return;
-    if (addBounds != -1 && addBounds != 0) return;
+    if (gridChar != '?' && gridChar != 'c' && gridChar != 'u' && gridChar != 'b') return;
+    if (addBounds != -1 && addBounds != 0 && addBounds != 1) return;
 
-    if (addBounds == 0) withBounds = false;
+    if (addBounds == 1) { withBounds = true; }
 
     if (is_not_equal(offset, 0.0))
     {
@@ -149,13 +166,21 @@ generate_grid_lonlat(GridDesciption &grid, std::string const &gridname, double i
   grid.xvals.resize(nlon);
   grid.yvals.resize(nlat);
 
-  for (size_t i = 0; i < nlon; ++i) grid.xvals[i] = lon1 + inc * 0.5 + i * inc;
-  for (size_t i = 0; i < nlat; ++i) grid.yvals[i] = lat1 + inc * 0.5 + i * inc;
+  for (size_t i = 0; i < nlon; ++i) { grid.xvals[i] = lon1 + inc * 0.5 + i * inc; }
+  for (size_t i = 0; i < nlat; ++i) { grid.yvals[i] = lat1 + inc * 0.5 + i * inc; }
 
   if (gridtype == GRID_LONLAT)
   {
     grid.xsize = nlon;
     grid.ysize = nlat;
+    if (withBounds)
+    {
+      grid.xbounds.resize(2 * nlon);
+      grid.ybounds.resize(2 * nlat);
+      grid_gen_bounds(nlon, grid.xvals, grid.xbounds);
+      grid_gen_bounds(nlat, grid.yvals, grid.ybounds);
+      grid_check_lat_borders(2 * nlat, grid.ybounds);
+    }
   }
   else
   {
@@ -238,7 +263,8 @@ generate_grid_dcw(GridDesciption &grid, std::string const &gridname, double inc)
   // printf("lon1, lon2, lat1, lat2 %g %g %g %g\n", lon1, lon2, lat1, lat2);
 
   const char *param = param2 ? param2 : "";
-  generate_grid_lonlat(grid, param, inc, lon1 - inc * 0.5, lon2 + inc * 0.5, lat1 - inc * 0.5, lat2 + inc * 0.5);
+  auto inch = inc * 0.5;
+  generate_grid_lonlat(grid, param, inc, { lon1 - inch, lon2 + inch, lat1 - inch, lat2 + inch });
 }
 
 static void
@@ -260,18 +286,30 @@ generate_grid_gme(GridDesciption &grid, std::string const &gridname)
   }
 }
 
+namespace
+{
+struct HealpixParams
+{
+  int refinementLevel{ -1 };
+  HpOrder hpOrder{ HpOrder::Nested };
+  size_t nside{ 0 };
+  size_t ncells{ 0 };
+  bool createIndices{ false };
+};
+}  // namespace
+
 static int
-scan_healpix_params(std::string const &gridname, bool isZoom, int &refinementLevel, HpOrder &hpOrder, bool &createIndices)
+scan_healpix_params(std::string const &gridname, HealpixParams &hpParams, bool isZoom)
 {
   char underChar = '?';
   std::vector<char> orderString(gridname.size(), 0);
-  auto numVals = std::sscanf(gridname.c_str(), "%d%c%s", &refinementLevel, &underChar, orderString.data());
-  if (refinementLevel < 0) return -1;
+  auto numVals = std::sscanf(gridname.c_str(), "%d%c%s", &hpParams.refinementLevel, &underChar, orderString.data());
+  if (hpParams.refinementLevel < 0) return -1;
   if (isZoom)
   {
     if (numVals == 2 && underChar == 'i')
     {
-      createIndices = true;
+      hpParams.createIndices = true;
       return 0;
     }
     if (numVals == 1) return (numVals == 1) ? 0 : -1;
@@ -282,11 +320,25 @@ scan_healpix_params(std::string const &gridname, bool isZoom, int &refinementLev
 
   if (orderString[0])
   {
-    hpOrder = hp_get_order(orderString.data());
-    if (hpOrder == HpOrder::Undef || hpOrder == HpOrder::XY) return -1;
+    hpParams.hpOrder = hp_get_order(orderString.data());
+    if (hpParams.hpOrder == HpOrder::Undef || hpParams.hpOrder == HpOrder::XY) return -1;
   }
 
   return 0;
+}
+
+static int
+get_healpix_params(std::string const &gridname, HealpixParams &hpParams, bool isZoom)
+{
+  auto status = scan_healpix_params(gridname, hpParams, isZoom);
+  if (status != -1)
+  {
+    hpParams.nside = isZoom ? std::lround(std::pow(2, hpParams.refinementLevel)) : hpParams.refinementLevel;
+    hpParams.ncells = 12 * hpParams.nside * hpParams.nside;
+    if (not isZoom) { hpParams.refinementLevel = std::log2(hpParams.refinementLevel); }
+  }
+
+  return status;
 }
 
 static void
@@ -294,20 +346,15 @@ generate_proj_healpix(GridDesciption &grid, std::string const &gridname, bool is
 {
   if (gridname.size() == 0) return;
 
-  int refinementLevel = -1;
-  HpOrder hpOrder(HpOrder::Nested);
-  bool createIndices{ false };
-  auto status = scan_healpix_params(gridname, isZoom, refinementLevel, hpOrder, createIndices);
+  HealpixParams hpParams;
+  auto status = get_healpix_params(gridname, hpParams, isZoom);
   if (status == -1) return;
 
-  size_t nside = isZoom ? std::lround(std::pow(2, refinementLevel)) : refinementLevel;
-
-  size_t ncells = 12 * nside * nside;
   grid.type = GRID_PROJECTION;
   grid.projection = "healpix";
-  grid.size = ncells;
-  grid.healpixNside = nside;
-  grid.healpixOrder = (hpOrder == HpOrder::Ring) ? "ring" : "nested";
+  grid.size = hpParams.ncells;
+  grid.healpixNside = hpParams.nside;
+  grid.healpixOrder = (hpParams.hpOrder == HpOrder::Ring) ? "ring" : "nested";
 }
 
 static void
@@ -315,23 +362,18 @@ generate_grid_healpix(GridDesciption &grid, std::string const &gridname, bool is
 {
   if (gridname.size() == 0) return;
 
-  int refinementLevel = -1;
-  HpOrder hpOrder(HpOrder::Nested);
-  bool createIndices{ false };
-  auto status = scan_healpix_params(gridname, isZoom, refinementLevel, hpOrder, createIndices);
+  HealpixParams hpParams;
+  auto status = get_healpix_params(gridname, hpParams, isZoom);
   if (status == -1) return;
 
-  size_t nside = isZoom ? std::lround(std::pow(2, refinementLevel)) : refinementLevel;
-
-  size_t ncells = 12 * nside * nside;
   grid.type = GRID_HEALPIX;
-  grid.size = ncells;
-  grid.refinementLevel = refinementLevel;
-  grid.healpixOrder = (hpOrder == HpOrder::Ring) ? "ring" : "nested";
-  if (createIndices)
+  grid.size = hpParams.ncells;
+  grid.refinementLevel = hpParams.refinementLevel;
+  grid.healpixOrder = (hpParams.hpOrder == HpOrder::Ring) ? "ring" : "nested";
+  if (hpParams.createIndices)
   {
-    grid.indices.resize(ncells);
-    for (size_t i = 0; i < ncells; ++i) { grid.indices[i] = i; }
+    grid.indices.resize(hpParams.ncells);
+    for (size_t i = 0, n = hpParams.ncells; i < n; ++i) { grid.indices[i] = i; }
   }
 }
 
@@ -740,7 +782,7 @@ grid_from_name(std::string const &gridname)
   // healpix  hpz<zoom>[_order] (order=[nested|ring|xy])
   else if (gridNameLC.starts_with("hpz")) { generate_proj_healpix(grid, gridNameLC.substr(3), true); }
   // healpix  hp<nside>[_order] (order=[nested|ring|xy])
-  else if (gridNameLC.starts_with("hp")) { generate_proj_healpix(grid, gridNameLC.substr(2)); }
+  else if (gridNameLC.starts_with("hp")) { generate_grid_healpix(grid, gridNameLC.substr(2)); }
   // gea<DX>: gaussian reduced equal area; DX in km
   else if (gridNameLC.starts_with("gea")) { generate_grid_gea(grid, gridNameLC); }
   // F<N> - full (regular) Gaussian grid with N latitude lines between the pole and equator
@@ -755,15 +797,15 @@ grid_from_name(std::string const &gridname)
   // dcw:code_Xdeg
   else if (gridNameLC.starts_with("dcw:")) { generate_grid_dcw(grid, gridNameLC.substr(4), 0.1); }
   // germany_Xdeg
-  else if (gridNameLC.starts_with("germany")) { generate_grid_lonlat(grid, gridNameLC.substr(7), 0.1, 5.6, 15.2, 47.1, 55.1); }
+  else if (gridNameLC.starts_with("germany")) { generate_grid_lonlat(grid, gridNameLC.substr(7), 0.1, { 5.6, 15.2, 47.1, 55.1 }); }
   // europe_Xdeg
-  else if (gridNameLC.starts_with("europe")) { generate_grid_lonlat(grid, gridNameLC.substr(6), 1, -30, 60, 30, 80); }
+  else if (gridNameLC.starts_with("europe")) { generate_grid_lonlat(grid, gridNameLC.substr(6), 1, { -30, 60, 30, 80 }); }
   // africa_Xdeg
-  else if (gridNameLC.starts_with("africa")) { generate_grid_lonlat(grid, gridNameLC.substr(6), 1, -20, 60, -40, 40); }
+  else if (gridNameLC.starts_with("africa")) { generate_grid_lonlat(grid, gridNameLC.substr(6), 1, { -20, 60, -40, 40 }); }
   // global_Xdeg
-  else if (gridNameLC.starts_with("global")) { generate_grid_lonlat(grid, gridNameLC.substr(6), 1, -180, 180, -90, 90); }
+  else if (gridNameLC.starts_with("global")) { generate_grid_lonlat(grid, gridNameLC.substr(6), 1, { -180, 180, -90, 90 }); }
   // zonal_Xdeg
-  else if (gridNameLC.starts_with("zonal")) { generate_grid_zonal(grid, gridNameLC, 1, -180, 180, -90, 90); }
+  else if (gridNameLC.starts_with("zonal")) { generate_grid_zonal(grid, gridNameLC, 1, { -180, 180, -90, 90 }); }
   // z<LAT>; zonal unstructured grid with <LAT> latitudes
   else if (gridNameLC[0] == 'z') { generate_grid_zonal(grid, gridNameLC); }
   // icoR02BXX

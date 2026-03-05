@@ -227,20 +227,6 @@ typedef struct
 
 typedef struct
 {
-  sleveltable_t *recordTable;  // record IDs for each subtype
-  int ncvarid;
-  int subtypeSize;
-  bool defmiss;  // true: if missval is defined in file
-  bool isUsed;
-
-  int gridID;
-  int zaxisID;
-  int tsteptype;  // TSTEP_*
-  int subtypeID;  // subtype ID, e.g. for tile-related meta-data (currently for GRIB-API only).
-} svarinfo_t;
-
-typedef struct
-{
   int ilev;
   int mlev;
   int ilevID;
@@ -258,13 +244,24 @@ enum cdfIDIdx
   CDF_VARID_Y,
   CDF_VARID_RP,  // reducedPoints
   CDF_VARID_A,
-  CDF_VARID_I,  // cellIndices
   CDF_SIZE_NCID,
 };
 
 typedef struct
 {
-  int ncIdVec[CDF_SIZE_NCID];
+  void *buffer;
+  size_t start[MAX_DIMENSIONS];
+  size_t count[MAX_DIMENSIONS];
+  size_t bufferSize;
+  size_t cacheSize;
+  size_t numSteps;
+  size_t maxSteps;
+  int numDims;
+} CdfCache;
+
+typedef struct
+{
+  int ncIdList[CDF_SIZE_NCID];
   int gridID;
   long start;
   long count;
@@ -272,19 +269,44 @@ typedef struct
 
 typedef struct
 {
-  int complexFloatId;
-  int complexDoubleId;
-  CdfGrid cdfGridVec[MAX_GRIDS_PS];
-  int zaxisIdVec[MAX_ZAXES_PS];  // Warning: synchronous array to vlist_to_pointer(vlistID)->zaxisIDs
-  int ncZvarIdVec[MAX_ZAXES_PS];
-  int ncDimIdVec[MAX_DIMS_PS];
-  size_t ncDimLenVec[MAX_DIMS_PS];
-  int ncNumDims;
+  int zaxisID;
+  long start;
+  long count;
+} CdfZaxis;
+
+typedef struct
+{
+  CdfGrid cdfGridList[MAX_GRIDS_PS];
+  CdfZaxis cdfZaxisList[MAX_ZAXES_PS];
   size_t chunkSizeDimT;
   size_t chunkSizeDimZ;
+  size_t ncDimLenList[MAX_DIMS_PS];
+  int ncDimIdList[MAX_DIMS_PS];
+  int zaxisIdList[MAX_ZAXES_PS];  // Warning: synchronous array to vlist_to_pointer(vlistID)->zaxisIDs
+  int ncZvarIdList[MAX_ZAXES_PS];
+  int ncNumDims;
+  int complexFloatId;
+  int complexDoubleId;
   VCT vct;
 } CdfInfo;
 #endif
+
+typedef struct
+{
+#ifdef HAVE_LIBNETCDF
+  CdfCache *cdfCache;
+#endif
+  sleveltable_t *recordTable;  // record IDs for each subtype
+  int ncvarid;
+  int subtypeSize;
+  bool defmiss;  // true: if missval is defined in file
+  bool isUsed;
+
+  int gridID;
+  int zaxisID;
+  int tsteptype;  // TSTEP_*
+  int subtypeID;  // subtype ID, e.g. for tile-related meta-data (currently for GRIB-API only).
+} svarinfo_t;
 
 typedef struct
 {
@@ -299,7 +321,7 @@ typedef struct
   SizeType numvals;
   char *filename;
   Record *record;
-  CdiQuery *query;
+  struct CdiQuery *query;
   svarinfo_t *vars;
   int nvars;  // number of variables
   int varsAllocated;
@@ -360,7 +382,9 @@ enum cdi_convention
 typedef enum
 {
   t_double = 0,
-  t_int = 1
+  t_int = 1,
+  t_intarr = 2,
+  t_doublearr = 3
 } key_val_pair_datatype;
 
 // Data structure holding optional key/value pairs for GRIB
@@ -371,6 +395,9 @@ typedef struct
   key_val_pair_datatype data_type;  // data type of this key/value pair
   double dbl_val;                   // double value (data_type == t_double)
   int int_val;                      // integer value (data_type == t_int)
+  int *int_arr;                     // pointer to integer array (if data_type == t_intarr)
+  double *dbl_arr;                  // pointer to double array (if data_type == t_doublearr)
+  size_t arr_len;                   // length of array (if array type)
   int subtype_index;                // tile index for this key-value pair
 } opt_key_val_pair_t;
 
@@ -423,12 +450,14 @@ extern int CDI_CMOR_Mode;
 extern int CDI_Reduce_Dim;
 extern int CDI_Shuffle;
 extern size_t CDI_Netcdf_Hdr_Pad;
-extern bool CDI_CopyChunkSpec;
-extern bool CDI_RemoveChunkSpec;
-extern bool CDI_Chunk_Cache_Info;
-extern long CDI_Chunk_Cache_In;
-extern long CDI_Chunk_Cache_Out;
-extern size_t CDI_Chunk_Cache_Max;
+extern bool CDI_Copy_ChunkSpec;
+extern bool CDI_Remove_ChunkSpec;
+extern bool CDI_Cache_Info;
+extern bool CDI_Cache_NC4;
+extern bool CDI_Cache_NCZ;
+extern long CDI_CacheSize_In;
+extern long CDI_CacheSize_Out;
+extern size_t CDI_CacheSize_Max;
 extern bool CDI_Netcdf_Lazy_Grid_Load;
 extern int STREAM_Debug;
 

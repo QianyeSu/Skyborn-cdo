@@ -278,7 +278,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Invert> registration = RegisterEntry<Invert>();
+  inline static auto registration = RegisterEntry<Invert>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

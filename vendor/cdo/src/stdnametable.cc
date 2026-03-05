@@ -79,17 +79,16 @@ var_units(int varid)
 int
 stdname_to_echamcode(std::string const &stdname)
 {
-  int code = -1;
   // clang-format off
-  if      (stdname == var_stdname(surface_geopotential))      code = 129;
-  else if (stdname == var_stdname(geopotential))              code = 129;
-  else if (stdname == var_stdname(air_temperature))           code = 130;
-  else if (stdname == var_stdname(specific_humidity))         code = 133;
-  else if (stdname == var_stdname(surface_air_pressure))      code = 134;
-  else if (stdname == var_stdname(air_pressure_at_sea_level)) code = 151;
-  else if (stdname == var_stdname(geopotential_height))       code = 156;
+  if (stdname == var_stdname(surface_geopotential))      return 129;
+  if (stdname == var_stdname(geopotential))              return 129;
+  if (stdname == var_stdname(air_temperature))           return 130;
+  if (stdname == var_stdname(specific_humidity))         return 133;
+  if (stdname == var_stdname(surface_air_pressure))      return 134;
+  if (stdname == var_stdname(air_pressure_at_sea_level)) return 151;
+  if (stdname == var_stdname(geopotential_height))       return 156;
   // clang-format on
-  return code;
+  return -1;
 }
 
 GribCodes

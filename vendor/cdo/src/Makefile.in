@@ -351,7 +351,8 @@ am_cdo_OBJECTS = cdo-cdo.$(OBJEXT) operators/cdo-Adisit.$(OBJEXT) \
 	operators/cdo-Splitrec.$(OBJEXT) \
 	operators/cdo-Splitsel.$(OBJEXT) \
 	operators/cdo-Splittime.$(OBJEXT) \
-	operators/cdo-Splityear.$(OBJEXT) operators/cdo-Tee.$(OBJEXT) \
+	operators/cdo-Splityear.$(OBJEXT) \
+	operators/cdo-Symmetrize.$(OBJEXT) operators/cdo-Tee.$(OBJEXT) \
 	operators/cdo-Test.$(OBJEXT) operators/cdo-Tests.$(OBJEXT) \
 	operators/cdo-Timcount.$(OBJEXT) \
 	operators/cdo-Timcumsum.$(OBJEXT) \
@@ -766,6 +767,7 @@ am__depfiles_remade = ./$(DEPDIR)/cdo-cdo.Po \
 	operators/$(DEPDIR)/cdo-Splitsel.Po \
 	operators/$(DEPDIR)/cdo-Splittime.Po \
 	operators/$(DEPDIR)/cdo-Splityear.Po \
+	operators/$(DEPDIR)/cdo-Symmetrize.Po \
 	operators/$(DEPDIR)/cdo-Tee.Po operators/$(DEPDIR)/cdo-Test.Po \
 	operators/$(DEPDIR)/cdo-Tests.Po \
 	operators/$(DEPDIR)/cdo-Timcount.Po \
@@ -1249,13 +1251,13 @@ cdo_SOURCES = cdo.cc operators/Adisit.cc operators/Afterburner.cc \
 	operators/Spectral.cc operators/Spectrum.cc operators/Split.cc \
 	operators/Splitdate.cc operators/Splitrec.cc \
 	operators/Splitsel.cc operators/Splittime.cc \
-	operators/Splityear.cc operators/Tee.cc operators/Test.cc \
-	operators/Tests.cc operators/Timcount.cc \
-	operators/Timcumsum.cc operators/Timfillmiss.cc \
-	operators/Timpctl.cc operators/Timselpctl.cc \
-	operators/Timselstat.cc operators/Timsort.cc \
-	operators/Timstat.cc operators/Timstat2.cc \
-	operators/Timstat3.cc operators/Tinfo.cc \
+	operators/Splityear.cc operators/Symmetrize.cc \
+	operators/Tee.cc operators/Test.cc operators/Tests.cc \
+	operators/Timcount.cc operators/Timcumsum.cc \
+	operators/Timfillmiss.cc operators/Timpctl.cc \
+	operators/Timselpctl.cc operators/Timselstat.cc \
+	operators/Timsort.cc operators/Timstat.cc \
+	operators/Timstat2.cc operators/Timstat3.cc operators/Tinfo.cc \
 	operators/Tocomplex.cc operators/Transpose.cc \
 	operators/Trend.cc operators/Trendarith.cc \
 	operators/Tstepcount.cc operators/Unpack.cc \
@@ -1787,6 +1789,8 @@ operators/cdo-Splittime.$(OBJEXT): operators/$(am__dirstamp) \
 	operators/$(DEPDIR)/$(am__dirstamp)
 operators/cdo-Splityear.$(OBJEXT): operators/$(am__dirstamp) \
 	operators/$(DEPDIR)/$(am__dirstamp)
+operators/cdo-Symmetrize.$(OBJEXT): operators/$(am__dirstamp) \
+	operators/$(DEPDIR)/$(am__dirstamp)
 operators/cdo-Tee.$(OBJEXT): operators/$(am__dirstamp) \
 	operators/$(DEPDIR)/$(am__dirstamp)
 operators/cdo-Test.$(OBJEXT): operators/$(am__dirstamp) \
@@ -2252,6 +2256,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Splitsel.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Splittime.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Splityear.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Symmetrize.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Tee.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@operators/$(DEPDIR)/cdo-Tests.Po@am__quote@ # am--include-marker
@@ -5770,6 +5775,20 @@ operators/cdo-Splityear.obj: operators/Splityear.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cdo_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o operators/cdo-Splityear.obj `if test -f 'operators/Splityear.cc'; then $(CYGPATH_W) 'operators/Splityear.cc'; else $(CYGPATH_W) '$(srcdir)/operators/Splityear.cc'; fi`
 
+operators/cdo-Symmetrize.o: operators/Symmetrize.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cdo_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT operators/cdo-Symmetrize.o -MD -MP -MF operators/$(DEPDIR)/cdo-Symmetrize.Tpo -c -o operators/cdo-Symmetrize.o `test -f 'operators/Symmetrize.cc' || echo '$(srcdir)/'`operators/Symmetrize.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) operators/$(DEPDIR)/cdo-Symmetrize.Tpo operators/$(DEPDIR)/cdo-Symmetrize.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='operators/Symmetrize.cc' object='operators/cdo-Symmetrize.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cdo_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o operators/cdo-Symmetrize.o `test -f 'operators/Symmetrize.cc' || echo '$(srcdir)/'`operators/Symmetrize.cc
+
+operators/cdo-Symmetrize.obj: operators/Symmetrize.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cdo_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT operators/cdo-Symmetrize.obj -MD -MP -MF operators/$(DEPDIR)/cdo-Symmetrize.Tpo -c -o operators/cdo-Symmetrize.obj `if test -f 'operators/Symmetrize.cc'; then $(CYGPATH_W) 'operators/Symmetrize.cc'; else $(CYGPATH_W) '$(srcdir)/operators/Symmetrize.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) operators/$(DEPDIR)/cdo-Symmetrize.Tpo operators/$(DEPDIR)/cdo-Symmetrize.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='operators/Symmetrize.cc' object='operators/cdo-Symmetrize.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cdo_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o operators/cdo-Symmetrize.obj `if test -f 'operators/Symmetrize.cc'; then $(CYGPATH_W) 'operators/Symmetrize.cc'; else $(CYGPATH_W) '$(srcdir)/operators/Symmetrize.cc'; fi`
+
 operators/cdo-Tee.o: operators/Tee.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(cdo_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT operators/cdo-Tee.o -MD -MP -MF operators/$(DEPDIR)/cdo-Tee.Tpo -c -o operators/cdo-Tee.o `test -f 'operators/Tee.cc' || echo '$(srcdir)/'`operators/Tee.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) operators/$(DEPDIR)/cdo-Tee.Tpo operators/$(DEPDIR)/cdo-Tee.Po
@@ -7113,6 +7132,7 @@ distclean: distclean-am
 	-rm -f operators/$(DEPDIR)/cdo-Splitsel.Po
 	-rm -f operators/$(DEPDIR)/cdo-Splittime.Po
 	-rm -f operators/$(DEPDIR)/cdo-Splityear.Po
+	-rm -f operators/$(DEPDIR)/cdo-Symmetrize.Po
 	-rm -f operators/$(DEPDIR)/cdo-Tee.Po
 	-rm -f operators/$(DEPDIR)/cdo-Test.Po
 	-rm -f operators/$(DEPDIR)/cdo-Tests.Po
@@ -7541,6 +7561,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f operators/$(DEPDIR)/cdo-Splitsel.Po
 	-rm -f operators/$(DEPDIR)/cdo-Splittime.Po
 	-rm -f operators/$(DEPDIR)/cdo-Splityear.Po
+	-rm -f operators/$(DEPDIR)/cdo-Symmetrize.Po
 	-rm -f operators/$(DEPDIR)/cdo-Tee.Po
 	-rm -f operators/$(DEPDIR)/cdo-Test.Po
 	-rm -f operators/$(DEPDIR)/cdo-Tests.Po

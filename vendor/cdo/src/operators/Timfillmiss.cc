@@ -39,7 +39,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timfillmiss> registration = RegisterEntry<Timfillmiss>();
+  inline static auto registration = RegisterEntry<Timfillmiss>();
 
 private:
   DateTimeList dtlist{};
@@ -52,7 +52,7 @@ private:
   int taxisID2{ CDI_UNDEFID };
 
   VarList varList1{};
-  FieldVector3D varsData{};
+  FieldVector3D varDataList{};
 
   int calendar{};
   int numVars{};
@@ -140,9 +140,9 @@ public:
         auto &dataValues = dataValues2D[ompthID];
 
         if (fieldMemType == MemType::Float)
-          for (int t = 0; t < numSteps; ++t) dataValues[t] = varsData[t][varID][levelID].vec_f[i];
+          for (int t = 0; t < numSteps; ++t) dataValues[t] = varDataList[t][varID][levelID].vec_f[i];
         else
-          for (int t = 0; t < numSteps; ++t) dataValues[t] = varsData[t][varID][levelID].vec_d[i];
+          for (int t = 0; t < numSteps; ++t) dataValues[t] = varDataList[t][varID][levelID].vec_d[i];
 
         // clang-format off
         if      (method == FillMethod::Nearest)  fill_1d_nearest(numSteps, timeValues, dataValues, missval, limit, maxGaps);
@@ -152,9 +152,9 @@ public:
         // clang-format on
 
         if (fieldMemType == MemType::Float)
-          for (int t = 0; t < numSteps; ++t) varsData[t][varID][levelID].vec_f[i] = dataValues[t];
+          for (int t = 0; t < numSteps; ++t) varDataList[t][varID][levelID].vec_f[i] = dataValues[t];
         else
-          for (int t = 0; t < numSteps; ++t) varsData[t][varID][levelID].vec_d[i] = dataValues[t];
+          for (int t = 0; t < numSteps; ++t) varDataList[t][varID][levelID].vec_d[i] = dataValues[t];
       }
     }
   }
@@ -169,16 +169,16 @@ public:
       if (numFields == 0) break;
 
       constexpr size_t NALLOC_INC = 1024;
-      if ((size_t) tsID >= varsData.size()) varsData.resize(varsData.size() + NALLOC_INC);
+      if ((size_t) tsID >= varDataList.size()) varDataList.resize(varDataList.size() + NALLOC_INC);
 
       dtlist.taxis_inq_timestep(taxisID1, tsID);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -209,7 +209,7 @@ public:
       {
         for (int levelID = 0; levelID < varList1.vars[varID].nlevels; ++levelID)
         {
-          auto &field = varsData[tsID][varID][levelID];
+          auto &field = varDataList[tsID][varID][levelID];
           if (field.hasData())
           {
             cdo_def_field(streamID2, varID, levelID);

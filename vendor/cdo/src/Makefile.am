@@ -486,6 +486,7 @@ cdo_SOURCES +=  operators/Adisit.cc            \
 				operators/Splitsel.cc          \
 				operators/Splittime.cc         \
 				operators/Splityear.cc         \
+				operators/Symmetrize.cc        \
 				operators/Tee.cc               \
 				operators/Test.cc              \
 				operators/Tests.cc             \

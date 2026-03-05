@@ -95,7 +95,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertintap> registration = RegisterEntry<Vertintap>();
+  inline static auto registration = RegisterEntry<Vertintap>();
 
   int AP2PLX{}, AP2HLX{};
   int airPressID_FL = -1, airPressID_HL = -1, deltaPressID = -1;
@@ -125,7 +125,8 @@ public:
 
   std::vector<bool> processVars, interpVars;
   Varray2D<size_t> varnumMissVals;
-  Field3DVector vardata1, vardata2;
+  Field3DVector varDataList1;
+  Field3DVector varDataList2;
 
   Varray<size_t> numMiss_FL, numMiss_HL;
   std::vector<int> vertIndex_FL, vertIndex_HL;
@@ -242,8 +243,8 @@ public:
     processVars.resize(numVars);
     interpVars.resize(numVars);
     varnumMissVals.resize(numVars);
-    vardata1.resize(numVars);
-    vardata2.resize(numVars);
+    varDataList1.resize(numVars);
+    varDataList2.resize(numVars);
 
     auto maxLevels = std::max(std::max(numFullLevels, numHalfLevels), numPL);
 
@@ -281,7 +282,7 @@ public:
 
       if (gridInqType(var.gridID) == GRID_SPECTRAL) cdo_abort("Spectral data unsupported!");
 
-      vardata1[varID].init(var);
+      varDataList1[varID].init(var);
 
       interpVars[varID] = (var.zaxisID == zaxisID_FL
                            || (isHeightAxis && zaxisID_FL != -1 && (var.nlevels == numHalfLevels || var.nlevels == numFullLevels)));
@@ -289,7 +290,7 @@ public:
       if (interpVars[varID])
       {
         varnumMissVals[varID].resize(maxLevels, 0);
-        vardata2[varID].init(varList2.vars[varID]);
+        varDataList2[varID].init(varList2.vars[varID]);
       }
       else
       {
@@ -340,7 +341,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
         processVars[varID] = true;
       }
 
@@ -355,27 +356,27 @@ public:
         if (psID != -1)
         {
           psProg.init(varList1.vars[psID]);
-          field_copy(vardata1[psID], psProg);
+          field_copy(varDataList1[psID], psProg);
         }
         else if (deltaPressID != -1)
         {
           psProg.init(varList1.vars[deltaPressID]);
           field_fill(psProg, 0);
-          for (int k = 0; k < numFullLevels; ++k) field_add(psProg, vardata1[deltaPressID], k);
+          for (int k = 0; k < numFullLevels; ++k) field_add(psProg, varDataList1[deltaPressID], k);
         }
         else
         {
           psProg.init(varList1.vars[airPressID_FL]);
-          field_copy(vardata1[airPressID_FL], numFullLevels - 1, psProg);
+          field_copy(varDataList1[airPressID_FL], numFullLevels - 1, psProg);
         }
 
         // check range of psProg
         check_range_ps(tsID + 1, psProg);
 
-        field_copy(vardata1[airPressID_FL], fullPress);
+        field_copy(varDataList1[airPressID_FL], fullPress);
 
         if (-1 != zaxisID_HL)
-          field_copy(vardata1[airPressID_HL], halfPress);
+          field_copy(varDataList1[airPressID_HL], halfPress);
         else
           calc_half_press(fullPress, halfPress);
 
@@ -406,7 +407,7 @@ public:
 
             auto const &levels3D = (var.nlevels == numFullLevels) ? fullPress : halfPress;
             auto const &vertIndex3D = (var.nlevels == numFullLevels) ? vertIndex_FL : vertIndex_HL;
-            vertical_interp_X(levels3D, vardata1[varID], vardata2[varID], vertIndex3D, pressureLevels, gridsize);
+            vertical_interp_X(levels3D, varDataList1[varID], varDataList2[varID], vertIndex3D, pressureLevels, gridsize);
 
             if (!extrapolate)
             {
@@ -418,7 +419,7 @@ public:
           for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
           {
             cdo_def_field(streamID2, varID, levelID);
-            cdo_write_field(streamID2, interpVars[varID] ? vardata2[varID] : vardata1[varID], levelID,
+            cdo_write_field(streamID2, interpVars[varID] ? varDataList2[varID] : varDataList1[varID], levelID,
                             varnumMissVals[varID][levelID]);
           }
         }

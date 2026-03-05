@@ -21,8 +21,11 @@
 #include "tablepar.h"
 #include "table.h"
 
-#define MAX_TABLE 256
-#define MAX_PARS 1024
+enum
+{
+  MAX_TABLE = 512,
+  MAX_PARS = 1024
+};
 
 typedef struct
 {
@@ -159,7 +162,7 @@ tableNewEntry(void)
     if (!parTable[tableID].used) break;
   }
 
-  if (tableID == parTableSize) Error("no more entries!");
+  if (tableID == parTableSize) Error("No more table entries (limit=%d)!", parTableSize);
 
   parTable[tableID].used = true;
   parTableNum++;
@@ -373,6 +376,8 @@ tableRead(const char *tablefile)
 
     tableDefEntry(tableID, id, ltype, name, longname, units);
   }
+
+  fclose(tablefp);
 
   return tableID;
 }

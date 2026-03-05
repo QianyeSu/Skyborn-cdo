@@ -374,7 +374,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Showinfo> registration = RegisterEntry<Showinfo>();
+  inline static auto registration = RegisterEntry<Showinfo>();
 
 public:
   void

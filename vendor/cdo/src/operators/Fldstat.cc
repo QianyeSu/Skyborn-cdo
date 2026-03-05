@@ -287,7 +287,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Fldstat> registration = RegisterEntry<Fldstat>();
+  inline static auto registration = RegisterEntry<Fldstat>();
 
   int FLDINT{};
   CdoStreamID streamID1{};

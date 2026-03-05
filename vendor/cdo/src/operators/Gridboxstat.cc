@@ -114,7 +114,7 @@ gen_boxgrid_curv2D(int gridID1, size_t xinc, size_t yinc, int gridID2)
   auto gridsize1 = gridInqSize(gridID1);
   auto gridsize2 = gridInqSize(gridID2);
 
-  auto circular = gridIsCircular(gridID1);
+  auto isCyclic = gridIsCyclic(gridID1);
   double xvals2_0 = 0.0;
 
   Varray<double> xvals1(gridsize1), yvals1(gridsize1);
@@ -148,7 +148,7 @@ gen_boxgrid_curv2D(int gridID1, size_t xinc, size_t yinc, int gridID2)
         auto use_x1 = x1;
         if (x1 >= nlon1)
         {
-          if (circular && use_y1 == y1)
+          if (isCyclic && use_y1 == y1)
             use_y1 -= 1;
           else
             use_x1 = nlon1 - 1;
@@ -307,7 +307,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Gridboxstat> registration = RegisterEntry<Gridboxstat>();
+  inline static auto registration = RegisterEntry<Gridboxstat>();
 
   int lastgrid = -1;
   bool wstatus = false;

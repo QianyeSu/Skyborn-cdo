@@ -66,7 +66,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 2, OnlyFirst },
   };
-  inline static RegisterEntry<Trend> registration = RegisterEntry<Trend>();
+  inline static auto registration = RegisterEntry<Trend>();
 
   static const int numWork = 5;
 

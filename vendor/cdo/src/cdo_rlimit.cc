@@ -17,7 +17,6 @@
 #endif
 
 #include <cstdio>
-#include <algorithm>
 
 #include "cdo_rlimit.h"
 #include "cdo_options.h"
@@ -29,23 +28,23 @@
 #define RLIM_T rlim_t
 #endif
 
-#define PRINT_RLIMIT(resource)                                                           \
-  {                                                                                      \
-    struct rlimit rlim;                                                                  \
-    auto status = getrlimit(resource, &rlim);                                            \
-    if (status == 0)                                                                     \
-      {                                                                                  \
-        if (sizeof(RLIM_T) > sizeof(long))                                               \
-          {                                                                              \
-            std::fprintf(stderr, "CUR %-15s = %llu\n", #resource, (long long) rlim.rlim_cur); \
-            std::fprintf(stderr, "MAX %-15s = %llu\n", #resource, (long long) rlim.rlim_max); \
-          }                                                                              \
-        else                                                                             \
-          {                                                                              \
-            std::fprintf(stderr, "CUR %-15s = %lu\n", #resource, (long) rlim.rlim_cur);       \
-            std::fprintf(stderr, "MAX %-15s = %lu\n", #resource, (long) rlim.rlim_max);       \
-          }                                                                              \
-      }                                                                                  \
+#define PRINT_RLIMIT(resource)                                                            \
+  {                                                                                       \
+    struct rlimit rlim;                                                                   \
+    auto status = getrlimit(resource, &rlim);                                             \
+    if (status == 0)                                                                      \
+    {                                                                                     \
+      if (sizeof(RLIM_T) > sizeof(long))                                                  \
+      {                                                                                   \
+        std::fprintf(stderr, "CUR %-15s = %llu\n", #resource, (long long) rlim.rlim_cur); \
+        std::fprintf(stderr, "MAX %-15s = %llu\n", #resource, (long long) rlim.rlim_max); \
+      }                                                                                   \
+      else                                                                                \
+      {                                                                                   \
+        std::fprintf(stderr, "CUR %-15s = %lu\n", #resource, (long) rlim.rlim_cur);       \
+        std::fprintf(stderr, "MAX %-15s = %lu\n", #resource, (long) rlim.rlim_max);       \
+      }                                                                                   \
+    }                                                                                     \
   }
 
 namespace cdo
@@ -79,15 +78,15 @@ set_rlimit(struct rlimit lim, int resource, const char *rname)
 {
   auto stat = setrlimit(resource, &lim);
   if (MpMO::DebugLevel > 0)
+  {
+    if (stat == 0)
     {
-      if (stat == 0)
-        {
-          std::fprintf(stderr, "Set %s to %ld\n", rname, (long) lim.rlim_cur);
-          PRINT_RLIMIT(resource);
-        }
-      else { std::fprintf(stderr, "Set %s to %ld failed!\n", rname, (long) lim.rlim_cur); }
-      std::fprintf(stderr, "\n");
+      std::fprintf(stderr, "Set %s to %ld\n", rname, (long) lim.rlim_cur);
+      PRINT_RLIMIT(resource);
     }
+    else { std::fprintf(stderr, "Set %s to %ld failed!\n", rname, (long) lim.rlim_cur); }
+    std::fprintf(stderr, "\n");
+  }
 }
 #endif
 
@@ -98,15 +97,15 @@ set_rlimit_min(long rsize, int resource, const char *rname)
   struct rlimit lim;
   auto stat = getrlimit(resource, &lim);
   if (stat == 0)
+  {
+    RLIM_T minSize = rsize;
+    minSize = std::min(minSize, lim.rlim_max);
+    if (lim.rlim_cur < minSize)
     {
-      RLIM_T minSize = rsize;
-      minSize = std::min(minSize, lim.rlim_max);
-      if (lim.rlim_cur < minSize)
-        {
-          lim.rlim_cur = minSize;
-          set_rlimit(lim, resource, rname);
-        }
+      lim.rlim_cur = minSize;
+      set_rlimit(lim, resource, rname);
     }
+  }
 #endif
 }
 
@@ -117,14 +116,14 @@ set_rlimit_max(long rsize, int resource, const char *rname)
   struct rlimit lim;
   auto stat = getrlimit(resource, &lim);
   if (stat == 0)
+  {
+    RLIM_T maxSize = rsize;
+    if (maxSize < lim.rlim_cur)
     {
-      RLIM_T maxSize = rsize;
-      if (maxSize < lim.rlim_cur)
-        {
-          lim.rlim_cur = maxSize;
-          set_rlimit(lim, resource, rname);
-        }
+      lim.rlim_cur = maxSize;
+      set_rlimit(lim, resource, rname);
     }
+  }
 #endif
 }
 

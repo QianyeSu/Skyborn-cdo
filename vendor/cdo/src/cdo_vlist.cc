@@ -150,18 +150,13 @@ cdo_compare_grids(int gridID1, int gridID2)
   {
     if (gridType1 == GRID_GAUSSIAN || gridType2 == GRID_LONLAT)
     {
-      auto xsize = gridInqXsize(gridID1);
       auto ysize = gridInqYsize(gridID1);
+      if (ysize == gridInqYsize(gridID2)) { compare_lat_reg2d(ysize, gridID1, gridID2); }
+      else { cdo_warning("ysize of input grids differ!"); }
 
-      if (ysize == gridInqYsize(gridID2))
-        compare_lat_reg2d(ysize, gridID1, gridID2);
-      else
-        cdo_warning("ysize of input grids differ!");
-
-      if (xsize == gridInqXsize(gridID2))
-        compare_lon_reg2d(xsize, gridID1, gridID2);
-      else
-        cdo_warning("xsize of input grids differ!");
+      auto xsize = gridInqXsize(gridID1);
+      if (xsize == gridInqXsize(gridID2)) { compare_lon_reg2d(xsize, gridID1, gridID2); }
+      else { cdo_warning("xsize of input grids differ!"); }
     }
     else if (gridType1 == GRID_CURVILINEAR || gridType2 == GRID_UNSTRUCTURED) { compare_grid_unstructured(gridID1, gridID2); }
   }

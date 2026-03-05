@@ -12,7 +12,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
-#include <algorithm>
 
 #include "cdo_output.h"
 

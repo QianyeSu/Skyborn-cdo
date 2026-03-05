@@ -8,187 +8,103 @@
 #include <float.h>
 
 #include "area.h"
-#include "yac_types.h"
-#include "clipping.h"
 #include "geometry.h"
 #include "utils_core.h"
 #include "ensure_array_size.h"
 
 static inline double scalar_product(double a[], double b[]);
 
-/* ----------------------------------- */
-
-double yac_triangle_area ( struct yac_grid_cell cell ) {
-
-  /* taken from the ICON code, mo_base_geometry.f90
-     provided by Luis Kornblueh, MPI-M. */
-
-  const double tol = 1e-18;
-
-  double s01, s12, s20;
-  double ca1, ca2, ca3;
-  double a1, a2, a3;
-
-  double * triangle[3];
-  double u01[3], u12[3], u20[3];
-
-  YAC_ASSERT(
-    cell.num_corners == 3, "ERROR(yac_triangle_area): cell is not a triangle")
-
-  triangle[0] = cell.coordinates_xyz[0];
-  triangle[1] = cell.coordinates_xyz[1];
-  triangle[2] = cell.coordinates_xyz[2];
-
-  /* First, compute cross products Uij = Vi x Vj. */
-
-  crossproduct_kahan(triangle[0], triangle[1], u01);
-  crossproduct_kahan(triangle[1], triangle[2], u12);
-  crossproduct_kahan(triangle[2], triangle[0], u20);
-
-  /*  Normalize Uij to unit vectors. */
-
-  s01 = scalar_product(u01, u01);
-  s12 = scalar_product(u12, u12);
-  s20 = scalar_product(u20, u20);
-
-  /* Test for a degenerated triangle associated with collinear vertices. */
-
-  if ( fabs(s01) < tol ||
-       fabs(s12) < tol ||
-       fabs(s20) < tol )
-    return 0.0;
-
-  s01 = sqrt(s01);
-  s12 = sqrt(s12);
-  s20 = sqrt(s20);
-
-  for (int m = 0; m < 3; m++ ) {
-    u01[m] = u01[m]/s01;
-    u12[m] = u12[m]/s12;
-    u20[m] = u20[m]/s20;
-  }
-
-  /*  Compute interior angles Ai as the dihedral angles between planes:
-
-      CA1 = cos(A1) = -<U01,U20>
-      CA2 = cos(A2) = -<U12,U01>
-      CA3 = cos(A3) = -<U20,U12>
-
+/** Compute the area of a spherical triangle using Eriksson's formula
+  *
+  * (Eriksson, F. (1990). On the Measure of Solid Angles. Mathematics Magazine,
+  *  63(3), 184–187. https://doi.org/10.1080/0025570X.1990.11977515)
+  *
+  * This function computes the signed spherical excess (area) of a triangle
+  * on the unit sphere using a numerically stable variant of Eriksson's formula:
+  *
+  *   area = 2 * atan2(a·(b×c), 1 + a·b + b·c + c·a)
+  *
+  * The implementation uses compensated arithmetic (error-free transformations
+  * via FMA instructions) to maintain high accuracy for small triangles and
+  * near-degenerate configurations.
+  *
+  * This formula was proposed for YAC by Hongyu Chen, who evaluated several
+  * methods for computing the area of a spherical triangle for her paper:
+  * "Accurate and Robust Algorithms for Conservative Regridding on the Sphere"
+  * (full reference will follow). Erikksons formula significantly exceeds
+  * the accuracy of L'Huilier's theorem based implementations.
+  *
+  * \param[in] a First vertex in Cartesian coordinates (x, y, z) on unit sphere
+  * \param[in] b Second vertex in Cartesian coordinates (x, y, z) on unit sphere
+  * \param[in] c Third vertex in Cartesian coordinates (x, y, z) on unit sphere
+  *
+  * \return Signed spherical excess (area) of the triangle. Positive if vertices
+  *         are ordered counter-clockwise when viewed from outside the sphere,
+  *         negative if clockwise.
+  *
+  * \remark All three vertices are assumed to lie on the unit sphere
+  * \remark The triangle edges are great circle arcs
   */
+static double tri_area(double const * restrict a,
+                       double const * restrict b,
+                       double const * restrict c) {
 
-  ca1 = -u01[0]*u20[0]-u01[1]*u20[1]-u01[2]*u20[2];
-  ca2 = -u12[0]*u01[0]-u12[1]*u01[1]-u12[2]*u01[2];
-  ca3 = -u20[0]*u12[0]-u20[1]*u12[1]-u20[2]*u12[2];
+  /* --------------------------------------------------
+    * Compensated cross product b x c
+    * -------------------------------------------------- */
 
-  if ( ca1 < -1.0 ) ca1 = -1.0;
-  if ( ca1 >  1.0 ) ca1 =  1.0;
-  if ( ca2 < -1.0 ) ca2 = -1.0;
-  if ( ca2 >  1.0 ) ca2 =  1.0;
-  if ( ca3 < -1.0 ) ca3 = -1.0;
-  if ( ca3 >  1.0 ) ca3 =  1.0;
+  double bc[3];   // b x c
+  double bc_e[3]; // error from computation of bc
+  det2_error(b[1], b[2], c[1], c[2], &bc[0], &bc_e[0]);
+  det2_error(b[2], b[0], c[2], c[0], &bc[1], &bc_e[1]);
+  det2_error(b[0], b[1], c[0], c[1], &bc[2], &bc_e[2]);
 
-  a1 = acos(ca1);
-  a2 = acos(ca2);
-  a3 = acos(ca3);
+  /* --------------------------------------------------
+    * Compensated scalar triple product
+    * T = a * (b x c)
+    * -------------------------------------------------- */
 
-  /*  Compute areas = a1 + a2 + a3 - pi.
+  double abc[3] =   // a * bc
+    {a[0]*bc[0], a[1]*bc[1], a[2]*bc[2]};
+  double abc_e[3] = // error from computation of abc
+    {fma(a[0], bc[0], -abc[0]) + a[0] * bc_e[0],
+     fma(a[1], bc[1], -abc[1]) + a[1] * bc_e[1],
+     fma(a[2], bc[2], -abc[2]) + a[2] * bc_e[2]};
 
-      here for a unit sphere: */
+  double triple = 0.0, triple_e = 0.0;
 
-  // return MAX(( a1+a2+a3-M_PI ) * YAC_EARTH_RADIUS * YAC_EARTH_RADIUS, 0.0);
-  return MAX( (a1+a2+a3-M_PI) , 0.0 );
-}
+  accu_eft(abc_e[0], &triple, &triple_e);
+  accu_eft(abc_e[1], &triple, &triple_e);
+  accu_eft(abc_e[2], &triple, &triple_e);
+  accu_eft(abc[0], &triple, &triple_e);
+  accu_eft(abc[1], &triple, &triple_e);
+  accu_eft(abc[2], &triple, &triple_e);
 
-/* ----------------------------------- */
+  /* --------------------------------------------------
+    * Compensated denominator
+    * D = 1 + a·b + b·c + c·a
+    * -------------------------------------------------- */
 
-static inline struct sin_cos_angle
-tri_area_quarter_angle(struct sin_cos_angle angle) {
+  double D = 1.0;   // denominator
+  double D_e = 0.0; // error from computing D
 
-  // the angle passed to this routine should be in the range [0;3*PI/4],
-  // in case the angle is outside this, we have to assume that this is due to
-  // numerical inaccuracy or
-  // tri_area was called for a too big triangle...has to be really big...
+  accu_product_eft(a[0], b[0], &D, &D_e);
+  accu_product_eft(a[1], b[1], &D, &D_e);
+  accu_product_eft(a[2], b[2], &D, &D_e);
 
-  if (compare_angles(angle, SIN_COS_7_M_PI_4) >= 0) return SIN_COS_ZERO;
-  else return quarter_angle(angle);
-}
+  accu_product_eft(b[0], c[0], &D, &D_e);
+  accu_product_eft(b[1], c[1], &D, &D_e);
+  accu_product_eft(b[2], c[2], &D, &D_e);
 
-/** area of a spherical triangle based on L'Huilier's Theorem
-  *
-  * source code is taken from code by Robert Oehmke of Earth System Modeling
-  * Framework (www.earthsystemmodeling.org)
-  *
-  * it has been extended by a more accurate computation of vector angles
-  *
-  * the license statement for this routine is as follows:
-  * Earth System Modeling Framework
-  * Copyright 2002-2013, University Corporation for Atmospheric Research,
-  * Massachusetts Institute of Technology, Geophysical Fluid Dynamics
-  * Laboratory, University of Michigan, National Centers for Environmental
-  * Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
-  * NASA Goddard Space Flight Center.
-  * Licensed under the University of Illinois-NCSA License.
-  *
-  * \remark all edges are on great circle
-  */
-static double tri_area_(
-  struct sin_cos_angle angle_a,
-  struct sin_cos_angle angle_b,
-  struct sin_cos_angle angle_c) {
+  accu_product_eft(c[0], a[0], &D, &D_e);
+  accu_product_eft(c[1], a[1], &D, &D_e);
+  accu_product_eft(c[2], a[2], &D, &D_e);
 
-  if (compare_angles(angle_a, SIN_COS_LOW_TOL) < 0) return 0.0;
-  if (compare_angles(angle_b, SIN_COS_LOW_TOL) < 0) return 0.0;
-  if (compare_angles(angle_c, SIN_COS_LOW_TOL) < 0) return 0.0;
+  /* --------------------------------------------------
+    * Signed spherical excess
+    * -------------------------------------------------- */
 
-  double sin_sin = angle_a.sin * angle_b.sin;
-  double sin_cos = angle_a.sin * angle_b.cos;
-  double cos_sin = angle_a.cos * angle_b.sin;
-  double cos_cos = angle_a.cos * angle_b.cos;
-
-  double sin_sin_sin = sin_sin * angle_c.sin;
-  double sin_sin_cos = sin_sin * angle_c.cos;
-  double sin_cos_sin = sin_cos * angle_c.sin;
-  double sin_cos_cos = sin_cos * angle_c.cos;
-  double cos_sin_sin = cos_sin * angle_c.sin;
-  double cos_sin_cos = cos_sin * angle_c.cos;
-  double cos_cos_sin = cos_cos * angle_c.sin;
-  double cos_cos_cos = cos_cos * angle_c.cos;
-
-  double t_sin_a = sin_sin_sin - sin_cos_cos;
-  double t_sin_b = cos_sin_cos + cos_cos_sin;
-  double t_sin_c = sin_sin_sin + sin_cos_cos;
-  double t_sin_d = cos_sin_cos - cos_cos_sin;
-  double t_cos_a = cos_cos_cos - cos_sin_sin;
-  double t_cos_b = sin_sin_cos + sin_cos_sin;
-  double t_cos_c = cos_cos_cos + cos_sin_sin;
-  double t_cos_d = sin_sin_cos - sin_cos_sin;
-
-  struct sin_cos_angle t_angle[4] = {
-    tri_area_quarter_angle(
-      (struct sin_cos_angle){.sin = - t_sin_a + t_sin_b,
-                             .cos = + t_cos_a - t_cos_b}),
-    tri_area_quarter_angle(
-      (struct sin_cos_angle){.sin = + t_sin_a + t_sin_b,
-                             .cos = + t_cos_a + t_cos_b}),
-    tri_area_quarter_angle(
-      (struct sin_cos_angle){.sin = + t_sin_c - t_sin_d,
-                             .cos = + t_cos_c + t_cos_d}),
-    tri_area_quarter_angle(
-      (struct sin_cos_angle){.sin = + t_sin_c + t_sin_d,
-                             .cos = + t_cos_c - t_cos_d})};
-
-  double t = (t_angle[0].sin*t_angle[1].sin*t_angle[2].sin*t_angle[3].sin) /
-             (t_angle[0].cos*t_angle[1].cos*t_angle[2].cos*t_angle[3].cos);
-
-  return 4.0 * atan(sqrt(fabs(t)));
-}
-
-static double tri_area(double u[3], double v[3], double w[3]) {
-
-  return
-    tri_area_(get_vector_angle_2(u,v),
-              get_vector_angle_2(u,w),
-              get_vector_angle_2(w,v));
+  return 2.0 * atan2(triple + triple_e, D + D_e);
 }
 
 /* ----------------------------------- */
@@ -246,7 +162,7 @@ static double lat_edge_correction_(
 
   // compute the same area, but use a gc edge instead of a lat edge
   double pole[3] = {0, 0, (a[2] >= 0.0)?1.0:-1.0};
-  double gc_area = tri_area(a, b, pole);
+  double gc_area = fabs(tri_area(a, b, pole));
 
   // the difference between the two triangle areas is the area enclosed
   // between the points a and b using a lat and a gc edge
@@ -329,171 +245,75 @@ static double lat_edge_correction_info(
   return correction * sign;
 }
 
-double yac_pole_area(struct yac_grid_cell cell) {
-
-  size_t const M = cell.num_corners;
-
-  double coordinates_x[M];
-  double coordinates_y[M];
-
-  for (size_t i = 0; i < M; ++i)
-    XYZtoLL(cell.coordinates_xyz[i], &(coordinates_x[i]), &(coordinates_y[i]));
-
-  double area = 0.0;
-
-  if (M < 2) return 0.0;
-
-  int closer_to_south_pole = coordinates_y[0] < 0;
-
-  double pole_vec[3] = {0, 0, (closer_to_south_pole)?-1.0:1.0};
-
-  // it would also be possible to use the equator instead
-  // of the poles as the baseline
-  // this could be used as special case for cell close
-  // the equator (were the other method is probably most
-  // inaccurate)
-
-  for (size_t i = 0; i < M; ++i) {
-
-    // if one of the points it at the pole
-    if (fabs(fabs(coordinates_y[i]) - M_PI_2) < 1e-12) continue;
-    if (fabs(fabs(coordinates_y[(i+1)%M]) - M_PI_2) < 1e-12) {
-      ++i; // we can skip the next edge
-      continue;
-    }
-
-    YAC_ASSERT(
-      (cell.edge_type[i] == YAC_GREAT_CIRCLE_EDGE) ||
-      (cell.edge_type[i] == YAC_LON_CIRCLE_EDGE) ||
-      (cell.edge_type[i] == YAC_LAT_CIRCLE_EDGE),
-      "ERROR: unsupported edge type")
-
-    if (cell.edge_type[i] == YAC_GREAT_CIRCLE_EDGE ||
-        cell.edge_type[i] == YAC_LON_CIRCLE_EDGE) {
-
-      double * a;
-      double * b;
-
-      a = cell.coordinates_xyz[i];
-      b = cell.coordinates_xyz[(i+1)%M];
-
-      double edge_direction = a[0]*b[1]-a[1]*b[0]; // 3. component of cross product
-
-      // if the edge is nearly on a circle of longitude
-      if (fabs(edge_direction) < 1e-12) continue;
-
-      double tmp_area = tri_area(a, b, pole_vec);
-
-      // or the other way round
-      if (edge_direction > 0) area -= tmp_area;
-      else                    area += tmp_area;
-
-    } else {
-
-      // the area of a sphere cap is:
-      // A = 2 * PI * r * h (where r == 1 and h == 1 - cos(d_lat))
-      // scaled with the longitude angle this is:
-      // A' = (d_lon / (2 * PI)) * A
-      // => A' = d_lon * (1 - cos(d_lat))
-
-      double d_lon = get_angle(coordinates_x[i], coordinates_x[(i+1)%M]);
-      double d_lat = M_PI_2;
-
-      if (closer_to_south_pole)
-        d_lat += coordinates_y[i];
-      else
-        d_lat -= coordinates_y[i];
-
-      double h = 1 - cos(d_lat);
-
-      area += d_lon * h;
-
-    }
-  }
-  // return fabs(area) * YAC_EARTH_RADIUS * YAC_EARTH_RADIUS;
-  return fabs(area);
-}
-
-double yac_planar_3dcell_area (struct yac_grid_cell cell) {
-
- /*
-  * source code is originally based on http://gaim.umbc.edu/2010/06/03/polygon-area/
+/** Compute the area of a grid cell on the unit sphere
   *
+  * This function computes the area of a spherical polygon that may contain
+  * both great circle edges and latitude circle edges. The polygon is
+  * triangulated using a fan triangulation from the first vertex, and the
+  * signed areas of the triangles are summed to correctly handle concave cells.
+  * For latitude circle edges, a correction term is added to account for the
+  * difference between the great circle path and the latitude circle path.
+  *
+  * \param[in] cell Grid cell structure
+  *
+  * \return The unsigned area of the grid cell on the unit sphere
+  *
+  * \remark For triangles with only great circle edges, uses tri_area directly
+  * \remark For polygons or cells with latitude edges, uses triangulation
+  *         with corrections
+  * \remark Returns 0.0 for degenerate cells with fewer than 2 corners
+  * \remark The result is always non-negative (absolute value of signed area)
   */
-
-  double norm[3] = {0,0,0};
-  size_t M = cell.num_corners;
-
-  if (M < 3) return 0.0;
-
-  for (size_t i0 = M - 1, i1 = 0; i1 < M; i0 = i1, ++i1) {
-    norm[0] += cell.coordinates_xyz[i0][1]*cell.coordinates_xyz[i1][2] -
-               cell.coordinates_xyz[i1][1]*cell.coordinates_xyz[i0][2];
-    norm[1] += cell.coordinates_xyz[i0][2]*cell.coordinates_xyz[i1][0] -
-               cell.coordinates_xyz[i1][2]*cell.coordinates_xyz[i0][0];
-    norm[2] += cell.coordinates_xyz[i0][0]*cell.coordinates_xyz[i1][1] -
-               cell.coordinates_xyz[i1][0]*cell.coordinates_xyz[i0][1];
-  };
-
-  return 0.5 * sqrt(norm[0]*norm[0] + norm[1]*norm[1] + norm[2]*norm[2]);
-}
-
- /*
-  * source code is originally based on code by Robert Oehmke of Earth System Modeling
-  * Framework (www.earthsystemmodeling.org)
-  *
-  * it has be extended to support YAC data structures and two types of
-  * grid cell edges (great circle and circle of latitude)
-  *
-  */
-double yac_huiliers_area (struct yac_grid_cell cell) {
+double yac_grid_cell_area (struct yac_grid_cell cell) {
 
   size_t M = cell.num_corners;
 
   if (M < 2) return 0.0;
 
+  // determine whether the cell contains at least one lat circle edge
   int lat_flag = 0;
-
   for (size_t i = 0; i < M; i++)
     lat_flag |= cell.edge_type[i] == YAC_LAT_CIRCLE_EDGE;
 
-  if (M == 3 && !lat_flag)
-    return tri_area(cell.coordinates_xyz[0],
-                    cell.coordinates_xyz[1],
-                    cell.coordinates_xyz[2]);
+  // if this is a basic triangle only conisting of great circle edges
+  // (e.g. ICON cell)
+  if (M == 3 && !lat_flag) {
 
-  // sum areas around cell
+    // in case of triangle only consisting of great circle edges, return
+    // absolut value of the signed area returned by tri_area
+    return
+      fabs(
+        tri_area(cell.coordinates_xyz[0],
+                 cell.coordinates_xyz[1],
+                 cell.coordinates_xyz[2]));
+  }
+
+  // loop over all subtriangles generated by triangulation using
+  // a fan approach
   double area = 0.0;
+  for (size_t i = 1; i < M - 1; ++i) {
 
-  for (size_t i = 2; i < M; ++i) {
-
-    double tmp_area = tri_area(cell.coordinates_xyz[0],
-                               cell.coordinates_xyz[i-1],
-                               cell.coordinates_xyz[i]);
-
-    double norm[3];
-
-    if (compute_norm_vector(cell.coordinates_xyz[i-1],
-                            cell.coordinates_xyz[i], norm)) continue;
-
-    double scalar_base = scalar_product(norm, cell.coordinates_xyz[0]);
-
-    if (scalar_base > 0) area += tmp_area;
-    else area -= tmp_area;
+    // signed area summation, this ensures that this routine
+    // also works for concave cells
+    area += tri_area(cell.coordinates_xyz[0],
+                     cell.coordinates_xyz[i],
+                     cell.coordinates_xyz[i+1]);
   }
 
   // if there is at least one latitude circle edge
   if (lat_flag) {
 
-    for (size_t i = 0; i < M; ++i) {
+    // loop over all edges of the polygon
+    for (size_t i = 0, j = M - 1; i < M; j = i++) {
 
-      if (cell.edge_type[i] == YAC_LAT_CIRCLE_EDGE) {
+      if (cell.edge_type[j] == YAC_LAT_CIRCLE_EDGE) {
 
-        size_t i_ = (i+1)%cell.num_corners;
-
+        // add correction for the area difference between the great circle
+        // edge and the latitude circle edge from vertex j to vertex i
+        // (uses vertex 0 as a reference to determine area sign)
         area += lat_edge_correction(cell.coordinates_xyz[0],
-                                    cell.coordinates_xyz[i],
-                                    cell.coordinates_xyz[i_]);
+                                    cell.coordinates_xyz[j],
+                                    cell.coordinates_xyz[i]);
       }
     }
   }
@@ -501,84 +321,138 @@ double yac_huiliers_area (struct yac_grid_cell cell) {
   return fabs(area);
 }
 
+/** Compute the signed area of a spherical triangle and update barycenter
+  *
+  * This function computes the signed area of a spherical triangle using
+  * tri_area() and simultaneously updates a barycenter accumulator. The
+  * barycenter contribution is computed using the edge normal vectors weighted
+  * by half of their associated edge lengths. This approach is exact for
+  * spherical triangles.
+  *
+  * \param[in] ref Reference (first) vertex in Cartesian coordinates on unit sphere
+  * \param[in] a Second vertex in Cartesian coordinates on unit sphere
+  * \param[in] b Third vertex in Cartesian coordinates on unit sphere
+  * \param[in,out] barycenter Barycenter accumulator to be updated (3D vector)
+  * \param[in] sign Sign multiplier for both area and barycenter contribution
+  *
+  * \return Signed area of the triangle multiplied by sign parameter
+  *
+  * \remark The barycenter is accumulated but not normalized by this function
+  * \remark Short edges (sin_angle < yac_angle_tol) are skipped
+  * \remark All vertices are assumed to lie on the unit sphere
+  */
 static double tri_area_info(
   double ref[3], double a[3], double b[3],
   double * barycenter, double sign) {
 
-  double * corners[3] = {b, ref, a};
-  double cross[3][3];
-  struct sin_cos_angle angles[3];
-  int zero_angle_flag = 0;
-  for (int i = 0, j = 2; i < 3; j = i++) {
-    crossproduct_kahan(corners[j], corners[i], cross[i]);
-    angles[i] =
-      sin_cos_angle_new(sqrt(cross[i][0]*cross[i][0] +
-                             cross[i][1]*cross[i][1] +
-                             cross[i][2]*cross[i][2]),
-                       scalar_product(corners[j], corners[i]));
-    zero_angle_flag |= angles[i].sin == 0.0;
-  }
-
-  if (zero_angle_flag) return 0.0;
-
-  double area = tri_area_(angles[0], angles[1], angles[2]);
-
   // the barycenter of the triangle is given by the sum edge norm vector
   // scaled by half of the associated edge length
-  for (int i = 0; i < 3; ++i) {
-    double scale = 0.5 * compute_angle(angles[i]) / angles[i].sin * sign;
-    for (int j = 0; j < 3; ++j)
-      barycenter[j] += cross[i][j] * scale;
+  // This approach is exact for spherical triangles. The weighted normalized
+  // sum of the triangle vertices works for the planar triangle.
+  double * corners[3] = {b, ref, a};
+  for (int i = 0, j = 2; i < 3; j = i++) {
+
+    double cross[3];
+    crossproduct_kahan(corners[j], corners[i], cross);
+    double sin_angle =
+      sqrt(cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2]);
+
+    // if the edge is too short
+    if (sin_angle < yac_angle_tol) continue;
+
+    double angle = asin(sin_angle);
+
+    double scale = 0.5 * angle / sin_angle * sign;
+    for (int k = 0; k < 3; ++k) barycenter[k] += cross[k] * scale;
   }
 
-  if (scalar_product(ref, cross[0]) < 0.0) area = -area;
-
-  return area * sign;
+  // return signed area
+  return tri_area(ref, a, b) * sign;
 }
 
-double yac_huiliers_area_info(
+/** Compute the signed area of a grid cell and update barycenter
+  *
+  * This function computes the signed area of a spherical polygon that may
+  * contain both great circle edges and latitude circle edges. It simultaneously
+  * updates a barycenter accumulator that can be used to compute the cell's
+  * center of mass. The polygon is triangulated using a fan triangulation from
+  * the first vertex, and the signed areas of the triangles are summed to
+  * correctly handle concave cells. For latitude circle edges, correction terms
+  * are added to account for the difference between the great circle path and
+  * the latitude circle path.
+  *
+  * \param[in] cell Grid cell structure
+  * \param[in,out] barycenter Barycenter accumulator to be updated (3D vector)
+  * \param[in] sign Sign multiplier for both area and barycenter contributions
+  *
+  * \return The signed area of the grid cell on the unit sphere multiplied by
+  *         sign parameter
+  *
+  * \remark For triangles with only great circle edges, uses tri_area_info directly
+  * \remark For polygons or cells with latitude edges, uses triangulation
+  *         with corrections
+  * \remark Returns 0.0 for degenerate cells with fewer than 2 corners
+  * \remark The barycenter is accumulated but not normalized by this function
+  * \remark The sign parameter allows for proper handling of overlapping regions
+  *         in conservative remapping algorithms
+  */
+double yac_grid_cell_area_info(
   struct yac_grid_cell cell, double * barycenter, double sign) {
 
   size_t M = cell.num_corners;
 
   if (M < 2) return 0.0;
 
+  // determine whether the cell contains at least one lat circle edge
   int lat_flag = 0;
-
   for (size_t i = 0; i < M; i++)
     lat_flag |= cell.edge_type[i] == YAC_LAT_CIRCLE_EDGE;
 
-  if (M == 3 && !lat_flag)
+  // if this is a basic triangle only conisting of great circle edges
+  // (e.g. ICON cell)
+  if (M == 3 && !lat_flag) {
+
+    // in case of triangle only consisting of great circle edges, return
+    // value of the signed area returned by tri_area_info and update
+    // barycenter
     return tri_area_info(cell.coordinates_xyz[0],
                          cell.coordinates_xyz[1],
                          cell.coordinates_xyz[2],
                          barycenter, sign);
+  }
 
-  // sum areas around cell
+  // loop over all subtriangles generated by triangulation using
+  // a fan approach
   double area = 0.0;
+  for (size_t i = 1; i < M - 1; ++i) {
 
-  for (size_t i = 2; i < M; ++i) {
+    // signed area summation, this ensures that this routine
+    // also works for concave cells
     area +=
       tri_area_info(
         cell.coordinates_xyz[0],
-        cell.coordinates_xyz[i-1],
         cell.coordinates_xyz[i],
+        cell.coordinates_xyz[i+1],
         barycenter, sign);
   }
 
   // if there is at least one latitude circle edge
   if (lat_flag) {
 
-    for (size_t i = 0; i < M; ++i) {
+    // loop over all edges of the polygon
+    for (size_t i = 0, j = M - 1; i < M; j = i++) {
 
-      if (cell.edge_type[i] == YAC_LAT_CIRCLE_EDGE) {
+      if (cell.edge_type[j] == YAC_LAT_CIRCLE_EDGE) {
 
-        size_t i_ = (i+1)%cell.num_corners;
-
+        // Add correction for the area difference between the great circle
+        // edge and the latitude circle edge from vertex j to vertex i
+        // (uses vertex 0 as a reference to determine area sign).
+        // Also updates the barycenter accumulator with the contribution
+        // from the latitude circle edge correction.
         area += lat_edge_correction_info(
           cell.coordinates_xyz[0],
+          cell.coordinates_xyz[j],
           cell.coordinates_xyz[i],
-          cell.coordinates_xyz[i_],
           barycenter, sign);
       }
     }

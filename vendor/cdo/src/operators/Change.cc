@@ -66,7 +66,7 @@ change_param(VarList const &varList1, int vlistID2, StringPairList const &string
     }
     auto paramStr = param_to_string(var1.param);
     for (auto const &stringPair : stringPairList)
-      if (paramStr == stringPair.first) vlistDefVarParam(vlistID2, var1.ID, string_to_param(stringPair.second));
+      if (paramStr == stringPair.first) { vlistDefVarParam(vlistID2, var1.ID, string_to_param(stringPair.second)); }
   }
 }
 
@@ -75,13 +75,13 @@ change_name(VarList const &varList1, int vlistID2, StringPairList const &stringP
 {
   int numPairs = stringPairList.size();
 
-  std::vector<bool> namefound(numPairs, false);
+  std::vector<bool> nameFound(numPairs, false);
   for (auto const &var1 : varList1.vars)
   {
     for (int i = 0; i < numPairs; ++i)
       if (var1.name == stringPairList[i].first)
       {
-        namefound[i] = true;
+        nameFound[i] = true;
         cdiDefKeyString(vlistID2, var1.ID, CDI_KEY_NAME, stringPairList[i].second.c_str());
         break;
       }
@@ -89,7 +89,7 @@ change_name(VarList const &varList1, int vlistID2, StringPairList const &stringP
 
   auto searchForGridName = false;
   for (int i = 0; i < numPairs; ++i)
-    if (!namefound[i])
+    if (!nameFound[i])
     {
       searchForGridName = true;
       break;
@@ -107,22 +107,22 @@ change_name(VarList const &varList1, int vlistID2, StringPairList const &stringP
       auto xfound = false, yfound = false;
       for (int i = 0; i < numPairs; ++i)
       {
-        if (!namefound[i])
+        if (!nameFound[i])
         {
           if (xname == stringPairList[i].first)
           {
             xfound = true;
-            namefound[i] = true;
+            nameFound[i] = true;
             if (gridID2 == -1) gridID2 = gridDuplicate(gridID1);
             cdiDefKeyString(gridID2, CDI_XAXIS, CDI_KEY_NAME, stringPairList[i].second.c_str());
           }
         }
-        if (!namefound[i])
+        if (!nameFound[i])
         {
           if (yname == stringPairList[i].first)
           {
             yfound = true;
-            namefound[i] = true;
+            nameFound[i] = true;
             if (gridID2 == -1) gridID2 = gridDuplicate(gridID1);
             cdiDefKeyString(gridID2, CDI_YAXIS, CDI_KEY_NAME, stringPairList[i].second.c_str());
           }
@@ -137,7 +137,7 @@ change_name(VarList const &varList1, int vlistID2, StringPairList const &stringP
 
   auto searchForZaxisName = false;
   for (int i = 0; i < numPairs; ++i)
-    if (!namefound[i])
+    if (!nameFound[i])
     {
       searchForZaxisName = true;
       break;
@@ -152,11 +152,11 @@ change_name(VarList const &varList1, int vlistID2, StringPairList const &stringP
       auto varname = cdo::inq_key_string(zaxisID1, CDI_GLOBAL, CDI_KEY_NAME);
       for (int i = 0; i < numPairs; ++i)
       {
-        if (!namefound[i])
+        if (!nameFound[i])
         {
           if (varname == stringPairList[i].first)
           {
-            namefound[i] = true;
+            nameFound[i] = true;
             auto zaxisID2 = zaxisDuplicate(zaxisID1);
             cdiDefKeyString(zaxisID2, CDI_GLOBAL, CDI_KEY_NAME, stringPairList[i].second.c_str());
             vlistChangeZaxis(vlistID2, zaxisID1, zaxisID2);
@@ -168,7 +168,7 @@ change_name(VarList const &varList1, int vlistID2, StringPairList const &stringP
   }
 
   for (int i = 0; i < numPairs; ++i)
-    if (!namefound[i]) cdo_warning("Variable name %s not found!", stringPairList[i].first);
+    if (!nameFound[i]) cdo_warning("Variable name %s not found!", stringPairList[i].first);
 }
 
 static void
@@ -316,7 +316,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Change> registration = RegisterEntry<Change>();
+  inline static auto registration = RegisterEntry<Change>();
 
   int CHCODE{}, CHTABNUM{}, CHPARAM{}, CHNAME{}, CHUNIT{}, CHLEVEL{}, CHLEVELC{}, CHLEVELV{}, CHLTYPE{};
 

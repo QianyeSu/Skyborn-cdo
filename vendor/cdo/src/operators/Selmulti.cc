@@ -167,7 +167,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Selmulti> registration = RegisterEntry<Selmulti>();
+  inline static auto registration = RegisterEntry<Selmulti>();
 
   int SELMULTI{}, DELMULTI{}, CHANGEMULTI{};
   CdoStreamID streamID1{};
@@ -827,6 +827,7 @@ multiSelectionParser(const char *filenameOrString)
         if (strpos != nullptr) selectionRec = 2;
       }
     }
+
     if (strpos != nullptr)  // we have SELECT ..
     {
       Debug(cdoDebugExt, " Parsing notation SELECT: %s", strpos);
@@ -852,7 +853,7 @@ multiSelectionParser(const char *filenameOrString)
             if (pline[0] == '*')
               val = -1;
             else
-              val = atoi(pline);
+              val = std::atoi(pline);
             Debug(cdoDebugExt >= 100, "code=%d", val);
             tuplerec->codeLST.push_back(val);
             tuplerec->ncodes = tuplerec->codeLST.size();
@@ -877,7 +878,7 @@ multiSelectionParser(const char *filenameOrString)
             if (pline[0] == '*')
               val = -1;
             else
-              val = atoi(pline);
+              val = std::atoi(pline);
             if (val == 100)
             {
               convertLevelsHPa2Pa = 1;
@@ -908,7 +909,7 @@ multiSelectionParser(const char *filenameOrString)
           while ((pline != parEnd) && (std::strlen(pline) > 0))
           {
             pline = removeSpaces(pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             if ((convertLevelsHPa2Pa) && (val != -1)) val *= 100;
             Debug(cdoDebugExt >= 100, "level=%d", val);
             tuplerec->levelLST.push_back(val);
@@ -931,7 +932,7 @@ multiSelectionParser(const char *filenameOrString)
           while ((pline != parEnd) && (std::strlen(pline) > 0))
           {
             pline = removeSpaces(pline);
-            floatval = atof(pline);
+            floatval = std::atof(pline);
             Debug(cdoDebugExt >= 100, "scale=%f", floatval);
             tuplerec->simpleMath = 1;    // 1:  simple array arithmetics
                                          // ( *,+), 0: do nothing
@@ -954,7 +955,7 @@ multiSelectionParser(const char *filenameOrString)
           while ((pline != parEnd) && (std::strlen(pline) > 0))
           {
             pline = removeSpaces(pline);
-            floatval = atof(pline);
+            floatval = std::atof(pline);
             Debug(cdoDebugExt >= 100, "offset=%f", floatval);
             tuplerec->simpleMath = 1;     // 1:  simple array arithmetics
                                           // ( *,+), 0: do nothing
@@ -1016,7 +1017,7 @@ multiSelectionParser(const char *filenameOrString)
             if (pline[0] == '*')
               val = -1;
             else
-              val = atoi(pline);
+              val = std::atoi(pline);
             Debug(cdoDebugExt >= 100, "code=%d", val);
             tuplerec->codeLST.push_back(val);
             tuplerec->ncodes = tuplerec->codeLST.size();
@@ -1040,7 +1041,7 @@ multiSelectionParser(const char *filenameOrString)
           while ((pline != parEnd) && (std::strlen(pline) > 0))
           {
             pline = removeSpaces(pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             if (val == 100)
             {
               convertLevelsHPa2Pa = 1;
@@ -1074,7 +1075,7 @@ multiSelectionParser(const char *filenameOrString)
           while ((pline != parEnd) && (std::strlen(pline) > 0))
           {
             pline = removeSpaces(pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             if ((convertLevelsHPa2Pa) && (val != -1)) val *= 100;
             Debug(cdoDebugExt >= 100, "level=%d", val);
             tuplerec->levelLST.push_back(val);
@@ -1114,7 +1115,7 @@ multiSelectionParser(const char *filenameOrString)
             parEnd = findParamEnd(pline);
             if ((!parEnd) || (pline[0] == 0)) cdo_abort("Channot parse: strpos=%s; parEnd=%s ... pline=%s", strpos, parEnd, pline);
             Debug(cdoDebugExt >= 100, "strpos=%s; parEnd=%s ... pline=%s", strpos, parEnd, pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             tuplerec->changedCode = val;
             Debug(cdoDebugExt >= 100, "changedCode=%d", val);
             strpos = goToNextSeparator(pline);
@@ -1124,7 +1125,7 @@ multiSelectionParser(const char *filenameOrString)
             parEnd = findParamEnd(pline);
             if ((!parEnd) || (pline[0] == 0)) cdo_abort("Channot parse: strpos=%s; parEnd=%s ... pline=%s", strpos, parEnd, pline);
             Debug(cdoDebugExt >= 100, "strpos=%s; parEnd=%s ... pline=%s", strpos, parEnd, pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             tuplerec->changedLevelType = val;
             Debug(cdoDebugExt >= 100, "changedLevelType=%d", val);
             strpos = goToNextSeparator(pline);
@@ -1134,7 +1135,7 @@ multiSelectionParser(const char *filenameOrString)
             parEnd = findParamEnd(pline);
             if ((!parEnd) || (pline[0] == 0)) cdo_abort("Channot parse: strpos=%s; parEnd=%s ... pline=%s", strpos, parEnd, pline);
             Debug(cdoDebugExt >= 100, "strpos=%s; parEnd=%s ... pline=%s", strpos, parEnd, pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             tuplerec->changedLevel = val;
             Debug(cdoDebugExt >= 100, "changedLevel=%d", val);
             pline = parEnd;
@@ -1144,7 +1145,7 @@ multiSelectionParser(const char *filenameOrString)
           while ((pline != parEnd) && (std::strlen(pline) > 0))
           {
             pline = removeSpaces(pline);
-            val = (pline[0] == '*') ? -1 : atoi(pline);
+            val = (pline[0] == '*') ? -1 : std::atoi(pline);
             if ((convertLevelsHPa2Pa) && (val != -1)) val *= 100;
             Debug(cdoDebugExt >= 100, "level=%d", val);
             tuplerec->levelLST.push_back(val);

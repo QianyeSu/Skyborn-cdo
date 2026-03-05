@@ -22,14 +22,8 @@ amatch(char *msr, const char *sub)
 int
 scan_par_obsolete(char *namelist, const char *name, int def)
 {
-  int value;
-
   char *cp = amatch(namelist, name);
-
-  if (cp == nullptr)
-    value = def;
-  else
-    value = atoi(cp);
+  int value = (cp == nullptr) ? def : std::atoi(cp);
   /*
   std::fprintf(stdout, " %16.16s = %6d ", name, value);
   if ( value == def ) std::fprintf(stdout, " (default)\n");
@@ -41,23 +35,14 @@ scan_par_obsolete(char *namelist, const char *name, int def)
 int
 scan_par(int verbose, char *namelist, const char *name, int def)
 {
-  int value;
-
   char *cp = amatch(namelist, name);
-
-  if (cp == nullptr)
-    value = def;
-  else
-    value = atoi(cp);
+  int value = (cp == nullptr) ? def : std::atoi(cp);
 
   if (verbose)
-    {
-      std::fprintf(stdout, " %16.16s = %6d ", name, value);
-      if (value == def)
-        std::fprintf(stdout, " (default)\n");
-      else
-        std::fprintf(stdout, "          \n");
-    }
+  {
+    std::fprintf(stdout, " %16.16s = %6d ", name, value);
+    std::fprintf(stdout, "%s \n", (value == def) ? " (default)" : "          ");
+  }
 
   return value;
 }
@@ -70,27 +55,27 @@ scan_time(int verbose, char *namelist, int *hours, int max_hours)
 
   char *cp = amatch(namelist, "timesel");
   if (cp == nullptr)
-    {
-      hours[nrqh++] = -1;
-      if (verbose) std::fprintf(stdout, " %16.16s = all\n", "timesel");
-      return (nrqh);
-    }
+  {
+    hours[nrqh++] = -1;
+    if (verbose) std::fprintf(stdout, " %16.16s = all\n", "timesel");
+    return (nrqh);
+  }
 
   int time = (int) std::strtol(cp, &icp, 10);
 
   while (icp != cp && nrqh < max_hours)
-    {
-      hours[nrqh++] = time;
-      cp = icp;
-      time = (int) std::strtol(cp, &icp, 10);
-    }
+  {
+    hours[nrqh++] = time;
+    cp = icp;
+    time = (int) std::strtol(cp, &icp, 10);
+  }
 
   if (verbose)
-    {
-      std::fprintf(stdout, " %16.16s = ", "timesel");
-      for (time = 0; time < nrqh; ++time) std::fprintf(stdout, " %02d", hours[time]);
-      std::fprintf(stdout, "\n");
-    }
+  {
+    std::fprintf(stdout, " %16.16s = ", "timesel");
+    for (time = 0; time < nrqh; ++time) std::fprintf(stdout, " %02d", hours[time]);
+    std::fprintf(stdout, "\n");
+  }
 
   return nrqh;
 }
@@ -103,16 +88,16 @@ scan_code(char *namelist, struct Variable *vars, int maxCodes, int *numCodes)
 
   char *cp = amatch(namelist, "code");
   if (cp != nullptr)
+  {
+    int code = (int) std::strtol(cp, &icp, 10);
+    while (code > 0 && code < maxCodes)
     {
-      int code = (int) std::strtol(cp, &icp, 10);
-      while (code > 0 && code < maxCodes)
-        {
-          ncodes++;
-          vars[code].selected = 1;
-          cp = icp;
-          code = (int) std::strtol(cp, &icp, 10);
-        }
+      ncodes++;
+      vars[code].selected = 1;
+      cp = icp;
+      code = (int) std::strtol(cp, &icp, 10);
     }
+  }
 
   *numCodes = ncodes;
 }
@@ -127,18 +112,18 @@ scan_darray(char *namelist, const char *name, double *values, int maxValues, int
   char *cp = amatch(namelist, name);
 
   if (cp != nullptr)
+  {
+    val = std::strtod(cp, &icp);
+    values[nval++] = val;
+    cp = icp;
+    val = std::strtod(cp, &icp);
+    while (val > 0 && nval < maxValues)
     {
-      val = std::strtod(cp, &icp);
       values[nval++] = val;
       cp = icp;
       val = std::strtod(cp, &icp);
-      while (val > 0 && nval < maxValues)
-        {
-          values[nval++] = val;
-          cp = icp;
-          val = std::strtod(cp, &icp);
-        }
     }
+  }
 
   *numValues = nval;
 }

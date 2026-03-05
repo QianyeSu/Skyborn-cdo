@@ -123,41 +123,37 @@ struct RemapGridW
 
   std::vector<int> mask;  // flag which cells participate
 
-  Varray<double> cell_center_lon;  // lon/lat coordinates for
-  Varray<double> cell_center_lat;  // each grid center in radians
-  Varray<double> cell_corner_lon;  // lon/lat coordinates for
-  Varray<double> cell_corner_lat;  // each grid corner in radians
+  Varray<double> cellCenterLon;  // lon/lat coordinates for
+  Varray<double> cellCenterLat;  // each grid center in radians
+  Varray<double> cellCornerLon;  // lon/lat coordinates for
+  Varray<double> cellCornerLat;  // each grid corner in radians
 
-  Varray<double> cell_area;  // total area of each grid cell
-  Varray<double> cell_frac;  // fractional area of grid cells participating in remapping
+  Varray<double> cellArea;  // total area of each grid cell
+  Varray<double> cellFrac;  // fractional area of grid cells participating in remapping
 
   void
   set_num_cells(size_t ncells_)
   {
     ncells = ncells_;
-
     mask.resize(ncells);
-
-    cell_center_lon.resize(ncells);
-    cell_center_lat.resize(ncells);
-
-    cell_frac.resize(ncells, 0.0);
+    cellCenterLon.resize(ncells);
+    cellCenterLat.resize(ncells);
+    cellFrac.resize(ncells, 0.0);
   }
 
   void
   set_num_corners(size_t ncorners_)
   {
     ncorners = ncorners_;
-
-    cell_corner_lon.resize(ncorners * ncells, 0.0);
-    cell_corner_lat.resize(ncorners * ncells, 0.0);
+    cellCornerLon.resize(ncorners * ncells, 0.0);
+    cellCornerLat.resize(ncorners * ncells, 0.0);
   }
 };
 
 static void
 remapGridWAlloc(RemapMethod mapType, RemapGridW &grid)
 {
-  if (mapType == RemapMethod::CONSERV) { grid.cell_area.resize(grid.ncells, 0.0); }
+  if (mapType == RemapMethod::CONSERV) { grid.cellArea.resize(grid.ncells, 0.0); }
 }
 
 struct RemapVarsW
@@ -210,17 +206,17 @@ read_remapgrid_scrip(int ncfileid, std::string const &prefix, bool lgridarea, Re
   cdf_read_var_size(ncfileid, (prefix + "_dims").c_str(), 2, grid.dims);
   cdf_read_var_int(ncfileid, (prefix + "_imask").c_str(), grid.mask.data());
 
-  cdf_read_coordinate_radian(ncfileid, (prefix + "_center_lat").c_str(), grid.cell_center_lat);
-  cdf_read_coordinate_radian(ncfileid, (prefix + "_center_lon").c_str(), grid.cell_center_lon);
+  cdf_read_coordinate_radian(ncfileid, (prefix + "_center_lat").c_str(), grid.cellCenterLat);
+  cdf_read_coordinate_radian(ncfileid, (prefix + "_center_lon").c_str(), grid.cellCenterLon);
 
   if (grid.ncorners)
   {
-    cdf_read_coordinate_radian(ncfileid, (prefix + "_corner_lat").c_str(), grid.cell_corner_lat);
-    cdf_read_coordinate_radian(ncfileid, (prefix + "_corner_lon").c_str(), grid.cell_corner_lon);
+    cdf_read_coordinate_radian(ncfileid, (prefix + "_corner_lat").c_str(), grid.cellCornerLat);
+    cdf_read_coordinate_radian(ncfileid, (prefix + "_corner_lon").c_str(), grid.cellCornerLon);
   }
 
-  if (lgridarea) cdf_read_var_double(ncfileid, (prefix + "_area").c_str(), grid.cell_area.data());
-  cdf_read_var_double(ncfileid, (prefix + "_frac").c_str(), grid.cell_frac.data());
+  if (lgridarea) cdf_read_var_double(ncfileid, (prefix + "_area").c_str(), grid.cellArea.data());
+  cdf_read_var_double(ncfileid, (prefix + "_frac").c_str(), grid.cellFrac.data());
 }
 
 static void
@@ -275,10 +271,8 @@ readRemapFileScrip(std::string const &remapFile, RemapAttributes &remapAtts, Rem
   if (convention != "SCRIP")
   {
     cdo_print("convention = %s", convention);
-    if (convention == "NCAR-CSM")
-      cdo_abort("Unsupported file convention: %s!", convention);
-    else
-      cdo_abort("Unknown file convention!");
+    if (convention == "NCAR-CSM") { cdo_abort("Unsupported file convention: %s!", convention); }
+    else { cdo_abort("Unknown file convention!"); }
   }
 
   // Read some additional global attributes
@@ -488,18 +482,18 @@ write_remapgrid_scrip(int ncfileid, const CDFgrid &cdfGrid, bool lgridarea, Rema
 
   cdfWriteVarInt(ncfileid, cdfGrid.imask_id, grid.mask.data());
 
-  if (grid.cell_center_lat.size()) cdfWriteVarDouble(ncfileid, cdfGrid.cntrlat_id, grid.cell_center_lat.data());
-  if (grid.cell_center_lon.size()) cdfWriteVarDouble(ncfileid, cdfGrid.cntrlon_id, grid.cell_center_lon.data());
+  if (grid.cellCenterLat.size()) cdfWriteVarDouble(ncfileid, cdfGrid.cntrlat_id, grid.cellCenterLat.data());
+  if (grid.cellCenterLon.size()) cdfWriteVarDouble(ncfileid, cdfGrid.cntrlon_id, grid.cellCenterLon.data());
 
   if (grid.ncorners)
   {
-    cdfWriteVarDouble(ncfileid, cdfGrid.crnrlat_id, grid.cell_corner_lat.data());
-    cdfWriteVarDouble(ncfileid, cdfGrid.crnrlon_id, grid.cell_corner_lon.data());
+    cdfWriteVarDouble(ncfileid, cdfGrid.crnrlat_id, grid.cellCornerLat.data());
+    cdfWriteVarDouble(ncfileid, cdfGrid.crnrlon_id, grid.cellCornerLon.data());
   }
 
-  if (lgridarea) cdfWriteVarDouble(ncfileid, cdfGrid.area_id, grid.cell_area.data());
+  if (lgridarea) cdfWriteVarDouble(ncfileid, cdfGrid.area_id, grid.cellArea.data());
 
-  cdfWriteVarDouble(ncfileid, cdfGrid.frac_id, grid.cell_frac.data());
+  cdfWriteVarDouble(ncfileid, cdfGrid.frac_id, grid.cellFrac.data());
 }
 
 static std::string
@@ -657,7 +651,7 @@ verify_weights(std::string const &remapFile)
 
   (void) readRemapFileScrip(remapFile, remapAtts, srcGrid, tgtGrid, remapVars);
 
-  check_areas(srcGrid.ncells, srcGrid.cell_area, tgtGrid.cell_area, remapVars.numLinks, remapVars.srcCellIndices,
+  check_areas(srcGrid.ncells, srcGrid.cellArea, tgtGrid.cellArea, remapVars.numLinks, remapVars.srcCellIndices,
               remapVars.tgtCellIndices, remapVars.weights);
 }
 
@@ -697,7 +691,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 0, NoRestriction },
   };
-  inline static RegisterEntry<Verifyweights> registration = RegisterEntry<Verifyweights>();
+  inline static auto registration = RegisterEntry<Verifyweights>();
 
 public:
   void

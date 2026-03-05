@@ -120,7 +120,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Tinfo> registration = RegisterEntry<Tinfo>();
+  inline static auto registration = RegisterEntry<Tinfo>();
 
 private:
   CdoStreamID streamID{};

@@ -97,7 +97,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Runpctl> registration = RegisterEntry<Runpctl>();
+  inline static auto registration = RegisterEntry<Runpctl>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
@@ -142,7 +142,7 @@ public:
   }
 
   void
-  write_fields(int otsID, FieldVector2D &varsData1)
+  write_fields(int otsID, FieldVector2D &varDataList1)
   {
     dtlist.stat_taxis_def_timestep(taxisID2, ndates);
     cdo_def_timestep(streamID2, otsID);
@@ -152,7 +152,7 @@ public:
       if (otsID && varList1.vars[varID].isConstant) continue;
 
       cdo_def_field(streamID2, varID, levelID);
-      auto &field1 = varsData1[varID][levelID];
+      auto &field1 = varDataList1[varID][levelID];
       cdo_write_field(streamID2, field1);
     }
   }
@@ -166,8 +166,8 @@ public:
     dtlist.set_stat(TimeStat::MEAN);
     dtlist.set_calendar(taxisInqCalendar(taxisID1));
 
-    FieldVector3D varsData1(ndates + 1);
-    for (int its = 0; its < ndates; its++) field2D_init(varsData1[its], varList1);
+    FieldVector3D varDataList1(ndates + 1);
+    for (int its = 0; its < ndates; its++) field2D_init(varDataList1[its], varList1);
 
     for (tsID = 0; tsID < ndates; ++tsID)
     {
@@ -182,7 +182,7 @@ public:
 
         if (tsID == 0) fieldInfoList[fieldID].set(varID, levelID);
 
-        auto &field = varsData1[tsID][varID][levelID];
+        auto &field = varDataList1[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -198,18 +198,18 @@ public:
         auto nlevels = varList1.vars[varID].nlevels;
         for (int levelID = 0; levelID < nlevels; ++levelID)
         {
-          auto &field1 = varsData1[0][varID][levelID];
-          runpctl(pn, ndates, field1, varsData1, varID, levelID);
+          auto &field1 = varDataList1[0][varID][levelID];
+          runpctl(pn, ndates, field1, varDataList1, varID, levelID);
         }
       }
 
-      write_fields(otsID, varsData1[0]);
+      write_fields(otsID, varDataList1[0]);
       otsID++;
 
       dtlist.shift();
 
-      varsData1[ndates] = varsData1[0];
-      for (int inp = 0; inp < ndates; ++inp) varsData1[inp] = varsData1[inp + 1];
+      varDataList1[ndates] = varDataList1[0];
+      for (int inp = 0; inp < ndates; ++inp) varDataList1[inp] = varDataList1[inp + 1];
 
       auto numFields = cdo_stream_inq_timestep(streamID1, tsID);
       if (numFields == 0) break;
@@ -219,7 +219,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &fieldN = varsData1[ndates - 1][varID][levelID];
+        auto &fieldN = varDataList1[ndates - 1][varID][levelID];
         cdo_read_field(streamID1, fieldN);
       }
 

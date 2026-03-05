@@ -1440,17 +1440,17 @@ cgribexDefTimerange(int tsteptype, int factor, int calendar, CdiDateTime rDateTi
     }
 
     // clang-format off
-      switch (tsteptype)
-	{
-	case TSTEP_INSTANT:  timerange =  0; ip1 = ip;  ip2 = 0;  break;
-	case TSTEP_INSTANT2: timerange =  1; ip1 = 0;   ip2 = 0;  break;
-	case TSTEP_RANGE:    timerange =  2; ip1 = 0;   ip2 = ip; break;
-	case TSTEP_AVG:      timerange =  3; ip1 = 0;   ip2 = ip; break;
-	case TSTEP_ACCUM:    timerange =  4; ip1 = ipx; ip2 = ip; break;
-	case TSTEP_DIFF:     timerange =  5; ip1 = 0;   ip2 = ip; break;
-	case TSTEP_INSTANT3:
-	default:             timerange = 10; ip1 = ip/256; ip2 = ip%256; break;
-	}
+    switch (tsteptype)
+    {
+      case TSTEP_INSTANT:  timerange =  0; ip1 = ip;  ip2 = 0;  break;
+      case TSTEP_INSTANT2: timerange =  1; ip1 = 0;   ip2 = 0;  break;
+      case TSTEP_RANGE:    timerange =  2; ip1 = 0;   ip2 = ip; break;
+      case TSTEP_AVG:      timerange =  3; ip1 = 0;   ip2 = ip; break;
+      case TSTEP_ACCUM:    timerange =  4; ip1 = ipx; ip2 = ip; break;
+      case TSTEP_DIFF:     timerange =  5; ip1 = 0;   ip2 = ip; break;
+      case TSTEP_INSTANT3:
+      default:             timerange = 10; ip1 = ip/256; ip2 = ip%256; break;
+    }
     // clang-format on
   }
 

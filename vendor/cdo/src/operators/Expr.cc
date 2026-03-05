@@ -64,7 +64,7 @@ static std::string
 exprs_from_file(std::vector<std::string> const &exprArgv)
 {
   if (exprArgv.size() != 1) operator_check_argc(1);
-  auto exprFile = exprArgv[0];
+  auto const &exprFile = exprArgv[0];
   std::ifstream stream(exprFile);
   if (!stream.is_open()) cdo_abort("Open failed on %s", exprFile);
   std::stringstream buffer;
@@ -325,7 +325,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Expr> registration = RegisterEntry<Expr>();
+  inline static auto registration = RegisterEntry<Expr>();
 
 private:
   CdoStreamID streamID1{};
@@ -693,9 +693,9 @@ public:
         if (parseArg.needed[varID])
         {
           auto offset = params[varID].ngp * levelID;
-          auto vardata = params[varID].data + offset;
+          auto varData = params[varID].data + offset;
           size_t numMissVals;
-          cdo_read_field(streamID1, vardata, &numMissVals);
+          cdo_read_field(streamID1, varData, &numMissVals);
           params[varID].numMissVals += numMissVals;
 
           if (numMissVals > 0) cdo_check_missval(params[varID].missval, params[varID].name);
@@ -717,10 +717,10 @@ public:
         for (int levelID = 0; levelID < nlev; ++levelID)
         {
           auto offset = ngp * levelID;
-          double *vardata = params[pidx].data + offset;
-          auto numMissVals = array_num_mv(ngp, vardata, missval);
+          double *varData = params[pidx].data + offset;
+          auto numMissVals = array_num_mv(ngp, varData, missval);
           cdo_def_field(streamID2, varID, levelID);
-          cdo_write_field(streamID2, vardata, numMissVals);
+          cdo_write_field(streamID2, varData, numMissVals);
         }
       }
 

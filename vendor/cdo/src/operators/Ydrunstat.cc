@@ -42,8 +42,8 @@ struct YdayStats
 {
   int numSets[MaxDays]{};
   CdiDateTime vDateTime[MaxDays]{};
-  FieldVector2D varsData1[MaxDays];
-  FieldVector2D varsData2[MaxDays];
+  FieldVector2D varDataList1[MaxDays];
+  FieldVector2D varDataList2[MaxDays];
   int vlistID{};
   VarList varList{};
 
@@ -52,20 +52,20 @@ struct YdayStats
 }  // namespace
 
 static void
-ydstat_update(YdayStats &stats, CdiDateTime vDateTime, FieldVector2D const &varsData1, FieldVector2D const &varsData2, int numSets,
+ydstat_update(YdayStats &stats, CdiDateTime vDateTime, FieldVector2D const &varDataList1, FieldVector2D const &varDataList2, int numSets,
               int operfunc)
 {
-  auto lvarstd = (varsData2.size() > 0);
+  auto lvarstd = (varDataList2.size() > 0);
 
   auto dayOfYear = decode_day_of_year(vDateTime.date);
   if (dayOfYear < 0 || dayOfYear >= MaxDays) cdo_abort("Day %d out of range!", dayOfYear);
 
   stats.vDateTime[dayOfYear] = vDateTime;
 
-  if (!stats.varsData1[dayOfYear].size())
+  if (!stats.varDataList1[dayOfYear].size())
   {
-    field2D_init(stats.varsData1[dayOfYear], stats.varList, FIELD_VEC);
-    if (lvarstd) field2D_init(stats.varsData2[dayOfYear], stats.varList, FIELD_VEC);
+    field2D_init(stats.varDataList1[dayOfYear], stats.varList, FIELD_VEC);
+    if (lvarstd) field2D_init(stats.varDataList2[dayOfYear], stats.varList, FIELD_VEC);
   }
 
   auto numVars = stats.varList.numVars();
@@ -76,18 +76,18 @@ ydstat_update(YdayStats &stats, CdiDateTime vDateTime, FieldVector2D const &vars
 
     for (int levelID = 0; levelID < var.nlevels; ++levelID)
     {
-      auto const &varData1 = varsData1[varID][levelID];
+      auto const &varData1 = varDataList1[varID][levelID];
       if (stats.numSets[dayOfYear] == 0)
       {
-        field_copy(varData1, stats.varsData1[dayOfYear][varID][levelID]);
-        if (lvarstd) field_copy(varsData2[varID][levelID], stats.varsData2[dayOfYear][varID][levelID]);
+        field_copy(varData1, stats.varDataList1[dayOfYear][varID][levelID]);
+        if (lvarstd) field_copy(varDataList2[varID][levelID], stats.varDataList2[dayOfYear][varID][levelID]);
       }
       else if (lvarstd)
       {
-        field2_sum(stats.varsData1[dayOfYear][varID][levelID], varData1);
-        field2_sum(stats.varsData2[dayOfYear][varID][levelID], varsData2[varID][levelID]);
+        field2_sum(stats.varDataList1[dayOfYear][varID][levelID], varData1);
+        field2_sum(stats.varDataList2[dayOfYear][varID][levelID], varDataList2[varID][levelID]);
       }
-      else { field2_function(stats.varsData1[dayOfYear][varID][levelID], varData1, operfunc); }
+      else { field2_function(stats.varDataList1[dayOfYear][varID][levelID], varData1, operfunc); }
     }
   }
 
@@ -116,12 +116,12 @@ ydstat_finalize(YdayStats &stats, int operfunc)
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
           auto numSets = stats.numSets[dayOfYear];
-          auto &rvars1 = stats.varsData1[dayOfYear][varID][levelID];
+          auto &rvars1 = stats.varDataList1[dayOfYear][varID][levelID];
 
           if (lmean) { fieldc_div(rvars1, (double) numSets); }
           else if (lvarstd)
           {
-            auto const &rvars2 = stats.varsData2[dayOfYear][varID][levelID];
+            auto const &rvars2 = stats.varDataList2[dayOfYear][varID][levelID];
             fieldc_stdvar_func(rvars1, rvars2, numSets, divisor);
           }
         }
@@ -208,7 +208,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ydrunstat> registration = RegisterEntry<Ydrunstat>();
+  inline static auto registration = RegisterEntry<Ydrunstat>();
 
 private:
   int operfunc{};
@@ -267,12 +267,12 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData1(numDates + 1);
-    FieldVector3D varsData2(numDates + 1);
+    FieldVector3D varDataList1(numDates + 1);
+    FieldVector3D varDataList2(numDates + 1);
     for (int its = 0; its < numDates; its++)
     {
-      field2D_init(varsData1[its], varList1, FIELD_VEC);
-      if (lvarstd) field2D_init(varsData2[its], varList1, FIELD_VEC);
+      field2D_init(varDataList1[its], varList1, FIELD_VEC);
+      if (lvarstd) field2D_init(varDataList2[its], varList1, FIELD_VEC);
     }
 
     YdayStats stats = YdayStats(vlistID1);
@@ -297,18 +297,18 @@ public:
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
         if (tsID == 0) fieldInfoList[fieldID].set(varID, levelID);
-        auto &rvars1 = varsData1[tsID][varID][levelID];
+        auto &rvars1 = varDataList1[tsID][varID][levelID];
         cdo_read_field(streamID1, rvars1);
 
         if (lvarstd)
         {
-          field2_moq(varsData2[tsID][varID][levelID], rvars1);
+          field2_moq(varDataList2[tsID][varID][levelID], rvars1);
           for (int inp = 0; inp < tsID; ++inp)
-            field2_sumsumq(varsData1[inp][varID][levelID], varsData2[inp][varID][levelID], rvars1);
+            field2_sumsumq(varDataList1[inp][varID][levelID], varDataList2[inp][varID][levelID], rvars1);
         }
         else
         {
-          for (int inp = 0; inp < tsID; ++inp) field2_function(varsData1[inp][varID][levelID], rvars1, operfunc);
+          for (int inp = 0; inp < tsID; ++inp) field2_function(varDataList1[inp][varID][levelID], rvars1, operfunc);
         }
       }
     }
@@ -317,17 +317,17 @@ public:
     {
       cdiDateTimes[numDates] = datetime_avg(dpy, numDates, cdiDateTimes);
 
-      ydstat_update(stats, cdiDateTimes[numDates], varsData1[0], varsData2[0], numDates, operfunc);
+      ydstat_update(stats, cdiDateTimes[numDates], varDataList1[0], varDataList2[0], numDates, operfunc);
 
       cdiDateTimes[numDates] = cdiDateTimes[0];
-      varsData1[numDates] = varsData1[0];
-      if (lvarstd) varsData2[numDates] = varsData2[0];
+      varDataList1[numDates] = varDataList1[0];
+      if (lvarstd) varDataList2[numDates] = varDataList2[0];
 
       for (int inp = 0; inp < numDates; ++inp)
       {
         cdiDateTimes[inp] = cdiDateTimes[inp + 1];
-        varsData1[inp] = varsData1[inp + 1];
-        if (lvarstd) varsData2[inp] = varsData2[inp + 1];
+        varDataList1[inp] = varDataList1[inp + 1];
+        if (lvarstd) varDataList2[inp] = varDataList2[inp + 1];
       }
 
       auto numFields = cdo_stream_inq_timestep(streamID1, tsID);
@@ -338,18 +338,18 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &rvars1 = varsData1[numDates - 1][varID][levelID];
+        auto &rvars1 = varDataList1[numDates - 1][varID][levelID];
         cdo_read_field(streamID1, rvars1);
 
         if (lvarstd)
         {
-          field2_moq(varsData2[numDates - 1][varID][levelID], rvars1);
+          field2_moq(varDataList2[numDates - 1][varID][levelID], rvars1);
           for (int inp = 0; inp < numDates - 1; ++inp)
-            field2_sumsumq(varsData1[inp][varID][levelID], varsData2[inp][varID][levelID], rvars1);
+            field2_sumsumq(varDataList1[inp][varID][levelID], varDataList2[inp][varID][levelID], rvars1);
         }
         else
         {
-          for (int inp = 0; inp < numDates - 1; ++inp) field2_function(varsData1[inp][varID][levelID], rvars1, operfunc);
+          for (int inp = 0; inp < numDates - 1; ++inp) field2_function(varDataList1[inp][varID][levelID], rvars1, operfunc);
         }
       }
 
@@ -379,18 +379,18 @@ public:
         {
           int varID, levelID;
           streamInqField(cdiStream, &varID, &levelID);
-          auto &rvars1 = varsData1[numDates - 1][varID][levelID];
+          auto &rvars1 = varDataList1[numDates - 1][varID][levelID];
           streamReadField(cdiStream, rvars1.vec_d.data(), &rvars1.numMissVals);
 
           if (lvarstd)
           {
-            field2_moq(varsData2[numDates - 1][varID][levelID], rvars1);
+            field2_moq(varDataList2[numDates - 1][varID][levelID], rvars1);
             for (int inp = 0; inp < numDates - 1; ++inp)
-              field2_sumsumq(varsData1[inp][varID][levelID], varsData2[inp][varID][levelID], rvars1);
+              field2_sumsumq(varDataList1[inp][varID][levelID], varDataList2[inp][varID][levelID], rvars1);
           }
           else
           {
-            for (int inp = 0; inp < numDates - 1; ++inp) field2_function(varsData1[inp][varID][levelID], rvars1, operfunc);
+            for (int inp = 0; inp < numDates - 1; ++inp) field2_function(varDataList1[inp][varID][levelID], rvars1, operfunc);
           }
         }
 
@@ -398,17 +398,17 @@ public:
         auto vDateTime = cdiDateTimes[numDates];
         if (vDateTime.date.year > endYear) vDateTime.date.year = endYear;
 
-        ydstat_update(stats, vDateTime, varsData1[0], varsData2[0], numDates, operfunc);
+        ydstat_update(stats, vDateTime, varDataList1[0], varDataList2[0], numDates, operfunc);
 
         cdiDateTimes[numDates] = cdiDateTimes[0];
-        varsData1[numDates] = varsData1[0];
-        if (lvarstd) varsData2[numDates] = varsData2[0];
+        varDataList1[numDates] = varDataList1[0];
+        if (lvarstd) varDataList2[numDates] = varDataList2[0];
 
         for (int inp = 0; inp < numDates; ++inp)
         {
           cdiDateTimes[inp] = cdiDateTimes[inp + 1];
-          varsData1[inp] = varsData1[inp + 1];
-          if (lvarstd) varsData2[inp] = varsData2[inp + 1];
+          varDataList1[inp] = varDataList1[inp + 1];
+          if (lvarstd) varDataList2[inp] = varDataList2[inp + 1];
         }
       }
 
@@ -432,7 +432,7 @@ public:
           auto [varID, levelID] = fieldInfoList[fieldID].get();
           if (otsID && varList1.vars[varID].isConstant) continue;
 
-          auto &rvars1 = stats.varsData1[dayOfYear][varID][levelID];
+          auto &rvars1 = stats.varDataList1[dayOfYear][varID][levelID];
 
           cdo_def_field(streamID2, varID, levelID);
           cdo_write_field(streamID2, rvars1);

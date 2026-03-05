@@ -110,14 +110,13 @@ fillmiss_kernel(int nfill, bool globgrid, long nx, long ny, long i, long j, T mi
 
   auto kk = k1 + k2;
   if (kk >= nfill)
-    {
-      if      (kk == 0) cdo_abort("no point found!");
-      else if (k1 == 0) rval = s2;
-      else if (k2 == 0) rval = s1;
-      else              rval = s1 * k2 / kk + s2 * k1 / kk;
-    }
-  else
-    rval = matrix1[j][i];
+  {
+    if      (kk == 0) { cdo_abort("no point found!"); }
+    else if (k1 == 0) { rval = s2; }
+    else if (k2 == 0) { rval = s1; }
+    else              { rval = s1 * k1 / kk + s2 * k2 / kk; }
+  }
+  else { rval = matrix1[j][i]; }
   // clang-format on
 
   return rval;
@@ -130,7 +129,7 @@ fillmiss_x(Varray<T1> &vIn, Varray<T2> &vOut, int gridID, double mv, int nfill, 
   T1 missval = mv;
   long nx = gridInqXsize(gridID);
   long ny = gridInqYsize(gridID);
-  auto globgrid = (bool) gridIsCircular(gridID);
+  auto globgrid = (bool) gridIsCyclic(gridID);
 
   auto gridtype = gridInqType(gridID);
   if (!(gridtype == GRID_LONLAT || gridtype == GRID_GAUSSIAN)) cdo_abort("Unsupported grid type: %s!", gridNamePtr(gridtype));
@@ -262,34 +261,34 @@ setmisstodis(Varray<T1> &vIn, Varray<T2> &vOut, int gridID, size_t numMissVals, 
   T1 missval = mv;
   auto gridID0 = gridID;
 
-  auto gridsize = gridInqSize(gridID);
-  auto nvals = gridsize - numMissVals;
+  auto gridSize = gridInqSize(gridID);
+  auto nvals = gridSize - numMissVals;
   gridID = generate_full_point_grid(gridID);
 
   if (!gridHasCoordinates(gridID)) cdo_abort("Cell center coordinates missing!");
 
-  Varray<double> xvals(gridsize);
-  Varray<double> yvals(gridsize);
-  gridInqXvals(gridID, xvals.data());
-  gridInqYvals(gridID, yvals.data());
+  Varray<double> xVals(gridSize);
+  Varray<double> yVals(gridSize);
+  gridInqXvals(gridID, xVals.data());
+  gridInqYvals(gridID, yVals.data());
 
   static bool doCheck = true;
   if (doCheck)
   {
     doCheck = false;
-    check_longitude_range(xvals, "center", cdo_grid_get_units(gridID, CDI_XAXIS, "grid center lon"));
-    check_latitude_range(yvals, "center", cdo_grid_get_units(gridID, CDI_YAXIS, "grid center lat"));
+    check_longitude_range(xVals, "center", cdo_grid_get_units(gridID, CDI_XAXIS, "grid center lon"));
+    check_latitude_range(yVals, "center", cdo_grid_get_units(gridID, CDI_YAXIS, "grid center lat"));
   }
 
   // Convert lat/lon units if required
-  cdo_grid_to_radian(gridID, CDI_XAXIS, xvals, "grid center lon");
-  cdo_grid_to_radian(gridID, CDI_YAXIS, yvals, "grid center lat");
+  cdo_grid_to_radian(gridID, CDI_XAXIS, xVals, "grid center lon");
+  cdo_grid_to_radian(gridID, CDI_YAXIS, yVals, "grid center lat");
 
   std::vector<size_t> mindex(numMissVals, 1), vindex(nvals, 1);
   Varray<double> lons(nvals), lats(nvals);
 
   size_t nv = 0, nm = 0;
-  for (size_t i = 0; i < gridsize; ++i)
+  for (size_t i = 0; i < gridSize; ++i)
   {
     vOut[i] = vIn[i];
     if (fp_is_equal(vIn[i], missval))
@@ -301,8 +300,8 @@ setmisstodis(Varray<T1> &vIn, Varray<T2> &vOut, int gridID, size_t numMissVals, 
     {
       if (nv < nvals)
       {
-        lons[nv] = xvals[i];
-        lats[nv] = yvals[i];
+        lons[nv] = xVals[i];
+        lats[nv] = yVals[i];
         vindex[nv] = i;
       }
       nv++;
@@ -312,6 +311,7 @@ setmisstodis(Varray<T1> &vIn, Varray<T2> &vOut, int gridID, size_t numMissVals, 
   if (nv != nvals) cdo_abort("Internal problem, number of valid values differ!");
 
   std::vector<KnnData> knnDataList;
+  knnDataList.reserve(Threading::ompNumMaxThreads);
   for (int i = 0; i < Threading::ompNumMaxThreads; ++i) knnDataList.emplace_back(numNeighbors);
 
   cdo::timer timer;
@@ -343,7 +343,7 @@ setmisstodis(Varray<T1> &vIn, Varray<T2> &vOut, int gridID, size_t numMissVals, 
 
     auto &knnData = knnDataList[ompthID];
 
-    grid_search_point_unstruct(gps, PointLonLat{ xvals[mindex[i]], yvals[mindex[i]] }, knnData);
+    grid_search_point_unstruct(gps, PointLonLat{ xVals[mindex[i]], yVals[mindex[i]] }, knnData);
 
     // Compute weights if mask is false, eliminate those points
     auto numWeights = knnData.compute_weights();
@@ -383,7 +383,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Fillmiss> registration = RegisterEntry<Fillmiss>();
+  inline static auto registration = RegisterEntry<Fillmiss>();
 
   int FILLMISS{}, FILLMISS2{}, SETMISSTONN{}, SETMISSTODIS{};
   CdoStreamID streamID1{};

@@ -65,7 +65,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Transpose> registration = RegisterEntry<Transpose>();
+  inline static auto registration = RegisterEntry<Transpose>();
 
 private:
   CdoStreamID streamID1;

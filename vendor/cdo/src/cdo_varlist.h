@@ -121,4 +121,6 @@ void varList_set_memtype(VarList &varList, MemType memType);
 void varList_set_unique_memtype(VarList &varList);
 int varList_get_psvarid(VarList const &varList, int zaxisID);
 
+void print_found_variables(VarIDs const &varIDs, CdoVars const &vars);
+
 #endif

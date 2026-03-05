@@ -46,7 +46,7 @@ std::string get_original(std::string const &operatorName);
 
 std::vector<std::string> get_sorted_operator_name_list();
 
-bool exists(const std::string arg);
+bool exists(const std::string &arg);
 OperatorMap &get();  // Factory::get()
 
 OperatorMap::iterator find_module(std::string const &operatorName);
@@ -54,7 +54,7 @@ OperatorMap::iterator find(std::string const &p_opername);
 OperatorMap::iterator find(std::string const &p_opername, std::function<void()> p_onError);
 
 const CdoModule &get_module(std::string const &p_operName);
-const CdoModule &get_module(const OperatorMap::iterator &it);
+const CdoModule &get_module(OperatorMap::iterator const &it);
 
 ModuleConstructor get_constructor(std::string const &p_operName);
 ModuleConstructor get_constructor(const OperatorMap::iterator it);
@@ -70,11 +70,12 @@ struct RegisterEntry
   create_constructor(const CdoModule &mod)
   {
     return
-        [&mod](int p_ID, std::string const &p_operName, std::vector<std::string> const &p_operatorArguments) -> std::shared_ptr<T> {
-          Debug(FACTORY, "Creating process via factory function, %d = ID, %s = name, %s = mod_name", p_ID, p_operName, mod.name);
-          auto new_process = std::make_shared<T>(p_ID, p_operName, p_operatorArguments, mod);
-          return new_process;
-        };
+        [&mod](int p_ID, std::string const &p_operName, std::vector<std::string> const &p_operatorArguments) -> std::shared_ptr<T>
+    {
+      Debug(FACTORY, "Creating process via factory function, %d = ID, %s = name, %s = mod_name", p_ID, p_operName, mod.name);
+      auto new_process = std::make_shared<T>(p_ID, p_operName, p_operatorArguments, mod);
+      return new_process;
+    };
   }
   void
   register_operator(const CdoModule &mod, std::string const &p_oper_name, ArgumentHandler &arghandler)
@@ -85,8 +86,8 @@ struct RegisterEntry
 public:
   explicit RegisterEntry(ArgumentHandler arghandler = ArgumentHandler())
   {
-    for (auto &oper : T::module.operators) { register_operator(T::module, oper.name,arghandler); }
-    for (auto &alias : T::module.aliases) { register_operator(T::module, alias.alias,arghandler); }
+    for (auto &oper : T::module.operators) { register_operator(T::module, oper.name, arghandler); }
+    for (auto &alias : T::module.aliases) { register_operator(T::module, alias.alias, arghandler); }
   };
 };
 #endif

@@ -98,7 +98,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Cloudlayer> registration = RegisterEntry<Cloudlayer>();
+  inline static auto registration = RegisterEntry<Cloudlayer>();
 
 private:
   static const int MaxCloudLayers = 3;

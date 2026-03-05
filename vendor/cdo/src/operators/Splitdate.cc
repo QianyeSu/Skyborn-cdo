@@ -29,7 +29,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Splitdate> registration = RegisterEntry<Splitdate>();
+  inline static auto registration = RegisterEntry<Splitdate>();
 
 private:
   int SPLITDATE{};

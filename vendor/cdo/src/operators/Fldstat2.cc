@@ -125,7 +125,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Fldstat2> registration = RegisterEntry<Fldstat2>();
+  inline static auto registration = RegisterEntry<Fldstat2>();
   int operfunc{};
 
   CdoStreamID streamID1{};

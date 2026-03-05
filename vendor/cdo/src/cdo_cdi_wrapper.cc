@@ -69,7 +69,7 @@ str_to_datatype(std::string const &datatypeStr)
 {
   if (datatypeStr.size() > 1)
   {
-    auto ilen = atoi(datatypeStr.c_str() + 1);
+    auto ilen = std::atoi(datatypeStr.c_str() + 1);
     // clang-format off
     if      (datatypeStr == "P0")     return CDI_DATATYPE_PACK;
     else if (datatypeStr[0] == 'P' && ilen > 0 && ilen <= 32) return ilen;

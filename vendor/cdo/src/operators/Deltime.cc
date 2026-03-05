@@ -25,7 +25,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Deltime> registration = RegisterEntry<Deltime>();
+  inline static auto registration = RegisterEntry<Deltime>();
 
 private:
   int DELDAY{}, DEL29FEB{};
@@ -64,10 +64,10 @@ public:
     }
     else
     {
-      auto nsel = cdo_operator_argc();
+      // auto nsel = cdo_operator_argc();
       operator_check_argc(1);
       auto sarg = cdo_operator_argv(0).c_str();
-      dday = atoi(sarg);
+      dday = std::atoi(sarg);
       dmon = 0;
       while (std::isdigit(*sarg)) sarg++;
       if (std::isalpha(*sarg))

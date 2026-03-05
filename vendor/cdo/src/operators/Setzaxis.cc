@@ -48,7 +48,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setzaxis> registration = RegisterEntry<Setzaxis>();
+  inline static auto registration = RegisterEntry<Setzaxis>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

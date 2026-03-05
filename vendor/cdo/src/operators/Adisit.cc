@@ -123,7 +123,7 @@ calc_adipot(size_t gridsize, size_t nlevel, Varray<double> const &pressure, Fiel
   }
 }
 
-int
+static int
 get_code(const CdoVar &var, std::string const &cname)
 {
   auto code = var.code;
@@ -156,7 +156,7 @@ struct IOSettings
 };
 }  // namespace
 
-IOSettings
+static IOSettings
 configureOutput(std::function<void(int, int)> const &outputSettingFunc, VarList const &varList, int vlistID, int thoID, int saoID,
                 Varray<double> &pressure)
 {
@@ -223,7 +223,7 @@ configureOutput(std::function<void(int, int)> const &outputSettingFunc, VarList 
   return IOSettings{ streamID2, vlistID2, gridsize, numLevels, taxisID1, taxisID2, tisID2, saoID2 };
 }
 
-const auto outputSetting_ADISIT = [](int p_vlistID2, int p_tisID2)
+const auto outputSetting_ADISIT = [](int p_vlistID2, int p_tisID2) -> void
 {
   vlistDefVarParam(p_vlistID2, p_tisID2, cdiEncodeParam(20, 255, 255));
   cdiDefKeyString(p_vlistID2, p_tisID2, CDI_KEY_NAME, "to");
@@ -231,7 +231,7 @@ const auto outputSetting_ADISIT = [](int p_vlistID2, int p_tisID2)
   cdiDefKeyString(p_vlistID2, p_tisID2, CDI_KEY_STDNAME, "sea_water_temperature");
 };
 
-const auto outputSetting_ADIPOT = [](int p_vlistID2, int p_tisID2)
+const auto outputSetting_ADIPOT = [](int p_vlistID2, int p_tisID2) -> void
 {
   vlistDefVarParam(p_vlistID2, p_tisID2, cdiEncodeParam(2, 255, 255));
   cdiDefKeyString(p_vlistID2, p_tisID2, CDI_KEY_NAME, "tho");
@@ -262,12 +262,12 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Adisit> registration = RegisterEntry<Adisit>();
+  inline static auto registration = RegisterEntry<Adisit>();
 
 private:
   int ADISIT{}, ADIPOT{};
-  int thoID = -1;
-  int saoID = -1;
+  int thoID{ -1 };
+  int saoID{ -1 };
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
@@ -285,9 +285,9 @@ private:
   int tisID2{};
   int saoID2{};
 
-  Varray<double> pressure;
+  Varray<double> pressure{};
 
-  VarList varList1;
+  VarList varList1{};
 
 public:
   void

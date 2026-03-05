@@ -73,7 +73,7 @@ struct CellSearch
 inline double
 gridcell_area(const yac_grid_cell &cell)
 {
-  return (cell.num_corners > 1) ? yac_huiliers_area(cell) : 0.0;
+  return (cell.num_corners > 1) ? yac_grid_cell_area(cell) : 0.0;
 }
 
 void cdo_compute_overlap_info(size_t numCells, CellSearch &cellSearch, const GridCell &tgtGridCell);

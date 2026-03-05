@@ -32,7 +32,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Replacevalues> registration = RegisterEntry<Replacevalues>();
+  inline static auto registration = RegisterEntry<Replacevalues>();
 
   int SETVALS{}, SETRTOC{}, SETRTOC2{};
   int nvals = 0;

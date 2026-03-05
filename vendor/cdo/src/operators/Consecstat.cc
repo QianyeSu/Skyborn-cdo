@@ -9,7 +9,7 @@
    This module contains the following operators:
 
       Consectstep  consecsum  For each timestep, the current number of
-                              onsecutive timsteps is counted
+                              consecutive timsteps is counted
       Consectstep  consects   For each period of consecutive timesteps, only
                               count its length + last contributing timesteps
 
@@ -43,58 +43,58 @@ selEndOfPeriod(Field &periods, Field const &history, Field const &current, int i
     cdo_abort("Fields have different gridsize (%s)", __func__);
 
   if (!isLastTimestep)
+  {
+    if (current.numMissVals || history.numMissVals)
     {
-      if (current.numMissVals || history.numMissVals)
-        {
 #ifdef _OPENMP
 #pragma omp parallel for default(shared)
 #endif
-          for (size_t i = 0; i < len; ++i)
-            {
-              if (fp_is_not_equal(harray[i], hmissval))
-                {
-                  if (fp_is_not_equal(carray[i], cmissval))
-                    parray[i] = (fp_is_equal(carray[i], 0.0) && is_not_equal(harray[i], 0.0)) ? harray[i] : pmissval;
-                  else  // fp_is_equal(carray[i], cmissval)
-                    parray[i] = (is_not_equal(harray[i], 0.0)) ? harray[i] : pmissval;
-                }
-              else /* fp_is_equal(harray[i], hmissval) */ { parray[i] = pmissval; }
-            }
-        }
-      else
+      for (size_t i = 0; i < len; ++i)
+      {
+        if (fp_is_not_equal(harray[i], hmissval))
         {
+          if (fp_is_not_equal(carray[i], cmissval))
+            parray[i] = (fp_is_equal(carray[i], 0.0) && is_not_equal(harray[i], 0.0)) ? harray[i] : pmissval;
+          else  // fp_is_equal(carray[i], cmissval)
+            parray[i] = (is_not_equal(harray[i], 0.0)) ? harray[i] : pmissval;
+        }
+        else /* fp_is_equal(harray[i], hmissval) */ { parray[i] = pmissval; }
+      }
+    }
+    else
+    {
 #ifdef _OPENMP
 #pragma omp parallel for default(shared) schedule(static)
 #endif
-          for (size_t i = 0; i < len; ++i)
-            {
-              parray[i] = (fp_is_equal(carray[i], 0.0) && is_not_equal(harray[i], 0.0)) ? harray[i] : pmissval;
-            }
-        }
+      for (size_t i = 0; i < len; ++i)
+      {
+        parray[i] = (fp_is_equal(carray[i], 0.0) && is_not_equal(harray[i], 0.0)) ? harray[i] : pmissval;
+      }
     }
+  }
   else
+  {
+    if (current.numMissVals)
     {
-      if (current.numMissVals)
-        {
 #ifdef _OPENMP
 #pragma omp parallel for default(shared)
 #endif
-          for (size_t i = 0; i < len; ++i)
-            {
-              if (!fp_is_equal(carray[i], cmissval))
-                parray[i] = (fp_is_equal(carray[i], 0.0)) ? pmissval : carray[i];
-              else  // fp_is_equal(carray[i], cmissval)
-                parray[i] = pmissval;
-            }
-        }
-      else
-        {
-#ifdef _OPENMP
-#pragma omp parallel for default(shared)
-#endif
-          for (size_t i = 0; i < len; ++i) parray[i] = fp_is_equal(carray[i], 0.0) ? pmissval : carray[i];
-        }
+      for (size_t i = 0; i < len; ++i)
+      {
+        if (!fp_is_equal(carray[i], cmissval))
+          parray[i] = (fp_is_equal(carray[i], 0.0)) ? pmissval : carray[i];
+        else  // fp_is_equal(carray[i], cmissval)
+          parray[i] = pmissval;
+      }
     }
+    else
+    {
+#ifdef _OPENMP
+#pragma omp parallel for default(shared)
+#endif
+      for (size_t i = 0; i < len; ++i) parray[i] = fp_is_equal(carray[i], 0.0) ? pmissval : carray[i];
+    }
+  }
 
   periods.numMissVals = varray_num_mv(len, parray, pmissval);
 }
@@ -120,22 +120,22 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Consecstat> registration = RegisterEntry<Consecstat>();
+  inline static auto registration = RegisterEntry<Consecstat>();
 
   CdiDateTime vDateTime{};
   CdiDateTime histDateTime{};
-  double refval = 0.0;
+  double refval{ 0.0 };
 
-  CdoStreamID istreamID;
-  CdoStreamID ostreamID;
+  CdoStreamID istreamID{};
+  CdoStreamID ostreamID{};
 
-  int ivlistID;
-  int itaxisID;
+  int ivlistID{};
+  int itaxisID{};
 
-  int ovlistID;
-  int otaxisID;
+  int ovlistID{};
+  int otaxisID{};
 
-  int operfunc;
+  int operfunc{};
 
   VarList varList1;
 
@@ -146,8 +146,7 @@ public:
     auto operatorID = cdo_operator_id();
     operfunc = cdo_operator_f1(operatorID);
 
-    if (operfunc == CONSECSUM)
-      if (cdo_operator_argc() > 0) refval = parameter_to_double(cdo_operator_argv(0));
+    if (operfunc == CONSECSUM && cdo_operator_argc() > 0) { refval = parameter_to_double(cdo_operator_argv(0)); }
 
     istreamID = cdo_open_read(0);
 
@@ -172,86 +171,86 @@ public:
   {
     Field field;
 
-    FieldVector2D varsData, histData, periodsData;
-    field2D_init(varsData, varList1, FIELD_VEC, 0);
+    FieldVector2D varDataList, histData, periodsData;
+    field2D_init(varDataList, varList1, FIELD_VEC, 0);
     if (operfunc == CONSECTS) field2D_init(histData, varList1, FIELD_VEC);
     if (operfunc == CONSECTS) field2D_init(periodsData, varList1, FIELD_VEC);
 
     int itsID = 0;
     int otsID = 0;
     while (true)
-      {
-        auto numFields = cdo_stream_inq_timestep(istreamID, itsID);
-        if (numFields == 0) break;
+    {
+      auto numFields = cdo_stream_inq_timestep(istreamID, itsID);
+      if (numFields == 0) break;
 
-        vDateTime = taxisInqVdatetime(itaxisID);
-        switch (operfunc)
+      vDateTime = taxisInqVdatetime(itaxisID);
+      switch (operfunc)
+      {
+        case CONSECSUM:
+          taxisDefVdatetime(otaxisID, vDateTime);
+          cdo_def_timestep(ostreamID, otsID);
+          break;
+        case CONSECTS:
+          if (itsID != 0)
           {
+            taxisDefVdatetime(otaxisID, histDateTime);
+            cdo_def_timestep(ostreamID, otsID - 1);
+          }
+          break;
+        default: printf(SWITCHWARN, __func__); break;
+      }
+
+      for (int fieldID = 0; fieldID < numFields; ++fieldID)
+      {
+        auto [varID, levelID] = cdo_inq_field(istreamID);
+        auto const &var1 = varList1.vars[varID];
+        field.init(var1);
+        cdo_read_field(istreamID, field);
+
+        auto &varData = varDataList[varID][levelID];
+        field2_sumtr(varData, field, refval);
+
+        switch (operfunc)
+        {
           case CONSECSUM:
-            taxisDefVdatetime(otaxisID, vDateTime);
-            cdo_def_timestep(ostreamID, otsID);
+            cdo_def_field(ostreamID, varID, levelID);
+            cdo_write_field(ostreamID, varData);
             break;
           case CONSECTS:
             if (itsID != 0)
-              {
-                taxisDefVdatetime(otaxisID, histDateTime);
-                cdo_def_timestep(ostreamID, otsID - 1);
-              }
+            {
+              selEndOfPeriod(periodsData[varID][levelID], histData[varID][levelID], varData, false);
+              cdo_def_field(ostreamID, varID, levelID);
+              cdo_write_field(ostreamID, periodsData[varID][levelID]);
+            }
+            histData[varID][levelID].vec_d = varData.vec_d;
             break;
           default: printf(SWITCHWARN, __func__); break;
-          }
-
-        for (int fieldID = 0; fieldID < numFields; ++fieldID)
-          {
-            auto [varID, levelID] = cdo_inq_field(istreamID);
-            auto const &var1 = varList1.vars[varID];
-            field.init(var1);
-            cdo_read_field(istreamID, field);
-
-            auto &varData = varsData[varID][levelID];
-            field2_sumtr(varData, field, refval);
-
-            switch (operfunc)
-              {
-              case CONSECSUM:
-                cdo_def_field(ostreamID, varID, levelID);
-                cdo_write_field(ostreamID, varData);
-                break;
-              case CONSECTS:
-                if (itsID != 0)
-                  {
-                    selEndOfPeriod(periodsData[varID][levelID], histData[varID][levelID], varData, false);
-                    cdo_def_field(ostreamID, varID, levelID);
-                    cdo_write_field(ostreamID, periodsData[varID][levelID]);
-                  }
-                histData[varID][levelID].vec_d = varData.vec_d;
-                break;
-              default: printf(SWITCHWARN, __func__); break;
-              }
-          }
-
-        histDateTime = vDateTime;
-        itsID++;
-        otsID++;
+        }
       }
+
+      histDateTime = vDateTime;
+      itsID++;
+      otsID++;
+    }
 
     if (operfunc == CONSECTS)  // Save the last timestep
-      {
-        taxisDefVdatetime(otaxisID, vDateTime);
-        cdo_def_timestep(ostreamID, otsID - 1);
+    {
+      taxisDefVdatetime(otaxisID, vDateTime);
+      cdo_def_timestep(ostreamID, otsID - 1);
 
-        auto numVars = varList1.numVars();
-        for (int varID = 0; varID < numVars; ++varID)
-          {
-            auto nlevels = varList1.vars[varID].nlevels;
-            for (int levelID = 0; levelID < nlevels; ++levelID)
-              {
-                selEndOfPeriod(periodsData[varID][levelID], histData[varID][levelID], varsData[varID][levelID], true);
-                cdo_def_field(ostreamID, varID, levelID);
-                cdo_write_field(ostreamID, periodsData[varID][levelID]);
-              }
-          }
+      auto numVars = varList1.numVars();
+      for (int varID = 0; varID < numVars; ++varID)
+      {
+        auto nlevels = varList1.vars[varID].nlevels;
+        for (int levelID = 0; levelID < nlevels; ++levelID)
+        {
+          selEndOfPeriod(periodsData[varID][levelID], histData[varID][levelID], varDataList[varID][levelID], true);
+          cdo_def_field(ostreamID, varID, levelID);
+          cdo_write_field(ostreamID, periodsData[varID][levelID]);
+        }
       }
+    }
   }
 
   void

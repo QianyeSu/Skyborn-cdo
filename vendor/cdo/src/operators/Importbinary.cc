@@ -122,7 +122,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Importbinary> registration = RegisterEntry<Importbinary>();
+  inline static auto registration = RegisterEntry<Importbinary>();
 
   size_t numMissVals = 0;
   int told{}, fnum{};

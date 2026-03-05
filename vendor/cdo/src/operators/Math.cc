@@ -343,7 +343,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Math> registration = RegisterEntry<Math>();
+  inline static auto registration = RegisterEntry<Math>();
 
 private:
   Oper operfunc{};

@@ -29,7 +29,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, OnlyFirst },
   };
-  inline static RegisterEntry<Selrec> registration = RegisterEntry<Selrec>();
+  inline static auto registration = RegisterEntry<Selrec>();
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};
 

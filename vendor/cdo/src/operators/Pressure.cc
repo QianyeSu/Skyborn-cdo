@@ -38,7 +38,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Pressure> registration = RegisterEntry<Pressure>();
+  inline static auto registration = RegisterEntry<Pressure>();
 
 private:
   int PRESSURE_FULL{}, PRESSURE_HALF{}, DELTA_PRESSURE{};
@@ -91,8 +91,7 @@ public:
     int zaxisType = -1;
     if (operatorID == PRESSURE_FULL || operatorID == DELTA_PRESSURE)
     {
-      if (numFullLevels == numHybridLevels)
-        zaxisID_PL = zaxisID_ML;
+      if (numFullLevels == numHybridLevels) { zaxisID_PL = zaxisID_ML; }
       else
       {
         if (Options::cdoVerbose) cdo_print("Creating ZAXIS_HYBRID .. (numFullLevels=%d)", numFullLevels);
@@ -102,8 +101,7 @@ public:
     }
     else
     {
-      if (numHalfLevels == numHybridLevels)
-        zaxisID_PL = zaxisID_ML;
+      if (numHalfLevels == numHybridLevels) { zaxisID_PL = zaxisID_ML; }
       else
       {
         if (Options::cdoVerbose) cdo_print("Creating ZAXIS_HYBRID_HALF .. (numHalfLevels=%d)", numHalfLevels);
@@ -127,10 +125,8 @@ public:
     if (Options::cdoVerbose)
     {
       cdo_print("Found:");
-      // clang-format off
-      if (-1 != varIDs.psID)   cdo_print("  %s -> %s", var_stdname(surface_air_pressure), varList1.vars[varIDs.psID].name);
+      if (-1 != varIDs.psID) cdo_print("  %s -> %s", var_stdname(surface_air_pressure), varList1.vars[varIDs.psID].name);
       if (-1 != varIDs.lnpsID) cdo_print("  LOG(%s) -> %s", var_stdname(surface_air_pressure), varList1.vars[varIDs.lnpsID].name);
-      // clang-format on
     }
 
     pvarID = varIDs.lnpsID;
@@ -217,15 +213,15 @@ public:
       }
 
       double *pout = nullptr;
-      int nlevels = 0;
+      int numLevels = 0;
       if (operatorID == PRESSURE_FULL)
       {
-        nlevels = numFullLevels;
+        numLevels = numFullLevels;
         pout = pressureFull.data();
       }
       else if (operatorID == DELTA_PRESSURE)
       {
-        nlevels = numFullLevels;
+        numLevels = numFullLevels;
         for (int k = 0; k < numFullLevels; ++k)
           for (size_t i = 0; i < gridsize; ++i)
             deltaPressure[k * gridsize + i] = pressureHalf[(k + 1) * gridsize + i] - pressureHalf[k * gridsize + i];
@@ -234,12 +230,12 @@ public:
       }
       else if (operatorID == PRESSURE_HALF)
       {
-        nlevels = numHalfLevels;
+        numLevels = numHalfLevels;
         pout = pressureHalf.data();
       }
 
       int varID = 0;
-      for (int levelID = 0; levelID < nlevels; ++levelID)
+      for (int levelID = 0; levelID < numLevels; ++levelID)
       {
         cdo_def_field(streamID2, varID, levelID);
         cdo_write_field(streamID2, &pout[levelID * gridsize], 0);
@@ -252,7 +248,6 @@ public:
   void
   close() override
   {
-
     cdo_stream_close(streamID2);
     cdo_stream_close(streamID1);
   }

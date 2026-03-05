@@ -94,7 +94,7 @@ selinfo_add(SelectInfo &selInfo, std::string const &description, std::string con
       {
         case SelType::INT:
         {
-          int first, last, inc;
+          int first{}, last{}, inc{};
           split_intstring(e.values[i], first, last, inc);
 
           if (first == last) { e.ivalues[j++] = first; }

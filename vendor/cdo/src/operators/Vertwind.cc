@@ -35,7 +35,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertwind> registration = RegisterEntry<Vertwind>();
+  inline static auto registration = RegisterEntry<Vertwind>();
 
 private:
   CdoStreamID streamID1{};

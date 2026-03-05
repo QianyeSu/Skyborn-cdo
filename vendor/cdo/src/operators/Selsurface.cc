@@ -192,7 +192,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Selsurface> registration = RegisterEntry<Selsurface>();
+  inline static auto registration = RegisterEntry<Selsurface>();
 
 private:
   int ISOSURFACE{}, BOTTOMVALUE{}, TOPVALUE{};
@@ -286,8 +286,8 @@ public:
     for (auto const &var : varList1.vars) { isVar3D[var.ID] = (var.zaxisID == zaxisID1); }
 
     Field field2;
-    FieldVector2D varsData1;
-    field2D_init(varsData1, varList1);
+    FieldVector2D varDataList1;
+    field2D_init(varDataList1, varList1);
 
     auto bottom_value_func = isReverse ? layer_value_max : layer_value_min;
     auto top_value_func = isReverse ? layer_value_min : layer_value_max;
@@ -308,7 +308,7 @@ public:
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
         auto const &var = varList1.vars[varID];
-        auto &field1 = varsData1[varID][levelID];
+        auto &field1 = varDataList1[varID][levelID];
         field1.init(var);
         cdo_read_field(streamID1, field1);
         foundVar[varID] = true;
@@ -323,9 +323,9 @@ public:
           {
             field2.init(var);
             // clang-format off
-            if      (operatorID == ISOSURFACE)  isosurface(isoval, numLevels, levels, varsData1[varID], field2);
-            else if (operatorID == BOTTOMVALUE) bottom_value_func(numLevels, varsData1[varID], field2);
-            else if (operatorID == TOPVALUE)    top_value_func(numLevels, varsData1[varID], field2);
+            if      (operatorID == ISOSURFACE)  isosurface(isoval, numLevels, levels, varDataList1[varID], field2);
+            else if (operatorID == BOTTOMVALUE) bottom_value_func(numLevels, varDataList1[varID], field2);
+            else if (operatorID == TOPVALUE)    top_value_func(numLevels, varDataList1[varID], field2);
             // clang-format on
 
             cdo_def_field(streamID2, varID, 0);
@@ -336,7 +336,7 @@ public:
             for (int levelID = 0; levelID < var.nlevels; ++levelID)
             {
               cdo_def_field(streamID2, varID, levelID);
-              cdo_write_field(streamID2, varsData1[varID][levelID]);
+              cdo_write_field(streamID2, varDataList1[varID][levelID]);
             }
           }
         }

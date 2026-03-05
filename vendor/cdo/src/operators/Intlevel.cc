@@ -69,7 +69,7 @@ restore_index_and_weights(int nlev1, int idx, float wgt, int &idx1, int &idx2, f
 //  1D vertical interpolation
 template <typename T1, typename T2>
 static void
-vert_interp_lev(size_t gridsize, int nlev1, double mv, Varray<T1> const &vardata1, Varray<T2> &vardata2, int nlev2,
+vert_interp_lev(size_t gridsize, int nlev1, double mv, Varray<T1> const &varData1, Varray<T2> &varData2, int nlev2,
                 Varray<int> const &lev_idx, Varray<float> const &lev_wgt)
 {
   T1 missval = mv;
@@ -83,10 +83,10 @@ vert_interp_lev(size_t gridsize, int nlev1, double mv, Varray<T1> const &vardata
     restore_index_and_weights(nlev1, idx, wgt, idx1, idx2, wgt1, wgt2);
 
     // upper/lower values from input field
-    auto var1L1 = &vardata1[gridsize * idx1];
-    auto var1L2 = &vardata1[gridsize * idx2];
+    auto var1L1 = &varData1[gridsize * idx1];
+    auto var1L2 = &varData1[gridsize * idx2];
 
-    auto var2 = &vardata2[gridsize * ilev];
+    auto var2 = &varData2[gridsize * ilev];
 
 #ifdef _OPENMP
 #pragma omp parallel for default(shared) schedule(static)
@@ -96,7 +96,7 @@ vert_interp_lev(size_t gridsize, int nlev1, double mv, Varray<T1> const &vardata
 }
 
 static void
-vert_interp_lev(size_t gridsize, int nlev1, double missval, const Field3D &field1, Field3D &field2, int nlev2,
+vert_interp_lev(size_t gridsize, int nlev1, double missval, Field3D const &field1, Field3D &field2, int nlev2,
                 Varray<int> const &lev_idx, Varray<float> const &lev_wgt)
 {
   auto func = [&](auto &v1, auto &v2) { vert_interp_lev(gridsize, nlev1, missval, v1, v2, nlev2, lev_idx, lev_wgt); };
@@ -106,7 +106,7 @@ vert_interp_lev(size_t gridsize, int nlev1, double missval, const Field3D &field
 //  3D vertical interpolation
 template <typename T1, typename T2>
 void
-vert_interp_lev3d(size_t gridsize, int nlev1, double mv, Varray<T1> const &vardata1, Varray<T2> &vardata2, int nlev2,
+vert_interp_lev3d(size_t gridsize, int nlev1, double mv, Varray<T1> const &varData1, Varray<T2> &varData2, int nlev2,
                   Varray<int> const &lev_idx, Varray<float> const &lev_wgt)
 {
   T1 missval = mv;
@@ -114,7 +114,7 @@ vert_interp_lev3d(size_t gridsize, int nlev1, double mv, Varray<T1> const &varda
   for (int ilev = 0; ilev < nlev2; ilev++)
   {
     auto offset = ilev * gridsize;
-    auto var2 = &vardata2[offset];
+    auto var2 = &varData2[offset];
 
 #ifdef _OPENMP
 #pragma omp parallel for default(shared) schedule(static)
@@ -128,8 +128,8 @@ vert_interp_lev3d(size_t gridsize, int nlev1, double mv, Varray<T1> const &varda
       restore_index_and_weights(nlev1, idx, wgt, idx1, idx2, wgt1, wgt2);
 
       // upper/lower values from input field
-      auto var1L1 = vardata1[idx1 * gridsize + i];
-      auto var1L2 = vardata1[idx2 * gridsize + i];
+      auto var1L1 = varData1[idx1 * gridsize + i];
+      auto var1L2 = varData1[idx2 * gridsize + i];
 
       var2[i] = vert_interp_lev_kernel(wgt1, wgt2, var1L1, var1L2, missval);
     }
@@ -438,7 +438,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Intlevel> registration = RegisterEntry<Intlevel>();
+  inline static auto registration = RegisterEntry<Intlevel>();
 
   int zaxisID1 = -1;
 
@@ -550,21 +550,21 @@ public:
     std::vector<bool> processVars(numVars);
     std::vector<bool> interpVars(numVars, false);
     std::vector<std::vector<size_t>> varnumMissVals(numVars);
-    Field3DVector vardata1(numVars);
-    Field3DVector vardata2(numVars);
+    Field3DVector varDataList1(numVars);
+    Field3DVector varDataList2(numVars);
 
     int maxLevels = std::max(numLevels1, numLevels2);
 
     for (int varID = 0; varID < numVars; ++varID)
     {
       auto const &var1 = varList1.vars[varID];
-      vardata1[varID].init(var1);
+      varDataList1[varID].init(var1);
       interpVars[varID] = (var1.zaxisID == zaxisID1 || var1.nlevels == numLevels1);
 
       if (interpVars[varID])
       {
         varnumMissVals[varID].resize(maxLevels, 0);
-        vardata2[varID].init(varList2.vars[varID]);
+        varDataList2[varID].init(varList2.vars[varID]);
       }
       else { varnumMissVals[varID].resize(var1.nlevels); }
     }
@@ -583,14 +583,14 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+        cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
         processVars[varID] = true;
       }
 
       if (tsID == 0 || zvarIsVarying)
       {
         if (!params.zvarname.empty())
-          vert_gen_weights3d1d(params.extrapolate, zvarGridsize, numLevels1, vardata1[zvarID], numLevels2, lev2, lev_idx, lev_wgt);
+          vert_gen_weights3d1d(params.extrapolate, zvarGridsize, numLevels1, varDataList1[zvarID], numLevels2, lev2, lev_idx, lev_wgt);
         else
           vert_gen_weights(params.extrapolate, numLevels1 + 2, lev1, numLevels2, lev2, lev_idx, lev_wgt);
       }
@@ -605,15 +605,15 @@ public:
           auto gridsize = var1.gridsize;
 
           if (!params.zvarname.empty())
-            vert_interp_lev3d(gridsize, numLevels1, missval, vardata1[varID], vardata2[varID], numLevels2, lev_idx, lev_wgt);
+            vert_interp_lev3d(gridsize, numLevels1, missval, varDataList1[varID], varDataList2[varID], numLevels2, lev_idx, lev_wgt);
           else
-            vert_interp_lev(gridsize, numLevels1, missval, vardata1[varID], vardata2[varID], numLevels2, lev_idx, lev_wgt);
+            vert_interp_lev(gridsize, numLevels1, missval, varDataList1[varID], varDataList2[varID], numLevels2, lev_idx, lev_wgt);
 
           for (int levelID = 0; levelID < numLevels2; ++levelID)
           {
             auto offset = gridsize * levelID;
             auto func = [&](auto const &v) { varnumMissVals[varID][levelID] = array_num_mv(gridsize, &v[offset], missval); };
-            field_operation(func, vardata2[varID]);
+            field_operation(func, varDataList2[varID]);
           }
         }
       }
@@ -625,7 +625,7 @@ public:
           for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
           {
             cdo_def_field(streamID2, varID, levelID);
-            cdo_write_field(streamID2, interpVars[varID] ? vardata2[varID] : vardata1[varID], levelID,
+            cdo_write_field(streamID2, interpVars[varID] ? varDataList2[varID] : varDataList1[varID], levelID,
                             varnumMissVals[varID][levelID]);
           }
         }

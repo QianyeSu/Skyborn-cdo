@@ -31,7 +31,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Splitsel> registration = RegisterEntry<Splitsel>();
+  inline static auto registration = RegisterEntry<Splitsel>();
 
 private:
   CdoStreamID streamID1{};

@@ -9,7 +9,7 @@ getenv_extrapolate(void)
   const auto envstr = getenv("EXTRAPOLATE");
   if (envstr && std::isdigit((int) envstr[0]))
   {
-    if (atoi(envstr) == 1) extrapolate = true;
+    if (std::atoi(envstr) == 1) { extrapolate = true; }
     if (extrapolate) cdo_print("Extrapolation of missing values enabled!");
   }
 

@@ -1,3 +1,49 @@
+2026-02-20  Uwe Schulzweida
+
+	* Version 2.6.0 released
+
+2026-02-19  Uwe Schulzweida
+
+	* Merge wave_spectrum patch from Daniel Reinert
+
+2026-02-13  Uwe Schulzweida
+
+	* Set default CDI_CACHE_NCZ=1
+
+2026-01-19  Uwe Schulzweida
+
+	* add env. var CDI_CACHE_NC to set CDI_CACHE_NC4 and CDI_CACHE_NCZ
+	* add CDI input cache for NC4 data (netcdf NC4 cache has performance issues)
+
+2026-01-17  Uwe Schulzweida
+
+	* CDO_CACHE_NCZ: added support for cell query
+
+2026-01-11  Uwe Schulzweida
+
+	* Wrong datetime returned in gribapiGetValidityDateTime with sub-minute resolution grib file [Bug #12335]
+
+2026-01-09  Uwe Schulzweida
+
+	* Changed healpix_index to coordinate variable
+
+2026-01-08  Uwe Schulzweida
+
+	* Fix problem with scalar zaxis
+
+2026-01-02  Uwe Schulzweida
+
+	* add CDI input cache for NCZ data (netcdf NCZ cache has performance issues)
+	* process_grid_query: improve HEALPix support
+
+2025-11-24  Uwe Schulzweida
+
+	* is_healpix_grid: add support for int64 attributes
+
+2025-11-17  Uwe Schulzweida
+
+	* cdf_time_dimid: replaced is_time_units() by is_timeaxis_units() (bug fix)
+
 2025-11-06  Uwe Schulzweida
 
 	* Version 2.5.4 released

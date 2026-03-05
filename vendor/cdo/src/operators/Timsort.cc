@@ -30,7 +30,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timsort> registration = RegisterEntry<Timsort>();
+  inline static auto registration = RegisterEntry<Timsort>();
 
   int nalloc = 0;
 
@@ -68,7 +68,7 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
     std::vector<CdiDateTime> vDateTimes;
 
     auto numVars = varList1.numVars();
@@ -84,17 +84,17 @@ public:
         constexpr int NALLOC_INC = 1024;
         nalloc += NALLOC_INC;
         vDateTimes.resize(nalloc);
-        varsData.resize(nalloc);
+        varDataList.resize(nalloc);
       }
 
       vDateTimes[tsID] = taxisInqVdatetime(taxisID1);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -127,21 +127,21 @@ public:
           {
             auto &v = fields[ompthID].vec_f;
             v.resize(nts);
-            for (int t = 0; t < nts; ++t) v[t] = varsData[t][varID][levelID].vec_f[i];
+            for (int t = 0; t < nts; ++t) v[t] = varDataList[t][varID][levelID].vec_f[i];
 
             std::ranges::sort(v);
 
-            for (int t = 0; t < nts; ++t) varsData[t][varID][levelID].vec_f[i] = v[t];
+            for (int t = 0; t < nts; ++t) varDataList[t][varID][levelID].vec_f[i] = v[t];
           }
           else
           {
             auto &v = fields[ompthID].vec_d;
             v.resize(nts);
-            for (int t = 0; t < nts; ++t) v[t] = varsData[t][varID][levelID].vec_d[i];
+            for (int t = 0; t < nts; ++t) v[t] = varDataList[t][varID][levelID].vec_d[i];
 
             std::ranges::sort(v);
 
-            for (int t = 0; t < nts; ++t) varsData[t][varID][levelID].vec_d[i] = v[t];
+            for (int t = 0; t < nts; ++t) varDataList[t][varID][levelID].vec_d[i] = v[t];
           }
         }
       }
@@ -157,7 +157,7 @@ public:
         auto const &var = varList1.vars[varID];
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
-          auto &field = varsData[tsID][varID][levelID];
+          auto &field = varDataList[tsID][varID][levelID];
           if (field.hasData())
           {
             cdo_def_field(streamID2, varID, levelID);

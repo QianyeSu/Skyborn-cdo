@@ -22,7 +22,7 @@ public:
     .number = CDI_COMP,  // Allowed number type
     .constraints = { 1, 2, OnlyFirst },
   };
-  inline static RegisterEntry<Complextorect> registration = RegisterEntry<Complextorect>();
+  inline static auto registration = RegisterEntry<Complextorect>();
 
 private:
   int COMPLEXTORECT{}, COMPLEXTOPOL{};

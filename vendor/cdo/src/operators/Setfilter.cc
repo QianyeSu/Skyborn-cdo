@@ -144,7 +144,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setfilter> registration = RegisterEntry<Setfilter>();
+  inline static auto registration = RegisterEntry<Setfilter>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

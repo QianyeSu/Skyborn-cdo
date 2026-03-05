@@ -378,7 +378,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Distgrid> registration = RegisterEntry<Distgrid>();
+  inline static auto registration = RegisterEntry<Distgrid>();
 
   CdoStreamID streamID1;
   std::vector<CdoStreamID> streamIDs;

@@ -271,7 +271,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timstat2> registration = RegisterEntry<Timstat2>();
+  inline static auto registration = RegisterEntry<Timstat2>();
 
   int numWork{};
 

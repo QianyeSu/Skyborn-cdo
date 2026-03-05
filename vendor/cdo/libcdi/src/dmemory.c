@@ -33,8 +33,11 @@ static const char *const memfunc[] = { "Malloc", "Calloc", "Realloc", "Free" };
 #undef MEM_UNDEFID
 #define MEM_UNDEFID -1
 
-#define MEM_MAXNAME 32 /* Min = 8, for  "unknown" ! */
+enum
+{
+  MEM_MAXNAME = 32 /* Min = 8, for  "unknown" ! */
 
+};
 static int dmemory_ExitOnError = 1;
 
 typedef struct

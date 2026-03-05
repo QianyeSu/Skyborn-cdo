@@ -74,9 +74,7 @@ public:
     }
 
     size_t numIndices = 0;
-
     if (m_pointsXYZ == nullptr) return numIndices;
-
     return numIndices;
   }
 

@@ -71,7 +71,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Samplegrid> registration = RegisterEntry<Samplegrid>();
+  inline static auto registration = RegisterEntry<Samplegrid>();
 
   int SAMPLEGRID{}, SUBGRID{};
   int resampleFactor = 0;

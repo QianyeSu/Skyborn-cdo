@@ -949,7 +949,7 @@ remap_weights_zonal_mean(int gridID1, int gridID2, Varray2D<size_t> &remapIndice
 
 template <typename T1, typename T2>
 static size_t
-remap_zonal_mean(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissval, const Varray2D<size_t> &remapIndices,
+remap_zonal_mean(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMissval, Varray2D<size_t> const &remapIndices,
                  Varray2D<double> const &remapWeights)
 {
   T1 missval = srcMissval;
@@ -990,7 +990,7 @@ remap_zonal_mean(Varray<T1> const &srcArray, Varray<T2> &tgtArray, double srcMis
 }
 
 void
-remap_zonal_mean(const Varray2D<size_t> &remapIndices, Varray2D<double> const &remapWeights, Field const &field1, Field &field2)
+remap_zonal_mean(Varray2D<size_t> const &remapIndices, Varray2D<double> const &remapWeights, Field const &field1, Field &field2)
 {
   auto func = [&](auto const &v1, auto &v2) { remap_zonal_mean(v1, v2, field1.missval, remapIndices, remapWeights); };
   field_operation2(func, field1, field2);

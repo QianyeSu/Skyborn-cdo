@@ -95,10 +95,7 @@ cdiInqAttConvertedToFloat(int gridID, int atttype, const char *attname, int attl
   {
     cdiInqAttFlt(gridID, CDI_GLOBAL, attname, attlen, attflt);
   }
-  else
-  {
-    status = false;
-  }
+  else { status = false; }
 
   return status;
 }
@@ -347,10 +344,7 @@ gridGenXvals(size_t xsize, double xfirst, double xlast, double xinc, double *res
       while (xfirst >= xlast) xlast += 360;
       xinc = (xlast - xfirst) / (double) xsize;
     }
-    else
-    {
-      xinc = (xlast - xfirst) / (double) (xsize - 1);
-    }
+    else { xinc = (xlast - xfirst) / (double) (xsize - 1); }
   }
 
   for (size_t i = 0; i < xsize; ++i) xvals[i] = xfirst + (double) i * xinc;
@@ -466,10 +460,7 @@ gridGenYvals(int gridtype, size_t ysize, double yfirst, double ylast, double yin
     }
   }
   // else if (gridtype == GRID_LONLAT || gridtype == GRID_GENERIC)
-  else
-  {
-    gridGenYvalsRegular(ysize, yfirst, ylast, yinc, yvals);
-  }
+  else { gridGenYvalsRegular(ysize, yfirst, ylast, yinc, yvals); }
   /*
     else
     Error("unable to calculate values for %s grid!", gridNamePtr(gridtype));
@@ -942,12 +933,12 @@ gridInqProjType(int gridID)
     if (gmapname[0])
     {
       // clang-format off
-          if      (str_is_equal(gmapname, "rotated_latitude_longitude"))   projtype = CDI_PROJ_RLL;
-          else if (str_is_equal(gmapname, "lambert_azimuthal_equal_area")) projtype = CDI_PROJ_LAEA;
-          else if (str_is_equal(gmapname, "lambert_conformal_conic"))      projtype = CDI_PROJ_LCC;
-          else if (str_is_equal(gmapname, "sinusoidal"))                   projtype = CDI_PROJ_SINU;
-          else if (str_is_equal(gmapname, "polar_stereographic"))          projtype = CDI_PROJ_STERE;
-          else if (str_is_equal(gmapname, "healpix"))                      projtype = CDI_PROJ_HEALPIX;
+      if      (str_is_equal(gmapname, "rotated_latitude_longitude"))   projtype = CDI_PROJ_RLL;
+      else if (str_is_equal(gmapname, "lambert_azimuthal_equal_area")) projtype = CDI_PROJ_LAEA;
+      else if (str_is_equal(gmapname, "lambert_conformal_conic"))      projtype = CDI_PROJ_LCC;
+      else if (str_is_equal(gmapname, "sinusoidal"))                   projtype = CDI_PROJ_SINU;
+      else if (str_is_equal(gmapname, "polar_stereographic"))          projtype = CDI_PROJ_STERE;
+      else if (str_is_equal(gmapname, "healpix"))                      projtype = CDI_PROJ_HEALPIX;
       // clang-format on
       gridptr->projtype = projtype;
     }
@@ -1944,10 +1935,10 @@ gridInqParamRLL(int gridID, double *xpole, double *ypole, double *angle)
       {
         double *attflt;
         // clang-format off
-              if      (str_is_equal(name, "grid_north_pole_longitude")) attflt = xpole;
-              else if (str_is_equal(name, "grid_north_pole_latitude") ) attflt = ypole;
-              else if (str_is_equal(name, "north_pole_grid_longitude")) attflt = angle;
-              else continue;
+        if      (str_is_equal(name, "grid_north_pole_longitude")) attflt = xpole;
+        else if (str_is_equal(name, "grid_north_pole_latitude") ) attflt = ypole;
+        else if (str_is_equal(name, "north_pole_grid_longitude")) attflt = angle;
+        else continue;
         // clang-format on
         bool valid = cdiInqAttConvertedToFloat(gridID, atttype, name, attlen, attflt);
         if ((nfound += valid) == 3) return;
@@ -2069,7 +2060,7 @@ grid_check_cyclic(grid_t *gridptr)
   };
   size_t xsize = gridptr->x.size, ysize = gridptr->y.size;
   const double *xvals = gridptr->vtable->inqXValsPtr(gridptr), *yvals = gridptr->vtable->inqYValsPtr(gridptr),
-               (*xbounds)[numVertices] = (const double (*)[numVertices]) gridptr->vtable->inqXBoundsPtr(gridptr);
+               (*xbounds)[numVertices] = (const double(*)[numVertices]) gridptr->vtable->inqXBoundsPtr(gridptr);
 
   if (gridptr->type == GRID_GAUSSIAN || gridptr->type == GRID_LONLAT)
   {
@@ -2159,12 +2150,10 @@ grid_check_cyclic(grid_t *gridptr)
 }
 
 int
-gridIsCircular(int gridID)
+gridIsCyclic(int gridID)
 {
   grid_t *gridptr = grid_to_pointer(gridID);
-
   if (gridptr->isCyclic == CDI_UNDEFID) grid_check_cyclic(gridptr);
-
   return gridptr->isCyclic;
 }
 
@@ -2213,7 +2202,7 @@ compareXYvals2(grid_t *gridRef, grid_t *gridTest)
                 || ((gridTest->x.bounds == NULL) ^ (gridRef->x.bounds == NULL))
                 || ((gridTest->y.bounds == NULL) ^ (gridRef->y.bounds == NULL));
 
-  typedef double (*inqVal)(grid_t *grid, SizeType index);
+  typedef double (*inqVal)(grid_t * grid, SizeType index);
   inqVal inqXValRef = gridRef->vtable->inqXVal, inqYValRef = gridRef->vtable->inqYVal, inqXValTest = gridTest->vtable->inqXVal,
          inqYValTest = gridTest->vtable->inqYVal;
 
@@ -3080,10 +3069,8 @@ gridDefBoundsGeneric(grid_t *gridptr, const double *bounds, size_t regularSize, 
   size_t size = nvertex * (isIrregular ? gridptr->size : regularSize);
   if (size == 0) Error("size undefined for gridID = %d", gridptr->self);
 
-  if (*field == NULL && size)
-    *field = (double *) Malloc(size * sizeof(double));
-  else if (CDI_Debug)
-    Warning("values already defined!");
+  if (*field == NULL && size) { *field = (double *) Malloc(size * sizeof(double)); }
+  else if (CDI_Debug) { Warning("values already defined!"); }
 
   copy_darray(size, bounds, *field);
 }
@@ -3676,10 +3663,7 @@ gridDefParamsCommon(int gridID, struct CDI_GridProjParams gpp)
       cdiDefAttFlt(gridID, CDI_GLOBAL, "semi_major_axis", CDI_DATATYPE_FLT64, 1, &gpp.a);
       cdiDefAttFlt(gridID, CDI_GLOBAL, "semi_minor_axis", CDI_DATATYPE_FLT64, 1, &gpp.b);
     }
-    else
-    {
-      cdiDefAttFlt(gridID, CDI_GLOBAL, "earth_radius", CDI_DATATYPE_FLT64, 1, &gpp.a);
-    }
+    else { cdiDefAttFlt(gridID, CDI_GLOBAL, "earth_radius", CDI_DATATYPE_FLT64, 1, &gpp.a); }
   }
   if (IS_NOT_EQUAL(gpp.rf, gpp.mv)) cdiDefAttFlt(gridID, CDI_GLOBAL, "inverse_flattening", CDI_DATATYPE_FLT64, 1, &gpp.rf);
   if (IS_NOT_EQUAL(gpp.x_0, gpp.mv)) cdiDefAttFlt(gridID, CDI_GLOBAL, "false_easting", CDI_DATATYPE_FLT64, 1, &gpp.x_0);
@@ -3780,23 +3764,23 @@ gridInqParamsLCC(int gridID, struct CDI_GridProjParams *gpp)
       if (cdiInqAttConvertedToFloat(gridID, atttype, attname, attlen, attflt))
       {
         // clang-format off
-              if      (str_is_equal(attname, "earth_radius"))                       gpp->a      = attflt[0];
-              else if (str_is_equal(attname, "semi_major_axis"))                    gpp->a      = attflt[0];
-              else if (str_is_equal(attname, "semi_minor_axis"))                    gpp->b      = attflt[0];
-              else if (str_is_equal(attname, "inverse_flattening"))                 gpp->rf     = attflt[0];
-              else if (str_is_equal(attname, "longitude_of_central_meridian"))      gpp->lon_0  = attflt[0];
-              else if (str_is_equal(attname, "latitude_of_projection_origin"))      gpp->lat_0  = attflt[0];
-              else if (str_is_equal(attname, "false_easting"))                      gpp->x_0    = attflt[0];
-              else if (str_is_equal(attname, "false_northing"))                     gpp->y_0    = attflt[0];
-              else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees")) gpp->xval_0 = attflt[0];
-              else if (str_is_equal(attname, "latitudeOfFirstGridPointInDegrees"))  gpp->yval_0 = attflt[0];
-              else if (str_is_equal(attname, "longitudeOfSouthernPoleInDegrees"))   gpp->x_SP   = attflt[0];
-              else if (str_is_equal(attname, "latitudeOfSouthernPoleInDegrees"))    gpp->y_SP   = attflt[0];
-              else if (str_is_equal(attname, "standard_parallel"))
-                {
-                  gpp->lat_1 = attflt[0];
-                  gpp->lat_2 = (attlen == 2) ? attflt[1] : attflt[0];
-                }
+        if      (str_is_equal(attname, "earth_radius"))                       gpp->a      = attflt[0];
+        else if (str_is_equal(attname, "semi_major_axis"))                    gpp->a      = attflt[0];
+        else if (str_is_equal(attname, "semi_minor_axis"))                    gpp->b      = attflt[0];
+        else if (str_is_equal(attname, "inverse_flattening"))                 gpp->rf     = attflt[0];
+        else if (str_is_equal(attname, "longitude_of_central_meridian"))      gpp->lon_0  = attflt[0];
+        else if (str_is_equal(attname, "latitude_of_projection_origin"))      gpp->lat_0  = attflt[0];
+        else if (str_is_equal(attname, "false_easting"))                      gpp->x_0    = attflt[0];
+        else if (str_is_equal(attname, "false_northing"))                     gpp->y_0    = attflt[0];
+        else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees")) gpp->xval_0 = attflt[0];
+        else if (str_is_equal(attname, "latitudeOfFirstGridPointInDegrees"))  gpp->yval_0 = attflt[0];
+        else if (str_is_equal(attname, "longitudeOfSouthernPoleInDegrees"))   gpp->x_SP   = attflt[0];
+        else if (str_is_equal(attname, "latitudeOfSouthernPoleInDegrees"))    gpp->y_SP   = attflt[0];
+        else if (str_is_equal(attname, "standard_parallel"))
+          {
+            gpp->lat_1 = attflt[0];
+            gpp->lat_2 = (attlen == 2) ? attflt[1] : attflt[0];
+          }
         // clang-format on
       }
     }
@@ -3985,17 +3969,17 @@ gridInqParamsSTERE(int gridID, struct CDI_GridProjParams *gpp)
       if (cdiInqAttConvertedToFloat(gridID, atttype, attname, attlen, attflt))
       {
         // clang-format off
-              if      (str_is_equal(attname, "earth_radius"))                          gpp->a      = attflt[0];
-              else if (str_is_equal(attname, "semi_major_axis"))                       gpp->a      = attflt[0];
-              else if (str_is_equal(attname, "semi_minor_axis"))                       gpp->b      = attflt[0];
-              else if (str_is_equal(attname, "inverse_flattening"))                    gpp->rf     = attflt[0];
-              else if (str_is_equal(attname, "standard_parallel"))                     gpp->lat_1  = attflt[0];
-              else if (str_is_equal(attname, "straight_vertical_longitude_from_pole")) gpp->lon_0  = attflt[0];
-              else if (str_is_equal(attname, "latitude_of_projection_origin"))         gpp->lat_0  = attflt[0];
-              else if (str_is_equal(attname, "false_easting"))                         gpp->x_0    = attflt[0];
-              else if (str_is_equal(attname, "false_northing"))                        gpp->y_0    = attflt[0];
-              else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees"))    gpp->xval_0 = attflt[0];
-              else if (str_is_equal(attname, "latitudeOfFirstGridPointInDegrees"))     gpp->yval_0 = attflt[0];
+        if      (str_is_equal(attname, "earth_radius"))                          gpp->a      = attflt[0];
+        else if (str_is_equal(attname, "semi_major_axis"))                       gpp->a      = attflt[0];
+        else if (str_is_equal(attname, "semi_minor_axis"))                       gpp->b      = attflt[0];
+        else if (str_is_equal(attname, "inverse_flattening"))                    gpp->rf     = attflt[0];
+        else if (str_is_equal(attname, "standard_parallel"))                     gpp->lat_1  = attflt[0];
+        else if (str_is_equal(attname, "straight_vertical_longitude_from_pole")) gpp->lon_0  = attflt[0];
+        else if (str_is_equal(attname, "latitude_of_projection_origin"))         gpp->lat_0  = attflt[0];
+        else if (str_is_equal(attname, "false_easting"))                         gpp->x_0    = attflt[0];
+        else if (str_is_equal(attname, "false_northing"))                        gpp->y_0    = attflt[0];
+        else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees"))    gpp->xval_0 = attflt[0];
+        else if (str_is_equal(attname, "latitudeOfFirstGridPointInDegrees"))     gpp->yval_0 = attflt[0];
         // clang-format on
       }
     }
@@ -4047,12 +4031,12 @@ gridInqParamsHEALPIX(int gridID, struct CDI_GridProjParams *gpp)
         if (cdiInqAttConvertedToFloat(gridID, atttype, attname, attlen, attflt))
         {
           // clang-format off
-                  if      (str_is_equal(attname, "earth_radius"))                          gpp->a      = attflt[0];
-                  else if (str_is_equal(attname, "semi_major_axis"))                       gpp->a      = attflt[0];
-                  else if (str_is_equal(attname, "semi_minor_axis"))                       gpp->b      = attflt[0];
-                  else if (str_is_equal(attname, "inverse_flattening"))                    gpp->rf     = attflt[0];
-                  else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees"))    gpp->xval_0 = attflt[0];
-                  else if (str_is_equal(attname, "healpix_nside"))                         gpp->nside  = (int) lround(attflt[0]);
+          if      (str_is_equal(attname, "earth_radius"))                          gpp->a      = attflt[0];
+          else if (str_is_equal(attname, "semi_major_axis"))                       gpp->a      = attflt[0];
+          else if (str_is_equal(attname, "semi_minor_axis"))                       gpp->b      = attflt[0];
+          else if (str_is_equal(attname, "inverse_flattening"))                    gpp->rf     = attflt[0];
+          else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees"))    gpp->xval_0 = attflt[0];
+          else if (str_is_equal(attname, "healpix_nside"))                         gpp->nside  = (int) lround(attflt[0]);
           // clang-format on
         }
       }
@@ -4854,7 +4838,7 @@ cdiVlistAddGridIfNew(int vlistID, grid_t *grid, int mode)
     }
   }
 
-  return (struct addIfNewRes) { .Id = gridID, .isNew = (!gridIsDefined && !gridIsDefinedGlobal) };
+  return (struct addIfNewRes){ .Id = gridID, .isNew = (!gridIsDefined && !gridIsDefinedGlobal) };
 }
 
 const struct gridVirtTable cdiGridVtable = {

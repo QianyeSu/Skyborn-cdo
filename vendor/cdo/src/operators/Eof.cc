@@ -115,7 +115,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 2, OnlyFirst },
   };
-  inline static RegisterEntry<Eof> registration = RegisterEntry<Eof>();
+  inline static auto registration = RegisterEntry<Eof>();
 
   struct eofdata_t
   {

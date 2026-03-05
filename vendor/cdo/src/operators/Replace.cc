@@ -29,7 +29,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Replace> registration = RegisterEntry<Replace>();
+  inline static auto registration = RegisterEntry<Replace>();
 
 private:
   static const int MaxVars = 1024;
@@ -48,7 +48,7 @@ private:
 
   VarList varList1{};
   VarList varList2{};
-  Varray2D<double> vardata2;
+  Varray2D<double> varDataList2;
 
 public:
   void
@@ -102,7 +102,7 @@ public:
 
     if (nchvars)
     {
-      vardata2.resize(nchvars);
+      varDataList2.resize(nchvars);
       varnumMissVals2.resize(nchvars);
       varlevel.resize(nchvars);
       for (int idx = 0; idx < nchvars; idx++)
@@ -110,7 +110,7 @@ public:
         auto const &var1 = varList1.vars[vars1[idx]];
         auto const &var2 = varList2.vars[vars2[idx]];
 
-        vardata2[idx].resize(var2.nlevels * var2.gridsize);
+        varDataList2[idx].resize(var2.nlevels * var2.gridsize);
         varnumMissVals2[idx].resize(var2.nlevels);
         varlevel[idx].resize(var1.nlevels);
         // for (int levelID = 0; levelID < var1.nlevels; levelID++) varlevel[idx][levelID] = levelID;
@@ -174,7 +174,7 @@ public:
             {
               auto offset = varList2.vars[varID].gridsize * levelID;
               size_t numMissVals = 0;
-              cdo_read_field(streamID2, &vardata2[idx][offset], &numMissVals);
+              cdo_read_field(streamID2, &varDataList2[idx][offset], &numMissVals);
               varnumMissVals2[idx][levelID] = numMissVals;
               break;
             }
@@ -198,7 +198,7 @@ public:
             if (levelID2 != -1)
             {
               auto offset = varList1.vars[varID].gridsize * levelID2;
-              parray = &vardata2[idx][offset];
+              parray = &varDataList2[idx][offset];
               numMissVals = varnumMissVals2[idx][levelID2];
               break;
             }

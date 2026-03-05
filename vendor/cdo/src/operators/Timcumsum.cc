@@ -30,7 +30,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timcumsum> registration = RegisterEntry<Timcumsum>();
+  inline static auto registration = RegisterEntry<Timcumsum>();
 
   CdoStreamID streamID1;
   CdoStreamID streamID2;
@@ -64,8 +64,8 @@ public:
   run() override
   {
     Field field;
-    FieldVector2D varsData1;
-    field2D_init(varsData1, varList1, FIELD_VEC);
+    FieldVector2D varDataList1;
+    field2D_init(varDataList1, varList1, FIELD_VEC);
 
     int tsID = 0;
     while (true)
@@ -79,7 +79,7 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &rvars1 = varsData1[varID][levelID];
+        auto &rvars1 = varDataList1[varID][levelID];
 
         if (tsID == 0)
         {

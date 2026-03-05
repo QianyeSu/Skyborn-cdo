@@ -23,7 +23,7 @@ cdo_compute_overlap_info(size_t numCells, CellSearch &cellSearch, const GridCell
       if (overlapCells[i].num_corners > 1)
       {
         for (int j = 0; j < 3; ++j) { overlapBarycenters[i][j] = 0.0; }
-        overlapAreas[i] = yac_huiliers_area_info(overlapCells[i], overlapBarycenters[i], 1.0);
+        overlapAreas[i] = yac_grid_cell_area_info(overlapCells[i], overlapBarycenters[i], 1.0);
         /*
         YAC_ASSERT((overlapBarycenters[i][0] != 0.0) || (overlapBarycenters[i][1] != 0.0)
                        || (overlapBarycenters[i][2] != 0.0),
@@ -122,7 +122,7 @@ cdo_compute_concave_overlap_info(size_t numCells, CellSearch &cellSearch, const 
       if (overlapBarycenters == nullptr)
         overlapAreas[i] += gridcell_area(overlapCells[i]) * edgeDirection;
       else
-        overlapAreas[i] += yac_huiliers_area_info(overlapCells[i], overlapBarycenters[i], edgeDirection);
+        overlapAreas[i] += yac_grid_cell_area_info(overlapCells[i], overlapBarycenters[i], edgeDirection);
     }
   }
 

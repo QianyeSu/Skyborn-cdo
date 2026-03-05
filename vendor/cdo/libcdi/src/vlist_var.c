@@ -734,31 +734,31 @@ vlistDefVarDatatype(int vlistID, int varID, int datatype)
       if (missvalIsDefault)
       {
         // clang-format off
-              switch (datatype)
-                {
-                case CDI_DATATYPE_INT8:   varptr->missval = -SCHAR_MAX; break;
-                case CDI_DATATYPE_UINT8:  varptr->missval =  UCHAR_MAX; break;
-                case CDI_DATATYPE_INT16:  varptr->missval = -SHRT_MAX;  break;
-                case CDI_DATATYPE_UINT16: varptr->missval =  USHRT_MAX; break;
-                case CDI_DATATYPE_INT32:  varptr->missval = -INT_MAX;   break;
-                case CDI_DATATYPE_UINT32: varptr->missval =  UINT_MAX;  break;
-                case CDI_DATATYPE_FLT32:  varptr->missval =  (float) CDI_Default_Missval;  break;
-                }
+        switch (datatype)
+          {
+          case CDI_DATATYPE_INT8:   varptr->missval = -SCHAR_MAX; break;
+          case CDI_DATATYPE_UINT8:  varptr->missval =  UCHAR_MAX; break;
+          case CDI_DATATYPE_INT16:  varptr->missval = -SHRT_MAX;  break;
+          case CDI_DATATYPE_UINT16: varptr->missval =  USHRT_MAX; break;
+          case CDI_DATATYPE_INT32:  varptr->missval = -INT_MAX;   break;
+          case CDI_DATATYPE_UINT32: varptr->missval =  UINT_MAX;  break;
+          case CDI_DATATYPE_FLT32:  varptr->missval =  (float) CDI_Default_Missval;  break;
+          }
         // clang-format on
       }
       else
       {
         // clang-format off
-              switch (datatype)
-                {
-                case CDI_DATATYPE_INT8:   varptr->missval = check_range(missval, -SCHAR_MAX, SCHAR_MAX) ? missval : -SCHAR_MAX; break;
-                case CDI_DATATYPE_UINT8:  varptr->missval = check_range(missval,          0, UCHAR_MAX) ? missval :  UCHAR_MAX; break;
-                case CDI_DATATYPE_INT16:  varptr->missval = check_range(missval,  -SHRT_MAX,  SHRT_MAX) ? missval : -SHRT_MAX;  break;
-                case CDI_DATATYPE_UINT16: varptr->missval = check_range(missval,          0, USHRT_MAX) ? missval :  USHRT_MAX; break;
-                case CDI_DATATYPE_INT32:  varptr->missval = check_range(missval,   -INT_MAX,   INT_MAX) ? missval : -INT_MAX;   break;
-                case CDI_DATATYPE_UINT32: varptr->missval = check_range(missval,          0,  UINT_MAX) ? missval :  UINT_MAX;  break;
-                case CDI_DATATYPE_FLT32:  varptr->missval = check_range(missval,   -FLT_MAX,   FLT_MAX) ? missval :  CDI_Default_Missval;  break;
-                }
+        switch (datatype)
+          {
+          case CDI_DATATYPE_INT8:   varptr->missval = check_range(missval, -SCHAR_MAX, SCHAR_MAX) ? missval : -SCHAR_MAX; break;
+          case CDI_DATATYPE_UINT8:  varptr->missval = check_range(missval,          0, UCHAR_MAX) ? missval :  UCHAR_MAX; break;
+          case CDI_DATATYPE_INT16:  varptr->missval = check_range(missval,  -SHRT_MAX,  SHRT_MAX) ? missval : -SHRT_MAX;  break;
+          case CDI_DATATYPE_UINT16: varptr->missval = check_range(missval,          0, USHRT_MAX) ? missval :  USHRT_MAX; break;
+          case CDI_DATATYPE_INT32:  varptr->missval = check_range(missval,   -INT_MAX,   INT_MAX) ? missval : -INT_MAX;   break;
+          case CDI_DATATYPE_UINT32: varptr->missval = check_range(missval,          0,  UINT_MAX) ? missval :  UINT_MAX;  break;
+          case CDI_DATATYPE_FLT32:  varptr->missval = check_range(missval,   -FLT_MAX,   FLT_MAX) ? missval :  CDI_Default_Missval;  break;
+          }
         // clang-format on
       }
     }
@@ -954,6 +954,7 @@ vlistDefVarMissval(int vlistID, int varID, double missval)
   var_t *varptr = vlistptr_get_varptr(__func__, vlist_to_pointer(vlistID), varID);
   varptr->missval = missval;
   varptr->missvalused = true;
+  cdiDefKeyFloat(vlistID, varID, CDI_KEY_MISSVAL, missval);
 }
 
 int
@@ -1050,12 +1051,9 @@ vlistDefFlag(int vlistID, int varID, int levID, int flag)
   var_t *varptr = vlistptr_get_varptr(__func__, vlistptr, varID);
 
   levinfo_t li = DEFAULT_LEVINFO(levID);
-  if (varptr->levinfo)
-    ;
-  else if (flag != li.flag)
-    cdiVlistCreateVarLevInfo(vlistptr, varID);
-  else
-    return;
+  if (varptr->levinfo) { ; }
+  else if (flag != li.flag) { cdiVlistCreateVarLevInfo(vlistptr, varID); }
+  else { return; }
 
   varptr->levinfo[levID].flag = flag;
   varptr->flag = 0;
@@ -1166,12 +1164,9 @@ vlistDefIndex(int vlistID, int varID, int levelID, int index)
   var_t *varptr = vlistptr_get_varptr(__func__, vlistptr, varID);
 
   levinfo_t li = DEFAULT_LEVINFO(levelID);
-  if (varptr->levinfo)
-    ;
-  else if (index != li.index)
-    cdiVlistCreateVarLevInfo(vlistptr, varID);
-  else
-    return;
+  if (varptr->levinfo) { ; }
+  else if (index != li.index) { cdiVlistCreateVarLevInfo(vlistptr, varID); }
+  else { return; }
 
   varptr->levinfo[levelID].index = index;
   reshSetStatus(vlistID, &vlistOps, RESH_DESYNC_IN_USE);
@@ -1345,9 +1340,9 @@ vlistDefVarXYZ(int vlistID, int varID, int xyz)
     else
     {
       // clang-format off
-        if (dimz == 0) for (int id = 0; id < 3; ++id) if (dimorder[id] == 0) { dimorder[id] = 3; break; }
-        if (dimy == 0) for (int id = 0; id < 3; ++id) if (dimorder[id] == 0) { dimorder[id] = 2; break; }
-        if (dimx == 0) for (int id = 0; id < 3; ++id) if (dimorder[id] == 0) { dimorder[id] = 1; break; }
+      if (dimz == 0) for (int id = 0; id < 3; ++id) if (dimorder[id] == 0) { dimorder[id] = 3; break; }
+      if (dimy == 0) for (int id = 0; id < 3; ++id) if (dimorder[id] == 0) { dimorder[id] = 2; break; }
+      if (dimx == 0) for (int id = 0; id < 3; ++id) if (dimorder[id] == 0) { dimorder[id] = 1; break; }
       // clang-format on
       xyz = vlistEncodeXyz(dimorder);
     }

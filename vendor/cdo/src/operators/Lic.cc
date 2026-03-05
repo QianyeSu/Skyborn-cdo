@@ -154,7 +154,6 @@ WriteImage2PNG(int width, int height, std::vector<unsigned char> const &pImage, 
   int code = 0;
   png_structp png_ptr = nullptr;
   png_infop info_ptr = nullptr;
-  png_bytep row = nullptr;
 
   // Open file for writing (binary mode)
   auto fobj = c_fopen(filename, "wb");
@@ -420,7 +419,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Lic> registration = RegisterEntry<Lic>();
+  inline static auto registration = RegisterEntry<Lic>();
 
   int numLevels = 0;
   size_t numMissVals;
@@ -436,8 +435,6 @@ public:
   size_t nx;
   size_t ny;
 
-  size_t gridsize;
-
   int gridID;
   int nstart;
 
@@ -445,6 +442,8 @@ public:
 
   Varray<double> xvals;
   Varray<double> yvals;
+
+  VarList varList1;
 
 public:
   void
@@ -470,7 +469,7 @@ public:
     streamID1 = cdo_open_read(0);
 
     auto vlistID1 = cdo_stream_inq_vlist(streamID1);
-    VarList varList1(vlistID1);
+    varList1 = VarList(vlistID1);
 
     // int taxisID1 = vlistInqTaxis(vlistID1);
 
@@ -484,24 +483,11 @@ public:
     gridID = varList1.vars[varID1].gridID;
     // int zaxisID = varList1.vars[varID1].zaxisID;
 
-    gridsize = varList1.gridsizeMax();
-
-    Varray<double> ivar1, ivar2, ovar1;
-    if (varID1 != -1 && varID2 != -1)
-    {
-      numLevels = varList1.vars[varID1].nlevels;
-      gridsize = varList1.vars[varID1].gridsize;
-      ivar1.resize(numLevels * gridsize);
-      ivar2.resize(numLevels * gridsize);
-      ovar1.resize(numLevels * gridsize);
-    }
-
     auto gridtype = gridInqType(gridID);
     if (gridtype != GRID_LONLAT && gridtype != GRID_GAUSSIAN) cdo_abort("Unsupported grid!\n");
 
     nx = gridInqXsize(gridID);
     ny = gridInqYsize(gridID);
-
     xvals.resize(nx);
     yvals.resize(ny);
     gridInqYvals(gridID, yvals.data());
@@ -511,8 +497,19 @@ public:
   void
   run() override
   {
+    auto gridsize = varList1.gridsizeMax();
     Varray<double> array1(gridsize);
     std::vector<float> varray(2 * gridsize);
+    /*
+    Varray<double> ivar1, ivar2, ovar1;
+    if (varID1 != -1 && varID2 != -1)
+    {
+      auto &var = varList1.vars[varID1];
+      ivar1.resize(var.nlevels * var.gridsize);
+      ivar2.resize(var.nlevels * var.gridsize);
+      ovar1.resize(var.nlevels * var.gridsize);
+    }
+    */
 
     int tsID = 0;
     while (true)

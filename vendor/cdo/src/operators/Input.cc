@@ -156,7 +156,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 1, NoRestriction },
   };
-  inline static RegisterEntry<Input> registration = RegisterEntry<Input>();
+  inline static auto registration = RegisterEntry<Input>();
 
   int INPUT{}, INPUTSRV{}, INPUTEXT{};
 

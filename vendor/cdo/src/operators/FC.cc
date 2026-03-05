@@ -66,7 +66,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<FC> registration = RegisterEntry<FC>();
+  inline static auto registration = RegisterEntry<FC>();
 
   int FC2SP{}, SP2FC{}, FC2GP{}, GP2FC{}, GRID2FOURIER{}, FOURIER2GRID{};
   int gridID2 = -1;

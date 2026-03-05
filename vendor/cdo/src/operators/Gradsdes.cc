@@ -909,7 +909,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, FilesOnly },
   };
-  inline static RegisterEntry<Gradsdes> registration = RegisterEntry<Gradsdes>();
+  inline static auto registration = RegisterEntry<Gradsdes>();
 
   int GRADSDES{}, DUMPMAP{};
   int gridID = -1;

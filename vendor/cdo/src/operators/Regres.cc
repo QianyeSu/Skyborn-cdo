@@ -67,7 +67,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Regres> registration = RegisterEntry<Regres>();
+  inline static auto registration = RegisterEntry<Regres>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID3{};

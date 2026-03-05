@@ -56,7 +56,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, OBASE, NoRestriction },
   };
-  inline static RegisterEntry<Ensval> registration = RegisterEntry<Ensval>();
+  inline static auto registration = RegisterEntry<Ensval>();
 
   int nostreams = 0, numGrids;
   size_t numMissVals{};

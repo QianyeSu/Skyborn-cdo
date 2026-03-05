@@ -50,7 +50,7 @@ FileStream::open_read()
 
   if (m_filename.size() > 6 && m_filename.rfind("query:", 0) == 0)
   {
-    CdiQuery *query = cdiQueryCreate();
+    auto query = cdiQueryCreate();
     auto path = set_query_parameter(m_filename.substr(6), query);
     if (Options::cdoVerbose) cdiQueryPrint(query);
 
@@ -58,7 +58,7 @@ FileStream::open_read()
   }
   else if (Options::cdoQueryParameter.size() > 0)
   {
-    CdiQuery *query = cdiQueryCreate();
+    auto query = cdiQueryCreate();
     (void) set_query_parameter(Options::cdoQueryParameter, query);
     if (Options::cdoVerbose) cdiQueryPrint(query);
 

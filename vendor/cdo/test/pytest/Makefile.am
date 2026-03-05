@@ -9,9 +9,10 @@ TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
                   $(top_srcdir)/config/tap-driver.sh
 
 TESTS =\
-	    cdoTest.py\
+        cdoTest.py\
+        CDI_cache.py.test\
         CDO_test.py.test\
-		Adisit.py.test\
+        Adisit.py.test\
 		Afterburner.py.test\
 		Arith.py.test\
 		Arithc.py.test\

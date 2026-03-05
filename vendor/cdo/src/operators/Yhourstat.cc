@@ -84,7 +84,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Yhourstat> registration = RegisterEntry<Yhourstat>();
+  inline static auto registration = RegisterEntry<Yhourstat>();
 
 private:
   CdoStreamID streamID1;

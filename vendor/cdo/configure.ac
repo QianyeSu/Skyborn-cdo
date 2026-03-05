@@ -5,7 +5,7 @@
 #  libtool  2.4.2
 
 AC_PREREQ([2.69])
-AC_INIT([cdo],[2.5.4],[https://mpimet.mpg.de/cdo])
+AC_INIT([cdo],[2.6.0],[https://mpimet.mpg.de/cdo])
 
 AC_DEFINE_UNQUOTED(CDO, ["$PACKAGE_VERSION"], [CDO version])
 
@@ -180,6 +180,7 @@ AC_PROG_AWK
 AC_CONFIG_FILES([test/cdoTestFunctions.test ],[chmod a+x "$ac_file"])
 
 AC_CONFIG_FILES([test/pytest/cdoTest.py
+                test/pytest/CDI_cache.py.test
                 test/pytest/CDO_test.py.test
                 test/pytest/Adisit.py.test
                 test/pytest/Afterburner.py.test

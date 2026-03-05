@@ -17,6 +17,7 @@
 #include <curl/curl.h>
 #endif
 
+#include <string>
 #include <cstring>
 
 #include <cdi.h>
@@ -69,7 +70,7 @@ download_gridfile(const char *uri, const char *basename)
     auto fp = std::fopen(basename, "w");
     if (fp == nullptr)
     {
-      std::fprintf(stderr, "ERROR: could not open local output file %s. %s.\n", basename, strerror(errno));
+      std::fprintf(stderr, "ERROR: could not open local output file %s. %s.\n", basename, std::strerror(errno));
       return -1;
     }
 
@@ -153,17 +154,14 @@ search_file(const char *directory, const char *filename)
       if (buf.st_size != 0 && !(buf.st_mode & S_IFDIR)) return 0;
     }
   }
-  else
-  {
-    std::perror(directory);
-  }
+  else { std::perror(directory); }
 #endif
 
   return 1;
 }
 
 static int
-grid_from_URI(char *griduri, char *gridfilepath)
+grid_from_URI(const char *griduri, const char *gridfilepath)
 {
   int status = -1;
 
@@ -178,7 +176,7 @@ grid_from_URI(char *griduri, char *gridfilepath)
 }
 
 static int
-grid_from_file(int gridID1, char *gridfilepath)
+grid_from_file(int gridID1, const char *gridfilepath)
 {
   int gridID2 = -1;
 
@@ -256,65 +254,58 @@ referenceToGrid(int gridID1)
   if (griduri[0] == 0) { cdo_warning("Reference to horizontal grid not available!"); }
   else
   {
-    auto filename = strrchr(griduri, '/');
+    auto filename = std::strrchr(griduri, '/');
     if (filename == nullptr)
     {
       filename = griduri;
       griduri[0] = 0;
     }
-    else
-    {
-      filename++;
-    }
+    else { filename++; }
 
-    int status = 0;
-    char griddir[8192] = { 0 };
-    char gridfilepath[8192] = { 0 };
+    std::string gridDir;
+    std::string gridFilePath;
 
     if (!IconGrids.empty() && griduri[0])
     {
       if (search_directory(IconGrids.c_str())) cdo_abort("CDO_ICON_GRIDS not found: %s!", IconGrids);
 
       auto wpath = griduri;
-      if (strncmp(griduri, "http://", 7) == 0) { wpath += 7; }
-      else if (strncmp(griduri, "https://", 8) == 0) { wpath += 8; }
+      if (std::strncmp(griduri, "http://", 7) == 0) { wpath += 7; }
+      else if (std::strncmp(griduri, "https://", 8) == 0) { wpath += 8; }
 
       if (wpath != griduri)
       {
-        auto const *gridpath = strchr(wpath, '/');
+        auto const *gridpath = std::strchr(wpath, '/');
         if (gridpath)
         {
-          strcpy(griddir, IconGrids.c_str());
-          strcpy(gridfilepath, griddir);
-          strcat(gridfilepath, gridpath);
-          status = search_file(griddir, gridfilepath);
-          if (status != 0) gridfilepath[0] = 0;
+          gridDir = IconGrids;
+          gridFilePath = gridDir;
+          gridFilePath += gridpath;
+          auto status = search_file(gridDir.c_str(), gridFilePath.c_str());
+          if (status != 0) { gridFilePath = ""; }
         }
       }
     }
 
-    if (gridfilepath[0] == 0)
+    if (gridFilePath.size() == 0)
     {
       if (!DownloadPath.empty())
       {
-        strcpy(griddir, DownloadPath.c_str());
-        strcat(griddir, "/");
+        gridDir = DownloadPath + "/";
+        auto status = search_directory(gridDir.c_str());
+        if (status != 0) cdo_abort("Download path not found: %s!", gridDir);
 
-        status = search_directory(griddir);
-        if (status != 0) cdo_abort("Download path not found: %s!", griddir);
-
-        strcpy(gridfilepath, griddir);
-        strcat(gridfilepath, filename);
+        gridFilePath = gridDir;
+        gridFilePath += filename;
       }
       else
       {
-        strcpy(griddir, "./");
-
-        strcpy(gridfilepath, griddir);
-        strcat(gridfilepath, filename);
+        gridDir = "./";
+        gridFilePath = gridDir;
+        gridFilePath += filename;
 
 #ifdef HAVE_SYS_STAT_H
-        status = search_file(griddir, gridfilepath);
+        auto status = search_file(gridDir.c_str(), gridFilePath.c_str());
         if (status != 0)
 #endif
         {
@@ -325,12 +316,12 @@ referenceToGrid(int gridID1)
       }
     }
 
-    if (gridVerbose) cdo_print("Search for horizontal grid file: %s", gridfilepath);
+    if (gridVerbose) cdo_print("Search for horizontal grid file: %s", gridFilePath);
 
     // scan local directory for file
-    status = search_file(griddir, gridfilepath);
-    if (status != 0) status = grid_from_URI(griduri, gridfilepath);
-    if (status == 0) gridID2 = grid_from_file(gridID1, gridfilepath);
+    auto status = search_file(gridDir.c_str(), gridFilePath.c_str());
+    if (status != 0) { status = grid_from_URI(griduri, gridFilePath.c_str()); }
+    if (status == 0) { gridID2 = grid_from_file(gridID1, gridFilePath.c_str()); }
   }
 
   return gridID2;

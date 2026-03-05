@@ -153,7 +153,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Shiftxy> registration = RegisterEntry<Shiftxy>();
+  inline static auto registration = RegisterEntry<Shiftxy>();
 
 private:
   int SHIFTX{}, SHIFTY{};

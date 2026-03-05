@@ -15,13 +15,20 @@
 #include <mpim_grid.h>
 #include <algorithm>
 
-#define NTR2NSP(ntr) ((ntr + 1) * (ntr + 2))
-#define NSP2NTR(nsp) ((long) ((((std::sqrt((double) (4 * nsp + 1))) - 3) / 2)))
-#define NGP2NLEVEL(ngp) ((long) (log10(((double) ngp) / 80.) / std::log10(4.)))
-#define NGP_ICON(nrooti, nlevel) ((long) (20 * nrooti * nrooti * ipow(4, nlevel)))
-/*#define NGP_GME(ni)           ((ni+1)*(ni+1)*10)*/
-#define NGP_GME(ni) (2 + ni * ni * 10)
-#define NGP2NI(ngp) ((long) std::sqrt((double) ngp / 10.) - 1)
+static long
+ipow(long i1, long i2)
+{
+  long i3 = 1;
+  for (long i = 0; i < i2; ++i) { i3 *= i1; }
+  return i3;
+}
+
+auto NTR2NSP = [](auto ntr) { return (ntr + 1) * (ntr + 2); };
+auto NSP2NTR = [](auto nsp) { return (long) ((((std::sqrt((double) (4 * nsp + 1))) - 3) / 2)); };
+auto NGP2NLEVEL = [](auto ngp) { return (long) (log10(((double) ngp) / 80.) / std::log10(4.)); };
+auto NGP_ICON = [](auto nrooti, auto nlevel) { return (long) (20 * nrooti * nrooti * ipow(4, nlevel)); };
+auto NGP_GME = [](auto ni) { return 2 + ni * ni * 10; };
+auto NGP2NI = [](auto ngp) { return (long) std::sqrt((double) ngp / 10.) - 1; };
 
 static void
 fac(long nlonin, long *nlonout, int *ierr)
@@ -78,16 +85,6 @@ ngp2ntr(long ngp)
   ntr = (2 * nlatl - 1) / 2;
 
   return ntr;
-}
-
-static long
-ipow(long i1, long i2)
-{
-  long i3 = 1;
-
-  for (long i = 0; i < i2; ++i) i3 *= i1;
-
-  return i3;
 }
 
 static constexpr long NiMax = 12;
@@ -220,7 +217,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 0, NoRestriction },
   };
-  inline static RegisterEntry<Specinfo> registration = RegisterEntry<Specinfo>();
+  inline static auto registration = RegisterEntry<Specinfo>();
 
   char arg[128], *parg;
   std::string argument;
@@ -252,7 +249,7 @@ private:
     if (*parg == '=') parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
 
-    p_grid_specs1.nlat = 2 * atoi(parg);
+    p_grid_specs1.nlat = 2 * std::atoi(parg);
     p_grid_specs2.nlat = p_grid_specs1.nlat;
     p_grid_specs3.nlat = p_grid_specs1.nlat;
 
@@ -304,7 +301,7 @@ private:
     parg = &arg[1];
     if (*parg == '=') parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs.ntr = atoi(parg);
+    p_grid_specs.ntr = std::atoi(parg);
     T_TL_TC(p_grid_specs, f);
   }
   void
@@ -313,7 +310,7 @@ private:
     parg = &arg[2];
     if (*parg == '=') parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs.ntr = atoi(parg);
+    p_grid_specs.ntr = std::atoi(parg);
     T_TL_TC(p_grid_specs, f);
   }
 
@@ -323,7 +320,7 @@ private:
     parg = &arg[2];
     if (*parg == '=') parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs1.ni = atoi(parg);
+    p_grid_specs1.ni = std::atoi(parg);
     p_grid_specs2.ni = p_grid_specs1.ni;
 
     p_grid_specs1.ngp_gme = NGP_GME(p_grid_specs1.ni);
@@ -386,7 +383,7 @@ private:
     parg = &arg[4];
     if (*parg == '=') parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs1.nlon = atoi(parg);
+    p_grid_specs1.nlon = std::atoi(parg);
     p_grid_specs2.nlon = p_grid_specs1.nlon;
     p_grid_specs3.nlon = p_grid_specs1.nlon;
 
@@ -407,7 +404,7 @@ private:
     parg = &arg[4];
     if (*parg == '=') parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs1.nlat = atoi(parg);
+    p_grid_specs1.nlat = std::atoi(parg);
     p_grid_specs2.nlat = p_grid_specs1.nlat;
     p_grid_specs3.nlat = p_grid_specs1.nlat;
 
@@ -424,13 +421,13 @@ private:
     if (*parg != 'R') cdo_abort("Wrong parameter: %s", arg);
     parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs1.nrooti = atoi(parg);
+    p_grid_specs1.nrooti = std::atoi(parg);
     p_grid_specs2.nrooti = p_grid_specs1.nrooti;
     while (std::isdigit((int) *parg)) parg++;
     if (*parg != 'B') cdo_abort("Wrong parameter: %s", arg);
     parg++;
     if (!std::isdigit((int) *parg)) cdo_abort("Wrong parameter: %s", arg);
-    p_grid_specs1.nlevel = atoi(parg);
+    p_grid_specs1.nlevel = std::atoi(parg);
     p_grid_specs2.nlevel = p_grid_specs1.nlevel;
     p_grid_specs1.ngp_icon = NGP_ICON(p_grid_specs1.nrooti, p_grid_specs1.nlevel);
     p_grid_specs2.ngp_icon = NGP_ICON(p_grid_specs1.nrooti, p_grid_specs2.nlevel);
@@ -508,18 +505,18 @@ public:
 
     if (grid_specs2.nout)
       std::fprintf(stdout, "   TL%-4ld %8ld %5ld %5ld %8ld  ni%ld %8ld  R%ldB%02ld  %8ld\n", grid_specs2.ntr, grid_specs2.nsp,
-              grid_specs2.nlon, grid_specs2.nlat, grid_specs2.ngp, grid_specs2.ni, grid_specs2.ngp_gme, grid_specs2.nrooti,
-              grid_specs2.nlevel, grid_specs2.ngp_icon);
+                   grid_specs2.nlon, grid_specs2.nlat, grid_specs2.ngp, grid_specs2.ni, grid_specs2.ngp_gme, grid_specs2.nrooti,
+                   grid_specs2.nlevel, grid_specs2.ngp_icon);
 
     if (grid_specs1.nout)
       std::fprintf(stdout, "   TQ%-4ld %8ld %5ld %5ld %8ld  ni%ld %8ld  R%ldB%02ld  %8ld\n", grid_specs1.ntr, grid_specs1.nsp,
-              grid_specs1.nlon, grid_specs1.nlat, grid_specs1.ngp, grid_specs1.ni, grid_specs1.ngp_gme, grid_specs1.nrooti,
-              grid_specs1.nlevel, grid_specs1.ngp_icon);
+                   grid_specs1.nlon, grid_specs1.nlat, grid_specs1.ngp, grid_specs1.ni, grid_specs1.ngp_gme, grid_specs1.nrooti,
+                   grid_specs1.nlevel, grid_specs1.ngp_icon);
 
     if (grid_specs3.nout)
       std::fprintf(stdout, "   TC%-4ld %8ld %5ld %5ld %8ld  ni%ld %8ld  R%ldB%02ld  %8ld\n", grid_specs3.ntr, grid_specs3.nsp,
-              grid_specs3.nlon, grid_specs3.nlat, grid_specs3.ngp, grid_specs3.ni, grid_specs3.ngp_gme, grid_specs3.nrooti,
-              grid_specs3.nlevel, grid_specs3.ngp_icon);
+                   grid_specs3.nlon, grid_specs3.nlat, grid_specs3.ngp, grid_specs3.ni, grid_specs3.ngp_gme, grid_specs3.nrooti,
+                   grid_specs3.nlevel, grid_specs3.ngp_icon);
   }
   void
   close() override

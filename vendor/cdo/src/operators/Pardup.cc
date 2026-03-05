@@ -29,7 +29,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Pardup> registration = RegisterEntry<Pardup>();
+  inline static auto registration = RegisterEntry<Pardup>();
 
 private:
   int PARDUP{}, PARMUL{};
@@ -89,19 +89,19 @@ public:
     auto numVars = varList1.numVars();
 
     Varray<double> array;
-    Varray2D<double> vardata;
+    Varray2D<double> varDataList;
     std::vector<std::vector<size_t>> varnumMissVals;
 
     auto gridsizeMax = varList1.gridsizeMax();
     array.resize(gridsizeMax);
-    vardata.resize(numVars);
+    varDataList.resize(numVars);
     varnumMissVals.resize(numVars);
 
     for (int varID = 0; varID < numVars; ++varID)
     {
       auto gridsize = varList1.vars[varID].gridsize;
       auto nlevels = varList1.vars[varID].nlevels;
-      vardata[varID].resize(gridsize * nlevels);
+      varDataList[varID].resize(gridsize * nlevels);
       varnumMissVals[varID].resize(nlevels);
     }
 
@@ -125,7 +125,7 @@ public:
 
         auto gridsize = varList1.vars[varID].gridsize;
         auto offset = gridsize * levelID;
-        auto single = &vardata[varID][offset];
+        auto single = &varDataList[varID][offset];
 
         size_t numMissVals;
         cdo_read_field(streamID1, single, &numMissVals);
@@ -141,7 +141,7 @@ public:
 
           auto gridsize = varList1.vars[varID].gridsize;
           auto offset = gridsize * levelID;
-          auto single = &vardata[varID][offset];
+          auto single = &varDataList[varID][offset];
           auto numMissVals = varnumMissVals[varID][levelID];
 
           array_copy(gridsize, single, array.data());

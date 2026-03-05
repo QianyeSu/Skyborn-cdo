@@ -417,7 +417,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaCfd> registration = RegisterEntry<EcaCfd>();
+  inline static auto registration = RegisterEntry<EcaCfd>();
   int ndays = 5;
   char cfd_name2[1024];
   char cfd_longname2[1024];
@@ -471,7 +471,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaCsu> registration = RegisterEntry<EcaCsu>();
+  inline static auto registration = RegisterEntry<EcaCsu>();
   double argT = 25.0;
   int ndays = 5;
   char csu_name2[1024];
@@ -527,7 +527,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaCwdi> registration = RegisterEntry<EcaCwdi>();
+  inline static auto registration = RegisterEntry<EcaCwdi>();
   int argN = 6;
   double argT = 5.0;
   char longname[sizeof(CWDI_LONGNAME) + 80];
@@ -587,7 +587,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaCwfi> registration = RegisterEntry<EcaCwfi>();
+  inline static auto registration = RegisterEntry<EcaCwfi>();
   int ECA_CWFI, ETCCDI_CSDI;
   int argN = 6;
   char longname[sizeof(CWFI_LONGNAME) + 40];
@@ -653,7 +653,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaEtr> registration = RegisterEntry<EcaEtr>();
+  inline static auto registration = RegisterEntry<EcaEtr>();
 
 public:
   void
@@ -683,7 +683,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaFd> registration = RegisterEntry<EcaFd>();
+  inline static auto registration = RegisterEntry<EcaFd>();
   int ECA_FD, ETCCDI_FD;
 
 public:
@@ -742,7 +742,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaGsl> registration = RegisterEntry<EcaGsl>();
+  inline static auto registration = RegisterEntry<EcaGsl>();
   int argN = 6;
   double argT = 5.0;
   double minLandFraction = 0.5;
@@ -788,7 +788,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaHd> registration = RegisterEntry<EcaHd>();
+  inline static auto registration = RegisterEntry<EcaHd>();
   double argX = 17.0;
   double argA = 17.0;
 
@@ -830,7 +830,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaHwdi> registration = RegisterEntry<EcaHwdi>();
+  inline static auto registration = RegisterEntry<EcaHwdi>();
   int argN = 6;
   double argT = 5.0;
   char longname[sizeof(HWDI_LONGNAME) + 80];
@@ -888,7 +888,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaHwfi> registration = RegisterEntry<EcaHwfi>();
+  inline static auto registration = RegisterEntry<EcaHwfi>();
   int ECA_HWFI, ETCCDI_WSDI;
   int argN = 6;
   char longname[sizeof(HWFI_LONGNAME) + 40];
@@ -954,7 +954,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaId> registration = RegisterEntry<EcaId>();
+  inline static auto registration = RegisterEntry<EcaId>();
   int ECA_ID, ETCCDI_ID;
 
 public:
@@ -1006,7 +1006,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaSu> registration = RegisterEntry<EcaSu>();
+  inline static auto registration = RegisterEntry<EcaSu>();
   int ECA_SU, ETCCDI_SU;
   double argT = 25.0;
   char longname[sizeof(SU_LONGNAME) + 40];
@@ -1060,7 +1060,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTg10p> registration = RegisterEntry<EcaTg10p>();
+  inline static auto registration = RegisterEntry<EcaTg10p>();
 
 public:
   void
@@ -1091,7 +1091,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTg90p> registration = RegisterEntry<EcaTg90p>();
+  inline static auto registration = RegisterEntry<EcaTg90p>();
 
 public:
   void
@@ -1122,7 +1122,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTn10p> registration = RegisterEntry<EcaTn10p>();
+  inline static auto registration = RegisterEntry<EcaTn10p>();
 
 public:
   void
@@ -1153,7 +1153,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTn90p> registration = RegisterEntry<EcaTn90p>();
+  inline static auto registration = RegisterEntry<EcaTn90p>();
 
 public:
   void
@@ -1184,7 +1184,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTr> registration = RegisterEntry<EcaTr>();
+  inline static auto registration = RegisterEntry<EcaTr>();
   int ECA_TR, ETCCDI_TR;
   double argT = 20.0;
   char longname[1024];
@@ -1239,7 +1239,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTx10p> registration = RegisterEntry<EcaTx10p>();
+  inline static auto registration = RegisterEntry<EcaTx10p>();
 
 public:
   void
@@ -1270,7 +1270,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaTx90p> registration = RegisterEntry<EcaTx90p>();
+  inline static auto registration = RegisterEntry<EcaTx90p>();
 
 public:
   void
@@ -1312,7 +1312,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaCdd> registration = RegisterEntry<EcaCdd>();
+  inline static auto registration = RegisterEntry<EcaCdd>();
   int ECA_CDD, ETCCDI_CDD;
   double threshold = 1;
   int ndays = 5;
@@ -1387,7 +1387,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaCwd> registration = RegisterEntry<EcaCwd>();
+  inline static auto registration = RegisterEntry<EcaCwd>();
 
   int ECA_CWD, ETCCDI_CWD;
   double threshold = 1;
@@ -1467,7 +1467,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaPd> registration = RegisterEntry<EcaPd>();
+  inline static auto registration = RegisterEntry<EcaPd>();
   int ECA_PD, ETCCDI_R1MM, ECA_R10MM, ETCCDI_R10MM, ECA_R20MM, ETCCDI_R20MM;
   char lnamebuffer[1024];
   double threshold = 0;
@@ -1586,7 +1586,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR75p> registration = RegisterEntry<EcaR75p>();
+  inline static auto registration = RegisterEntry<EcaR75p>();
 
 public:
   void
@@ -1618,7 +1618,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR75ptot> registration = RegisterEntry<EcaR75ptot>();
+  inline static auto registration = RegisterEntry<EcaR75ptot>();
 
 public:
   void
@@ -1650,7 +1650,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR90p> registration = RegisterEntry<EcaR90p>();
+  inline static auto registration = RegisterEntry<EcaR90p>();
 
 public:
   void
@@ -1682,7 +1682,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR95p> registration = RegisterEntry<EcaR95p>();
+  inline static auto registration = RegisterEntry<EcaR95p>();
 
 public:
   void
@@ -1714,7 +1714,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR90ptot> registration = RegisterEntry<EcaR90ptot>();
+  inline static auto registration = RegisterEntry<EcaR90ptot>();
 
 public:
   void
@@ -1777,7 +1777,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR95ptot> registration = RegisterEntry<EcaR95ptot>();
+  inline static auto registration = RegisterEntry<EcaR95ptot>();
 
 public:
   void
@@ -1809,7 +1809,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR99p> registration = RegisterEntry<EcaR99p>();
+  inline static auto registration = RegisterEntry<EcaR99p>();
 
 public:
   void
@@ -1841,7 +1841,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaR99ptot> registration = RegisterEntry<EcaR99ptot>();
+  inline static auto registration = RegisterEntry<EcaR99ptot>();
 
 public:
   void
@@ -1872,7 +1872,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaRr1> registration = RegisterEntry<EcaRr1>();
+  inline static auto registration = RegisterEntry<EcaRr1>();
   char longname[1024];
 
 public:
@@ -1921,7 +1921,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaRx1day> registration = RegisterEntry<EcaRx1day>();
+  inline static auto registration = RegisterEntry<EcaRx1day>();
   int ECA_RX1DAY, ETCCDI_RX1DAY;
 
 public:
@@ -1971,7 +1971,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaRx5day> registration = RegisterEntry<EcaRx5day>();
+  inline static auto registration = RegisterEntry<EcaRx5day>();
   int ECA_RX5DAY, ETCCDI_RX5DAY;
   char longname2[sizeof(RX5DAY_LONGNAME2) + 40];
 
@@ -2030,7 +2030,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EcaSdii> registration = RegisterEntry<EcaSdii>();
+  inline static auto registration = RegisterEntry<EcaSdii>();
   int ECA_SDII, ETCCDI_SDII;
   char longname[1024];
   double threshold = 1;
@@ -2092,7 +2092,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Fdns> registration = RegisterEntry<Fdns>();
+  inline static auto registration = RegisterEntry<Fdns>();
 
 public:
   void
@@ -2125,7 +2125,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Strwin> registration = RegisterEntry<Strwin>();
+  inline static auto registration = RegisterEntry<Strwin>();
   double maxWind = 10.5;
   char longname[sizeof(STRWIN_LONGNAME) + 40];
 
@@ -2179,7 +2179,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Strbre> registration = RegisterEntry<Strbre>();
+  inline static auto registration = RegisterEntry<Strbre>();
   double maxWind = 10.5;
 
 public:
@@ -2223,7 +2223,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Strgal> registration = RegisterEntry<Strgal>();
+  inline static auto registration = RegisterEntry<Strgal>();
   double maxWind = 20.5;
 
 public:
@@ -2267,7 +2267,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Hurr> registration = RegisterEntry<Hurr>();
+  inline static auto registration = RegisterEntry<Hurr>();
   double maxWind = 32.5;
 
 public:

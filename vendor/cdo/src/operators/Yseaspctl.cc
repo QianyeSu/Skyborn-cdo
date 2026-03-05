@@ -44,7 +44,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Yseaspctl> registration = RegisterEntry<Yseaspctl>();
+  inline static auto registration = RegisterEntry<Yseaspctl>();
 
   CdoStreamID streamID1;
   CdoStreamID streamID2;

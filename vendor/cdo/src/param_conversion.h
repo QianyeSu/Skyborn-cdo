@@ -26,6 +26,7 @@ double radius_str_to_deg(std::string const &string);
 
 int string_to_param(std::string const &paramstr);
 std::string param_to_string(int param);
+std::string param_to_string_zerofilled(int param);
 
 /* time/date/season converisons */
 /* =================================================================================== */

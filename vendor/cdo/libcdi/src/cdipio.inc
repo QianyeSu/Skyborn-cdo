@@ -1,10 +1,10 @@
 ! This file was automatically generated, don't edit!
 !
-! Fortran interface for CDI library version 2.5.4
+! Fortran interface for CDI library version 2.6.0
 !
 ! Author:
 ! -------
-! Uwe Schulzweida, MPI-MET, Hamburg,   October 2025
+! Uwe Schulzweida, MPI-MET, Hamburg,   February 2026
 !
 
 !

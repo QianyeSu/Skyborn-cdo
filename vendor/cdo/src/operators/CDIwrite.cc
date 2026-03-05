@@ -142,7 +142,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 1, NoRestriction },
   };
-  inline static RegisterEntry<CDIwrite> registration = RegisterEntry<CDIwrite>();
+  inline static auto registration = RegisterEntry<CDIwrite>();
 
   MemType memtype = Options::CDO_Memtype;
   int filetype = -1, datatype = -1;

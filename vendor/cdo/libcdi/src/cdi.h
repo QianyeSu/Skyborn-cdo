@@ -441,16 +441,16 @@ void    streamWriteVarF(int streamID, int varID, const float data[], SizeType nu
 //      streamReadVar: Read a variable
 void    streamReadVar(int streamID, int varID, double data[], SizeType *numMissVals);
 void    streamReadVarF(int streamID, int varID, float data[], SizeType *numMissVals);
-void    streamReadVarPart(int streamID, int varID, int varType, int start, SizeType size, void *data, SizeType *numMissVals, int memtype);
+void    streamReadVarPart(int streamID, int varID, int varType, int start, SizeType size, void *data, SizeType *numMissVals, int memType);
 
 //      streamWriteVarSlice: Write a horizontal slice of a variable
 void    streamWriteVarSlice(int streamID, int varID, int levelID, const double data[], SizeType numMissVals);
 void    streamWriteVarSliceF(int streamID, int varID, int levelID, const float data[], SizeType numMissVals);
-void    streamReadVarSlicePart(int streamID, int varID, int levelID, int varType, int start, SizeType size, void *data, SizeType *numMissVals, int memtype);
 
 //      streamReadVarSlice: Read a horizontal slice of a variable
 void    streamReadVarSlice(int streamID, int varID, int levelID, double data[], SizeType *numMissVals);
 void    streamReadVarSliceF(int streamID, int varID, int levelID, float data[], SizeType *numMissVals);
+void    streamReadVarSlicePart(int streamID, int varID, int levelID, int varType, int start, SizeType size, void *data, SizeType *numMissVals, int memType);
 
 void    streamWriteVarChunk(int streamID, int varID, const int rect[][2], const double data[], SizeType numMissVals);
 void    streamWriteVarChunkF(int streamID, int varID, const int rect[][2], const float data[], SizeType numMissVals);
@@ -720,12 +720,21 @@ void    vlistDefVarIntKey(int vlistID, int varID, const char *name, int value);
 //      vlistDefVarDblKey: Set an arbitrary keyword/double value pair for GRIB API
 void    vlistDefVarDblKey(int vlistID, int varID, const char *name, double value);
 
+//      vlistDefVarIntArrKey: Set an arbitrary keyword/integer array pair for GRIB API
+void    vlistDefVarIntArrKey(int vlistID, int varID, const char *name, int *values, int nvalues);
+//      vlistDefVarDblArrKey: Set an arbitrary keyword/double array pair for GRIB API
+void    vlistDefVarDblArrKey(int vlistID, int varID, const char *name, double *values, int nvalues);
+
 //      vlistHasVarKey: returns 1 if meta-data key was read, 0 otherwise
 int     vlistHasVarKey(int vlistID, int varID, const char *name);
 //      vlistInqVarDblKey: raw access to GRIB meta-data
 double  vlistInqVarDblKey(int vlistID, int varID, const char *name);
 //      vlistInqVarIntKey: raw access to GRIB meta-data
 int     vlistInqVarIntKey(int vlistID, int varID, const char *name);
+//      vlistInqVarDblArrKey: raw access to GRIB meta-data
+double *vlistInqVarDblArrKey(int vlistID, int varID, const char *name);
+//      vlistInqVarIntArrKey: raw access to GRIB meta-data
+int    *vlistInqVarIntArrKey(int vlistID, int varID, const char *name);
 
 // CDI attributes
 
@@ -994,7 +1003,7 @@ double  gridInqYval(int gridID, SizeType index);
 double  gridInqXinc(int gridID);
 double  gridInqYinc(int gridID);
 
-int     gridIsCircular(int gridID);
+int     gridIsCyclic(int gridID);
 
 int     gridInqTrunc(int gridID);
 void    gridDefTrunc(int gridID, int trunc);
@@ -1344,49 +1353,33 @@ extern "C" {
 
 // CDI query interface
 
-typedef struct
-{
-  int numEntries;
-  // Names
-  int numNames;
-  bool *namesFound;
-  char **names;
-  // Grid cell indices
-  int numCellidx;
-  bool *cellidxFound;
-  size_t *cellidx;
-  // Level indices
-  int numLevidx;
-  bool *levidxFound;
-  int *levidx;
-  // Time step indices
-  int numStepidx;
-  bool *stepidxFound;
-  int *stepidx;
-} CdiQuery;
+struct CdiQuery;
 
-CdiQuery *cdiQueryCreate(void);
-CdiQuery *cdiQueryClone(const CdiQuery *query);
-void cdiQueryDelete(CdiQuery *query);
-void cdiQuerySetNames(CdiQuery *query, int numNames, char **names);
-void cdiQuerySetCellidx(CdiQuery *query, int numCellidx, size_t *cellidx);
-void cdiQuerySetLevidx(CdiQuery *query, int numLevidx, int *levidx);
-void cdiQuerySetStepidx(CdiQuery *query, int numStepidx, int *stepidx);
-size_t cdiQueryGetCellidx(const CdiQuery *query, int index);
-int cdiQueryName(CdiQuery *query, const char *name);
-int cdiQueryCellidx(CdiQuery *query, size_t cellidx);
-int cdiQueryLevidx(CdiQuery *query, int levidx);
-int cdiQueryStepidx(CdiQuery *query, int stepidx);
-int cdiQueryNumNames(const CdiQuery *query);
-int cdiQueryNumCellidx(const CdiQuery *query);
-int cdiQueryNumStepidx(const CdiQuery *query);
-int cdiQueryNumEntries(const CdiQuery *query);
-int cdiQueryNumEntriesFound(const CdiQuery *query);
-void cdiQueryPrint(const CdiQuery *query);
-void cdiQueryPrintEntriesNotFound(const CdiQuery *query);
+struct CdiQuery *cdiQueryCreate(void);
+struct CdiQuery *cdiQueryClone(const struct CdiQuery *query);
+void cdiQueryDelete(struct CdiQuery *query);
+void cdiQuerySetNames(struct CdiQuery *query, int numNames, const char **names);
+void cdiQuerySetCells(struct CdiQuery *query, int numCells, const size_t *cells);
+void cdiQuerySetLayers(struct CdiQuery *query, int numLayers, const int *layers);
+void cdiQuerySetSteps(struct CdiQuery *query, int numSteps, const int *steps);
+size_t cdiQueryGetCell(const struct CdiQuery *query, int index);
+int cdiQueryGetLayer(const struct CdiQuery *query, int index);
+int cdiQueryGetStep(const struct CdiQuery *query, int index);
+int cdiQueryName(struct CdiQuery *query, const char *name);
+// int cdiQueryCell(struct CdiQuery *query, size_t cell);
+// int cdiQueryLayer(struct CdiQuery *query, int layer);
+// int cdiQueryStep(struct CdiQuery *query, int step);
+int cdiQueryNumNames(const struct CdiQuery *query);
+int cdiQueryNumCells(const struct CdiQuery *query);
+int cdiQueryNumLayers(const struct CdiQuery *query);
+int cdiQueryNumSteps(const struct CdiQuery *query);
+int cdiQueryNumEntries(const struct CdiQuery *query);
+int cdiQueryNumEntriesFound(const struct CdiQuery *query);
+void cdiQueryPrint(const struct CdiQuery *query);
+void cdiQueryPrintEntriesNotFound(const struct CdiQuery *query);
 
 // streamOpenReadQuery: Open a dataset for reading and apply query
-int streamOpenReadQuery(const char *path, CdiQuery *query);
+int streamOpenReadQuery(const char *path, struct CdiQuery *query);
 
 // CDI interface for paraview vtkCDIReader.cxx
 

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "ensure_array_size.h"
 #include "utils_core.h"

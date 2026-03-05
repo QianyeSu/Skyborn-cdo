@@ -12,6 +12,8 @@
 #include <string>
 #include "varray.h"
 
+std::vector<size_t> healpix_compute_cell_parameter(int refinementLevel, double lon1, double lon2, double lat1, double lat2);
+
 int cdo_healpix_to_lonlat(int gridID, size_t nvals, Varray<double> &xvals, Varray<double> &yvals, bool withBounds,
                           Varray<double> &xbounds, Varray<double> &ybounds);
 

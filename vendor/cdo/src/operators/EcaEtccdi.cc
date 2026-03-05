@@ -192,10 +192,8 @@ calculateOuterPeriod(Field &field, int MaxMonths, int recentYear, int endOfCalc,
       streamReadField(cdiStream, field.vec_d.data(), &field.numMissVals);
 
       Field &pctls = varsPtemp[dayOfYear][0][levelID];
-      if (selection == func_selle)
-        vfarselle(field, pctls);
-      else if (selection == func_selge)
-        vfarselge(field, pctls);
+      if (selection == func_selle) { vfarselle(field, pctls); }
+      else if (selection == func_selge) { vfarselge(field, pctls); }
 
       auto &array = field.vec_d;
       if (func2 == FieldFunc_Avg)
@@ -229,7 +227,7 @@ etccdi_op(ETCCDI_REQUEST &request)
 {
   constexpr int MaxDays = 373;
   constexpr int MaxMonths = 12;
-  FieldVector2D varsData2[MaxDays];
+  FieldVector2D varDataList2[MaxDays];
   HistogramSet hsets[MaxDays];
 
   const int operatorID = cdo_operator_id();
@@ -313,19 +311,19 @@ etccdi_op(ETCCDI_REQUEST &request)
 
   Field field;
 
-  FieldVector3D varsData1(sumboot * (MaxDays - 1) + 1);
+  FieldVector3D varDataList1(sumboot * (MaxDays - 1) + 1);
   FieldVector3D cei(sumboot * MaxMonths);
   FieldVector3D varsPtemp(MaxDays);
 
   for (int dayOfYear = 0; dayOfYear < MaxDays; dayOfYear++)
   {
-    field2D_init(varsData1[dayOfYear], varList1, FIELD_VEC | FIELD_MEMTYPE);
+    field2D_init(varDataList1[dayOfYear], varList1, FIELD_VEC | FIELD_MEMTYPE);
     wdaysSrc[dayOfYear] = false;
     for (int year = 0; year < sumboot; year++) wdaysRead[dayOfYear + year * (MaxDays - 1)] = false;
   }
 
   for (int dayOfYear = MaxDays; dayOfYear < sumboot * (MaxDays - 1) + 1; dayOfYear++)
-    field2D_init(varsData1[dayOfYear], varList1, FIELD_VEC | FIELD_MEMTYPE);
+    field2D_init(varDataList1[dayOfYear], varList1, FIELD_VEC | FIELD_MEMTYPE);
 
   int tsID = 0;
 
@@ -350,10 +348,10 @@ etccdi_op(ETCCDI_REQUEST &request)
 
     if (dayOfYear < 0 || dayOfYear >= MaxDays) cdo_abort("Day %d out of range!", dayOfYear);
 
-    if (!varsData2[dayOfYear].size())
+    if (!varDataList2[dayOfYear].size())
     {
       wdaysSrc[dayOfYear] = true;
-      field2D_init(varsData2[dayOfYear], varList2, FIELD_VEC | FIELD_MEMTYPE);
+      field2D_init(varDataList2[dayOfYear], varList2, FIELD_VEC | FIELD_MEMTYPE);
       field2D_init(varsPtemp[dayOfYear], varList2, FIELD_VEC);
       hsets[dayOfYear].create(numVars);
 
@@ -363,8 +361,8 @@ etccdi_op(ETCCDI_REQUEST &request)
     for (int fieldID = 0; fieldID < numFields; ++fieldID)
     {
       auto [varID, levelID] = cdo_inq_field(streamID2);
-      cdo_read_field(streamID2, varsData2[dayOfYear][varID][levelID]);
-      varsPtemp[dayOfYear][varID][levelID].numMissVals = varsData2[dayOfYear][varID][levelID].numMissVals;
+      cdo_read_field(streamID2, varDataList2[dayOfYear][varID][levelID]);
+      varsPtemp[dayOfYear][varID][levelID].numMissVals = varDataList2[dayOfYear][varID][levelID].numMissVals;
     }
 
     for (int fieldID = 0; fieldID < numFields; ++fieldID)
@@ -373,7 +371,7 @@ etccdi_op(ETCCDI_REQUEST &request)
       field.init(varList1.vars[varID]);
       cdo_read_field(streamID3, field);
 
-      hsets[dayOfYear].defVarLevelBounds(varID, levelID, varsData2[dayOfYear][varID][levelID], field);
+      hsets[dayOfYear].defVarLevelBounds(varID, levelID, varDataList2[dayOfYear][varID][levelID], field);
     }
     // fieldsFree(vlistID2, vars2[dayOfYear]);
     // field2D_init(vars2[dayOfYear], varList2, FIELD_VEC);
@@ -416,7 +414,7 @@ etccdi_op(ETCCDI_REQUEST &request)
         for (int fieldID = 0; fieldID < numFields; ++fieldID)
         {
           auto [varID, levelID] = cdo_inq_field(streamID1);
-          cdo_read_field(streamID1, varsData1[dayOfYear + (year - request.startboot) * (MaxDays - 1)][varID][levelID]);
+          cdo_read_field(streamID1, varDataList1[dayOfYear + (year - request.startboot) * (MaxDays - 1)][varID][levelID]);
 
           if (tsID == 0) fieldInfoList[fieldID].set(varID, levelID);
         }
@@ -469,7 +467,7 @@ etccdi_op(ETCCDI_REQUEST &request)
           {
             if (wdaysRead[loopdoy + ytoadd * (MaxDays - 1)])
             {
-              auto &source = varsData1[loopdoy + ytoadd * (MaxDays - 1)][varID][levelID];
+              auto &source = varDataList1[loopdoy + ytoadd * (MaxDays - 1)][varID][levelID];
               auto &hset = hsets[1];
               hset.addVarLevelValues(varID, levelID, source);
             }
@@ -479,7 +477,7 @@ etccdi_op(ETCCDI_REQUEST &request)
       else
       {
 #ifdef _OPENMP
-#pragma omp parallel for shared(sumboot, varsData1, request, varID, levelID, hsets, wdays, wdaysRead) schedule(dynamic)
+#pragma omp parallel for shared(sumboot, varDataList1, request, varID, levelID, hsets, wdays, wdaysRead) schedule(dynamic)
 #endif
         for (int loopdoy = 1; loopdoy < MaxDays; loopdoy++)
         {
@@ -489,7 +487,7 @@ etccdi_op(ETCCDI_REQUEST &request)
             {
               for (int ano = 0; ano < request.ndates; ano++)
               {
-                auto &source = varsData1[wdays[ytoadd * request.ndates * (MaxDays - 1) + (loopdoy - 1) * request.ndates + ano + 1]]
+                auto &source = varDataList1[wdays[ytoadd * request.ndates * (MaxDays - 1) + (loopdoy - 1) * request.ndates + ano + 1]]
                                         [varID][levelID];
                 auto &hset = hsets[loopdoy];
                 hset.addVarLevelValues(varID, levelID, source);
@@ -550,7 +548,7 @@ etccdi_op(ETCCDI_REQUEST &request)
         for (int levelID = 0; levelID < varList1.vars[varID].nlevels; ++levelID)
         {
 #ifdef _OPENMP
-#pragma omp parallel for shared(sumboot, wdaysRead, request, varsData1, varID, levelID, hsets, wdays, cei) schedule(dynamic)
+#pragma omp parallel for shared(sumboot, wdaysRead, request, varDataList1, varID, levelID, hsets, wdays, cei) schedule(dynamic)
 #endif
           for (int loopdoy = 1; loopdoy < MaxDays; loopdoy++)
           {
@@ -563,14 +561,14 @@ etccdi_op(ETCCDI_REQUEST &request)
                   int recentWday = ytoadd * request.ndates * (MaxDays - 1) + (loopdoy - 1) * request.ndates + ano + 1;
                   if ((int((wdays[recentWday] - 1) / (MaxDays - 1)) + request.startboot) == bootsyear)
                   {
-                    auto &source = varsData1[wdays[recentWday]][varID][levelID];
+                    auto &source = varDataList1[wdays[recentWday]][varID][levelID];
                     auto &hset = hsets[loopdoy];
                     hset.subVarLevelValues(varID, levelID, source);
                   }
                   // percyear cannot be smaller than request.startboot
                   if ((int((wdays[recentWday] - 1) / (MaxDays - 1)) + request.startboot) == bootsyear - 1)
                   {
-                    auto &source = varsData1[wdays[recentWday]][varID][levelID];
+                    auto &source = varDataList1[wdays[recentWday]][varID][levelID];
                     auto &hset = hsets[loopdoy];
                     hset.addVarLevelValues(varID, levelID, source);
                   }
@@ -584,8 +582,8 @@ etccdi_op(ETCCDI_REQUEST &request)
             if (subyear != bootsyear)
             {
 #ifdef _OPENMP
-#pragma omp parallel for shared(sumboot, request, varsData1, varID, levelID, hsets, wdaysRead, varsPtemp, varsData2, cei, subyear, \
-                                    bootsyear, wdays, frequency) schedule(dynamic)
+#pragma omp parallel for shared(sumboot, request, varDataList1, varID, levelID, hsets, wdaysRead, varsPtemp, varDataList2, cei, subyear, \
+                                bootsyear, wdays, frequency) schedule(dynamic)
 #endif
               for (int loopdoy = 1; loopdoy < MaxDays; loopdoy++)
               {
@@ -598,7 +596,7 @@ etccdi_op(ETCCDI_REQUEST &request)
                       int recentWday = ytoadd * request.ndates * (MaxDays - 1) + (loopdoy - 1) * request.ndates + ano + 1;
                       if ((int((wdays[recentWday] - 1) / (MaxDays - 1)) + request.startboot) == subyear)
                       {
-                        auto &source = varsData1[wdays[recentWday]][varID][levelID];
+                        auto &source = varDataList1[wdays[recentWday]][varID][levelID];
                         auto &hset = hsets[loopdoy];
                         if (hset.addVarLevelValues(varID, levelID, source) == 1) cdo_print("'%d', '%d", loopdoy, wdays[recentWday]);
                       }
@@ -613,8 +611,8 @@ etccdi_op(ETCCDI_REQUEST &request)
                   auto &pctls = varsPtemp[loopdoy][varID][levelID];
                   hsets[loopdoy].getVarLevelPercentiles(pctls, varID, levelID, request.pn);
                   /*** Compare data with percentile ***/
-                  auto &source = varsData1[loopdoy + (bootsyear - request.startboot) * (MaxDays - 1)][varID][levelID];
-                  auto &toCompare = varsData2[loopdoy][varID][levelID];
+                  auto &source = varDataList1[loopdoy + (bootsyear - request.startboot) * (MaxDays - 1)][varID][levelID];
+                  auto &toCompare = varDataList2[loopdoy][varID][levelID];
                   field_copy(source, toCompare);
                   if (selection == func_selle)
                     vfarselle(toCompare, pctls);
@@ -654,7 +652,7 @@ etccdi_op(ETCCDI_REQUEST &request)
                       int recentWday = ytoadd * request.ndates * (MaxDays - 1) + (loopdoy - 1) * request.ndates + ano + 1;
                       if ((int((wdays[recentWday] - 1) / (MaxDays - 1)) + request.startboot) == subyear)
                       {
-                        auto &source = varsData1[wdays[recentWday]][varID][levelID];
+                        auto &source = varDataList1[wdays[recentWday]][varID][levelID];
                         auto &hset = hsets[loopdoy];
                         if (hset.subVarLevelValues(varID, levelID, source) == 1) cdo_print("'%d', '%d", loopdoy, wdays[recentWday]);
                       }
@@ -743,7 +741,7 @@ etccdi_op(ETCCDI_REQUEST &request)
                 // percyear cannot be smaller than request.startboot
                 if ((int((wdays[recentWday] - 1) / (MaxDays - 1)) + request.startboot) == bootsyear - 1)
                 {
-                  auto &source = varsData1[wdays[recentWday]][varID][levelID];
+                  auto &source = varDataList1[wdays[recentWday]][varID][levelID];
                   auto &hset = hsets[loopdoy];
                   hset.addVarLevelValues(varID, levelID, source);
                 }
@@ -759,9 +757,9 @@ etccdi_op(ETCCDI_REQUEST &request)
       }
     }
     field.resize(gridsizeMax);
-    field.missval = varsData1[1][0][0].missval;
-    field.size = varsData1[1][0][0].size;
-    field.grid = varsData1[1][0][0].grid;
+    field.missval = varDataList1[1][0][0].missval;
+    field.size = varDataList1[1][0][0].size;
+    field.grid = varDataList1[1][0][0].grid;
     calculateOuterPeriod(field, MaxMonths, request.endboot + 1, lastYear + 1, cei, varsPtemp, frequency, taxisID4, streamID4,
                          &otsID, varList1, fieldInfoList, selection, request.func2);
   }
@@ -790,7 +788,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, FilesOnly },
   };
-  inline static RegisterEntry<EcaEtccdi> registration = RegisterEntry<EcaEtccdi>();
+  inline static auto registration = RegisterEntry<EcaEtccdi>();
 
   int ETCCDI_TX90P, ETCCDI_R99P, ETCCDI_R95P, ETCCDI_TX10P, ETCCDI_TN90P, ETCCDI_TN10P;
   ETCCDI_REQUEST request;

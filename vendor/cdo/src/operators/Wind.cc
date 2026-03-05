@@ -79,7 +79,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Wind> registration = RegisterEntry<Wind>();
+  inline static auto registration = RegisterEntry<Wind>();
 
   int UV2DV{}, UV2DVL{}, DV2UV{}, DV2UVL{}, DV2PS{};
   CdoStreamID streamID1{};

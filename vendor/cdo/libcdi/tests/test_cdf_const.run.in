@@ -34,23 +34,23 @@ exec 5<&- 6<&-
 #PATTERNS
 #^   File format : NetCDF
 #^   Var : Institut Source   T Steptype Levels Num    Points Num Dtype : Parameter ID
-#^     1 : unknown  unknown  c instant       1   1        72   1  F32  : -1         
-#^     2 : unknown  unknown  c instant       5   2        72   1  F32  : -2         
+#^     1 : unknown  unknown  c instant       1   1        72   1  F32  : -1
+#^     2 : unknown  unknown  c instant       5   2        72   1  F32  : -2
 #^   Grid coordinates :
 #^     1 : lonlat                   : points=72 (12x6)
-#^                              lon : 0 to 330 by 30 degrees_east  circular
+#^                              lon : 0 to 330 by 30 degrees_east  cyclic
 #^                              lat : -75 to 75 by 30 degrees_north
 #^   Vertical coordinates :
 #^     1 : surface                  : levels=1
 #^     2 : pressure                 : levels=5
 #^                             plev : 101300 to 20000 Pa
 #^   Rec :       Date     Time   Level Gridsize    Miss :     Minimum        Mean     Maximum : Parameter ID
-#^     1 : 0000-00-00 00:00:00       0       72       0 :      1.1000      1.1000      1.1000 : -1         
-#^     2 : 0000-00-00 00:00:00  101300       72       0 :      2.2000      2.2000      2.2000 : -2         
-#^     3 : 0000-00-00 00:00:00   92500       72       0 :      2.2000      2.2000      2.2000 : -2         
-#^     4 : 0000-00-00 00:00:00   85000       72       0 :      2.2000      2.2000      2.2000 : -2         
-#^     5 : 0000-00-00 00:00:00   50000       72       0 :      2.2000      2.2000      2.2000 : -2         
-#^     6 : 0000-00-00 00:00:00   20000       72       0 :      2.2000      2.2000      2.2000 : -2         
+#^     1 : 0000-00-00 00:00:00       0       72       0 :      1.1000      1.1000      1.1000 : -1
+#^     2 : 0000-00-00 00:00:00  101300       72       0 :      2.2000      2.2000      2.2000 : -2
+#^     3 : 0000-00-00 00:00:00   92500       72       0 :      2.2000      2.2000      2.2000 : -2
+#^     4 : 0000-00-00 00:00:00   85000       72       0 :      2.2000      2.2000      2.2000 : -2
+#^     5 : 0000-00-00 00:00:00   50000       72       0 :      2.2000      2.2000      2.2000 : -2
+#^     6 : 0000-00-00 00:00:00   20000       72       0 :      2.2000      2.2000      2.2000 : -2
 #END PATTERNS
 
 #

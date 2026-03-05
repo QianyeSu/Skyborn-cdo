@@ -157,7 +157,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Remapweights> registration = RegisterEntry<Remapweights>();
+  inline static auto registration = RegisterEntry<Remapweights>();
 
   KnnParams knnParams{};
   RemapSwitches remapSwitches{};
@@ -324,7 +324,7 @@ public:
         if (mapType != RemapMethod::CONSERV && var.gridType == GRID_GME)
           cdo_abort("Only conservative remapping is available to remap between GME grids!");
 
-        if (gridIsCircular(var.gridID) && !extrapolateIsSet) remapExtrapolate = true;
+        if (gridIsCyclic(var.gridID) && !extrapolateIsSet) remapExtrapolate = true;
 
         remap_set_mask(field1, var.gridsize, numMissVals1, var.missval, imask);
 

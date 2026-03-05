@@ -85,12 +85,12 @@ make_cyclic(const double *array1, double *array2, long nlon, long nlat)
 }
 
 static void
-output_zon(double levmin, double levmax, const double *cell_corner_lat)
+output_zon(double levmin, double levmax, const double *cellCornerLat)
 {
-  auto latmin = cell_corner_lat[0];
-  auto latmax = cell_corner_lat[0];
-  for (int ic = 1; ic < 4; ++ic) latmin = std::min(latmin, cell_corner_lat[ic]);
-  for (int ic = 1; ic < 4; ++ic) latmax = std::max(latmax, cell_corner_lat[ic]);
+  auto latmin = cellCornerLat[0];
+  auto latmax = cellCornerLat[0];
+  for (int ic = 1; ic < 4; ++ic) latmin = std::min(latmin, cellCornerLat[ic]);
+  for (int ic = 1; ic < 4; ++ic) latmax = std::max(latmax, cellCornerLat[ic]);
   const double xlev[4] = { levmin, levmax, levmax, levmin };
   const double xlat[4] = { latmin, latmin, latmax, latmax };
   for (int ic = 0; ic < 4; ++ic) std::fprintf(stdout, "   %g  %g\n", xlat[ic], xlev[ic]);
@@ -98,12 +98,12 @@ output_zon(double levmin, double levmax, const double *cell_corner_lat)
 }
 
 static void
-output_mer(double levmin, double levmax, const double *cell_corner_lon)
+output_mer(double levmin, double levmax, const double *cellCornerLon)
 {
-  auto lonmin = cell_corner_lon[0];
-  auto lonmax = cell_corner_lon[0];
-  for (int ic = 1; ic < 4; ++ic) lonmin = std::min(lonmin, cell_corner_lon[ic]);
-  for (int ic = 1; ic < 4; ++ic) lonmax = std::max(lonmax, cell_corner_lon[ic]);
+  auto lonmin = cellCornerLon[0];
+  auto lonmax = cellCornerLon[0];
+  for (int ic = 1; ic < 4; ++ic) lonmin = std::min(lonmin, cellCornerLon[ic]);
+  for (int ic = 1; ic < 4; ++ic) lonmax = std::max(lonmax, cellCornerLon[ic]);
   const double xlev[4] = { levmin, levmin, levmax, levmax };
   const double xlon[4] = { lonmin, lonmax, lonmax, lonmin };
   for (int ic = 0; ic < 4; ++ic) std::fprintf(stdout, "   %g  %g\n", xlon[ic], xlev[ic]);
@@ -373,7 +373,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Outputgmt> registration = RegisterEntry<Outputgmt>();
+  inline static auto registration = RegisterEntry<Outputgmt>();
 
 private:
   int GMTXYZ{}, OUTPUTCENTER2{}, OUTPUTCENTERCPT{}, GMTCELLS{}, OUTPUTBOUNDSCPT{}, OUTPUTVECTOR{}, OUTPUTTRI{}, OUTPUTVRML{},
@@ -404,7 +404,7 @@ private:
   double missval{};
 
   bool printHeader{};
-  bool grid_is_circular{};
+  bool isCyclic{};
 
   VarList varList;
   Varray<double> uf, vf;
@@ -514,7 +514,7 @@ public:
 
     ncorner = (gridInqType(gridID) == GRID_UNSTRUCTURED) ? gridInqNvertex(gridID) : 4;
 
-    grid_is_circular = gridIsCircular(gridID);
+    isCyclic = gridIsCyclic(gridID);
 
     grid_center_lat.resize(gridsize);
     grid_center_lon.resize(gridsize);
@@ -530,7 +530,7 @@ public:
     plon = grid_center_lon.data();
     plat = grid_center_lat.data();
 
-    if (operatorID == OUTPUTCENTER2 && grid_is_circular)
+    if (operatorID == OUTPUTCENTER2 && isCyclic)
     {
       gridsize2 = nlat * (nlon + 1);
 
@@ -602,7 +602,7 @@ public:
     auto parray = array.data();
 
     Varray<double> array2;
-    if (operatorID == OUTPUTCENTER2 && grid_is_circular)
+    if (operatorID == OUTPUTCENTER2 && isCyclic)
     {
       array2.resize(nlat * (nlon + 1));
       parray = array2.data();
@@ -654,7 +654,7 @@ public:
 
         cdo_read_field(streamID, array.data(), &numMissVals);
 
-        if (operatorID == OUTPUTCENTER2 && grid_is_circular) make_cyclic(array.data(), array2.data(), nlon, nlat);
+        if (operatorID == OUTPUTCENTER2 && isCyclic) make_cyclic(array.data(), array2.data(), nlon, nlat);
 
         auto level = zaxis_center_lev[levelID];
 
@@ -709,7 +709,7 @@ public:
           if (gridInqType(gridID) != GRID_CURVILINEAR) cdo_abort("Unsupported grid!");
 
           long mlon = nlon - 1;
-          // if ( gridIsCircular(gridID) ) mlon = nlon;
+          // if ( gridIsCyclic(gridID) ) mlon = nlon;
           for (long j = 0; j < nlat - 1; ++j)
             for (long i = 0; i < mlon; ++i)
             {

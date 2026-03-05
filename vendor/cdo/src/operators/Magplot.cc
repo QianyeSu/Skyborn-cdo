@@ -413,7 +413,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Magplot> registration = RegisterEntry<Magplot>();
+  inline static auto registration = RegisterEntry<Magplot>();
   int CONTOUR, SHADED, GRFILL;
   CdoStreamID streamID;
 
@@ -585,17 +585,17 @@ public:
                 syntax = false;
               else
               {
-                if (key == "min") YMIN = atof(value);
-                if (key == "max") YMAX = atof(value);
-                if (key == "count") COUNT = atoi(value);
-                if (key == "interval") INTERVAL = atof(value);
-                if (key == "thickness") THICKNESS = atoi(value);
-                if (key == "resolution") RESOLUTION = atoi(value);
-                if (key == "step_freq") STEP_FREQ = atoi(value);
-                if (key == "lat_min") LAT_MIN = atof(value);
-                if (key == "lat_max") LAT_MAX = atof(value);
-                if (key == "lon_min") LON_MIN = atof(value);
-                if (key == "lon_max") LON_MAX = atof(value);
+                if (key == "min") YMIN = std::atof(value);
+                if (key == "max") YMAX = std::atof(value);
+                if (key == "count") COUNT = std::atoi(value);
+                if (key == "interval") INTERVAL = std::atof(value);
+                if (key == "thickness") THICKNESS = std::atoi(value);
+                if (key == "resolution") RESOLUTION = std::atoi(value);
+                if (key == "step_freq") STEP_FREQ = std::atoi(value);
+                if (key == "lat_min") LAT_MIN = std::atof(value);
+                if (key == "lat_max") LAT_MAX = std::atof(value);
+                if (key == "lon_min") LON_MIN = std::atof(value);
+                if (key == "lon_max") LON_MAX = std::atof(value);
               }
             }
 

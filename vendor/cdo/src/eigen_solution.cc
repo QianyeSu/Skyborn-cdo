@@ -518,9 +518,9 @@ jacobi_1side(Varray2D<double> &M, Varray<double> &A, size_t n)
   if (n_iter == max_jacobi_iter && n_finished < count)
   {
     std::fprintf(stderr,
-            "jacobi_1side (Warning): Eigenvalue computation with one-sided jacobi scheme did not converge properly.\n"
-            "                        %zu of %zu pairs of columns did not achieve requested orthogonality of %g\n",
-            count - n_finished, count, fnorm_precision);
+                 "jacobi_1side (Warning): Eigenvalue computation with one-sided jacobi scheme did not converge properly.\n"
+                 "                        %zu of %zu pairs of columns did not achieve requested orthogonality of %g\n",
+                 count - n_finished, count, fnorm_precision);
 
     if (n_finished == 0)
     {
@@ -564,7 +564,7 @@ parallel_eigen_solution_of_symmetric_matrix(Varray2D<double> &M, Varray<double> 
   {
     initEnv = false;
     auto envstr = getenv("MAX_JACOBI_ITER");
-    max_jacobi_iter = envstr ? atoi(envstr) : MAX_JACOBI_ITER;
+    max_jacobi_iter = envstr ? std::atoi(envstr) : MAX_JACOBI_ITER;
     if (Options::cdoVerbose) cdo_print("Using MAX_JACOBI_ITER %i from %s", max_jacobi_iter, envstr ? "Environment" : "default");
 
     envstr = getenv("FNORM_PRECISION");

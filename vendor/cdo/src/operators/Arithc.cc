@@ -71,7 +71,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Arithc> registration = RegisterEntry<Arithc>();
+  inline static auto registration = RegisterEntry<Arithc>();
 
   CdoStreamID streamID1;
   int taxisID1{ CDI_UNDEFID };

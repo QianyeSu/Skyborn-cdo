@@ -49,12 +49,14 @@ int CDI_Reduce_Dim = 0;
 int CDI_Shuffle = 0;
 int CDI_Test = 0;
 size_t CDI_Netcdf_Hdr_Pad = 0UL;
-bool CDI_CopyChunkSpec = false;
-bool CDI_RemoveChunkSpec = false;
-bool CDI_Chunk_Cache_Info = false;
-long CDI_Chunk_Cache_In = -1L;
-long CDI_Chunk_Cache_Out = -1L;
-size_t CDI_Chunk_Cache_Max = 0UL;
+bool CDI_Copy_ChunkSpec = false;
+bool CDI_Remove_ChunkSpec = false;
+bool CDI_Cache_Info = false;
+bool CDI_Cache_NC4 = false;
+bool CDI_Cache_NCZ = true;
+long CDI_CacheSize_In = -1L;
+long CDI_CacheSize_Out = -1L;
+size_t CDI_CacheSize_Max = 0UL;
 bool CDI_Netcdf_Lazy_Grid_Load = false;
 
 char *cdiPartabPath = NULL;
@@ -64,7 +66,7 @@ double CDI_Default_Missval = -9.E33;
 double CDI_Grid_Missval = -9999.;
 
 // clang-format off
-static const char Filetypes[][9] = {
+static const char *Filetypes[] = {
   "UNKNOWN",
   "GRIB",
   "GRIB2",
@@ -254,45 +256,42 @@ cdiDebug(int level)
 int
 cdiHaveFiletype(int filetype)
 {
-  int status = 0;
-
   switch (filetype)
   {
 #ifdef HAVE_LIBSERVICE
-    case CDI_FILETYPE_SRV: status = 1; break;
+    case CDI_FILETYPE_SRV: return 1;
 #endif
 #ifdef HAVE_LIBEXTRA
-    case CDI_FILETYPE_EXT: status = 1; break;
+    case CDI_FILETYPE_EXT: return 1;
 #endif
 #ifdef HAVE_LIBIEG
-    case CDI_FILETYPE_IEG: status = 1; break;
+    case CDI_FILETYPE_IEG: return 1;
 #endif
 #ifdef HAVE_LIBGRIB
 #if defined HAVE_LIBGRIB_API || defined HAVE_LIBCGRIBEX
-    case CDI_FILETYPE_GRB: status = 1; break;
+    case CDI_FILETYPE_GRB: return 1;
 #endif
 #ifdef HAVE_LIBGRIB_API
-    case CDI_FILETYPE_GRB2: status = 1; break;
+    case CDI_FILETYPE_GRB2: return 1;
 #endif
 #endif
 #ifdef HAVE_LIBNETCDF
-    case CDI_FILETYPE_NC: status = 1; break;
+    case CDI_FILETYPE_NC: return 1;
 #ifdef HAVE_NETCDF2
-    case CDI_FILETYPE_NC2: status = 1; break;
+    case CDI_FILETYPE_NC2: return 1;
 #endif
-    case CDI_FILETYPE_NC4: status = 1; break;
-    case CDI_FILETYPE_NC4C: status = 1; break;
+    case CDI_FILETYPE_NC4: return 1;
+    case CDI_FILETYPE_NC4C: return 1;
 #ifdef HAVE_NCZARR
-    case CDI_FILETYPE_NCZARR: status = 1; break;
+    case CDI_FILETYPE_NCZARR: return 1;
 #endif
 #ifdef HAVE_NETCDF5
-    case CDI_FILETYPE_NC5: status = 1; break;
+    case CDI_FILETYPE_NC5: return 1;
 #endif
 #endif
-    default: status = 0; break;
   }
 
-  return status;
+  return 0;
 }
 
 void
@@ -324,8 +323,6 @@ cdiInitialize(void)
   if (!Init_CDI)
   {
     Init_CDI = true;
-    char *envstr;
-    long value;
 
 #ifdef HAVE_LIBCGRIBEX
     gribFixZSE(1);    // 1: Fix ZeroShiftError of simple packed spherical harmonics
@@ -335,66 +332,126 @@ cdiInitialize(void)
     grib_multi_support_off(NULL);
 #endif
 
-    value = cdi_getenv_int("CDI_DEBUG");
-    if (value >= 0) CDI_Debug = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_DEBUG");
+      if (value >= 0) { CDI_Debug = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_GRIBAPI_DEBUG");
-    if (value >= 0) CDI_gribapi_debug = (bool) value;
+    {
+      long value = cdi_getenv_int("CDI_GRIBAPI_DEBUG");
+      if (value >= 0) { CDI_gribapi_debug = (bool) value; }
+    }
 
-    value = cdi_getenv_int("CDI_ECCODES_DEBUG");
-    if (value >= 0) CDI_gribapi_debug = (bool) value;
+    {
+      long value = cdi_getenv_int("CDI_ECCODES_DEBUG");
+      if (value >= 0) { CDI_gribapi_debug = (bool) value; }
+    }
 
-    value = cdi_getenv_int("CDI_ECCODES_GRIB1");
-    if (value >= 0) cdiSetEccodesGrib1((bool) value);
+    {
+      long value = cdi_getenv_int("CDI_ECCODES_GRIB1");
+      if (value >= 0) { cdiSetEccodesGrib1((bool) value); }
+    }
 
-    value = cdi_getenv_int("CDI_LOCK_IO");
-    if (value >= 0) CDI_Lock_IO = (bool) value;
+    {
+      long value = cdi_getenv_int("CDI_LOCK_IO");
+      if (value >= 0) { CDI_Lock_IO = (bool) value; }
+    }
 
-    value = cdi_getenv_int("CDI_READ_CELL_CENTER");
-    if (value >= 0) CDI_Read_Cell_Center = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_READ_CELL_CENTER");
+      if (value >= 0) { CDI_Read_Cell_Center = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_READ_CELL_CORNERS");
-    if (value >= 0) CDI_Read_Cell_Corners = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_READ_CELL_CORNERS");
+      if (value >= 0) { CDI_Read_Cell_Corners = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_RECOPT");
-    if (value >= 0) CDI_Recopt = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_RECOPT");
+      if (value >= 0) { CDI_Recopt = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_REGULARGRID");
-    if (value >= 0) cdiDataUnreduced = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_REGULARGRID");
+      if (value >= 0) { cdiDataUnreduced = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_SORTNAME");
-    if (value >= 0) cdiSortName = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_SORTNAME");
+      if (value >= 0) { cdiSortName = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_HAVE_MISSVAL");
-    if (value >= 0) cdiHaveMissval = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_HAVE_MISSVAL");
+      if (value >= 0) { cdiHaveMissval = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_LEVELTYPE");
-    if (value >= 0) cdiDefaultLeveltype = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_LEVELTYPE");
+      if (value >= 0) { cdiDefaultLeveltype = (int) value; }
+    }
 
-    value = cdi_getenv_int("CDI_NETCDF_HDR_PAD");
-    if (value >= 0) CDI_Netcdf_Hdr_Pad = (size_t) value;
+    {
+      long value = cdi_getenv_int("CDI_NETCDF_HDR_PAD");
+      if (value >= 0) { CDI_Netcdf_Hdr_Pad = (size_t) value; }
+    }
 
-    value = cdi_getenv_int("CDI_COPY_CHUNKSPEC");
-    if (value >= 0) CDI_CopyChunkSpec = (value > 0);
+    {
+      long value = cdi_getenv_int("CDI_COPY_CHUNKSPEC");
+      if (value >= 0) { CDI_Copy_ChunkSpec = (value > 0); }
+    }
 
-    value = cdi_getenv_int("CDI_REMOVE_CHUNKSPEC");
-    if (value >= 0) CDI_RemoveChunkSpec = (value > 0);
+    {
+      long value = cdi_getenv_int("CDI_REMOVE_CHUNKSPEC");
+      if (value >= 0) { CDI_Remove_ChunkSpec = (value > 0); }
+    }
 
-    value = cdi_getenv_int("CDI_CHUNK_CACHE_INFO");
-    if (value > 0) CDI_Chunk_Cache_Info = true;
+    {
+      long value = cdi_getenv_int("CDI_CACHE_INFO");
+      if (value >= 0) { CDI_Cache_Info = (value > 0); }
+    }
 
-    value = cdi_getenv_int("CDI_CHUNK_CACHE_IN");
-    if (value >= 0) CDI_Chunk_Cache_In = value;
+    {
+      long value = cdi_getenv_int("CDI_CACHE_NC");
+      if (value >= 0)
+      {
+        CDI_Cache_NC4 = (value > 0);
+        CDI_Cache_NCZ = (value > 0);
+      }
+    }
 
-    value = cdi_getenv_int("CDI_CHUNK_CACHE_OUT");
-    if (value >= 0) CDI_Chunk_Cache_Out = value;
+    {
+      long value = cdi_getenv_int("CDI_CACHE_NC4");
+      if (value >= 0) { CDI_Cache_NC4 = (value > 0); }
+    }
 
-    value = cdi_getenv_int("CDI_CHUNK_CACHE_MAX");
-    if (value >= 0) CDI_Chunk_Cache_Max = (size_t) value;
+    {
+      long value = cdi_getenv_int("CDI_CACHE_NCZ");
+      if (value >= 0) { CDI_Cache_NCZ = (value > 0); }
+    }
 
-    value = cdi_getenv_int("CDI_TEST");
-    if (value >= 0) CDI_Test = (int) value;
+    {
+      long value = cdi_getenv_int("CDI_CACHESIZE_IN");
+      if (value >= 0) { CDI_CacheSize_In = value; }
+    }
 
+    {
+      long value = cdi_getenv_int("CDI_CACHESIZE_OUT");
+      if (value >= 0) { CDI_CacheSize_Out = value; }
+    }
+
+    {
+      long value = cdi_getenv_int("CDI_CACHESIZE_MAX");
+      if (value >= 0) { CDI_CacheSize_Max = (size_t) value; }
+    }
+
+    {
+      long value = cdi_getenv_int("CDI_TEST");
+      if (value >= 0) { CDI_Test = (int) value; }
+    }
+
+    char *envstr;
     envstr = getenv("CDI_GRIB1_TEMPLATE");
     if (envstr) CDI_GRIB1_Template = envstr;
 
@@ -489,13 +546,13 @@ cdiInitialize(void)
     if (envstr)
     {
       // clang-format off
-	      if      (strncmp(envstr, "standard", 8)  == 0) CDI_Default_Calendar = CALENDAR_STANDARD;
-	      else if (strncmp(envstr, "gregorian", 9) == 0) CDI_Default_Calendar = CALENDAR_GREGORIAN;
-	      else if (strncmp(envstr, "proleptic", 9) == 0) CDI_Default_Calendar = CALENDAR_PROLEPTIC;
-	      else if (strncmp(envstr, "360days", 7)   == 0) CDI_Default_Calendar = CALENDAR_360DAYS;
-	      else if (strncmp(envstr, "365days", 7)   == 0) CDI_Default_Calendar = CALENDAR_365DAYS;
-	      else if (strncmp(envstr, "366days", 7)   == 0) CDI_Default_Calendar = CALENDAR_366DAYS;
-	      else if (strncmp(envstr, "none", 4)      == 0) CDI_Default_Calendar = CALENDAR_NONE;
+	    if      (strncmp(envstr, "standard", 8)  == 0) CDI_Default_Calendar = CALENDAR_STANDARD;
+	    else if (strncmp(envstr, "gregorian", 9) == 0) CDI_Default_Calendar = CALENDAR_GREGORIAN;
+	    else if (strncmp(envstr, "proleptic", 9) == 0) CDI_Default_Calendar = CALENDAR_PROLEPTIC;
+	    else if (strncmp(envstr, "360days", 7)   == 0) CDI_Default_Calendar = CALENDAR_360DAYS;
+	    else if (strncmp(envstr, "365days", 7)   == 0) CDI_Default_Calendar = CALENDAR_365DAYS;
+	    else if (strncmp(envstr, "366days", 7)   == 0) CDI_Default_Calendar = CALENDAR_366DAYS;
+	    else if (strncmp(envstr, "none", 4)      == 0) CDI_Default_Calendar = CALENDAR_NONE;
       // clang-format on
       if (CDI_Debug) Message("Default calendar set to %s!", envstr);
     }
@@ -514,8 +571,11 @@ cdiInitialize(void)
 const char *
 strfiletype(int filetype)
 {
-  int size = (int) (sizeof(Filetypes) / sizeof(char *));
-  return (filetype > 0 && filetype < size) ? Filetypes[filetype] : Filetypes[0];
+  enum
+  {
+    numFiletypes = (int) (sizeof(Filetypes) / sizeof(Filetypes[0]))
+  };
+  return (filetype > 0 && filetype < numFiletypes) ? Filetypes[filetype] : Filetypes[0];
 }
 
 void
@@ -536,8 +596,8 @@ cdiDefGlobal(const char *string, int value)
   else if (str_is_equal(string, "REDUCE_DIM"))            CDI_Reduce_Dim = value;
   else if (str_is_equal(string, "NETCDF_HDR_PAD"))        CDI_Netcdf_Hdr_Pad = (size_t) value;
   else if (str_is_equal(string, "NETCDF_LAZY_GRID_LOAD")) CDI_Netcdf_Lazy_Grid_Load = (bool) value;
-  else if (str_is_equal(string, "COPY_CHUNKSPEC"))        CDI_CopyChunkSpec = (bool) value;
-  else if (str_is_equal(string, "REMOVE_CHUNKSPEC"))      CDI_RemoveChunkSpec = (bool) value;
+  else if (str_is_equal(string, "COPY_CHUNKSPEC"))        CDI_Copy_ChunkSpec = (bool) value;
+  else if (str_is_equal(string, "REMOVE_CHUNKSPEC"))      CDI_Remove_ChunkSpec = (bool) value;
   else Warning("Unsupported global key: %s", string);
   // clang-format on
 }

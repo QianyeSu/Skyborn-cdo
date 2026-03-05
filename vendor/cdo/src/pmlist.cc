@@ -163,7 +163,7 @@ KVListAppendNamelist(KVList &kvlist, const char *key, const char *buffer, Nameli
     if (cdocmor && kv.key == "code" && !std::strstr(pval, ","))
     {
       value.resize(4);
-      auto code = atol(pval);
+      auto code = std::atol(pval);
       if (code > 0 && code < 1000)
         std::snprintf(value.data(), 4, "%03ld", code);
       else
@@ -278,7 +278,7 @@ int
 parse_list_buffer(NamelistParser &p, ListBuffer const &listBuffer)
 {
   const char *errMsg = "Namelist error";
-  const auto name = listBuffer.name.c_str();
+  auto name = listBuffer.name.c_str();
 
   auto status = p.parse(listBuffer.buffer.data(), listBuffer.buffer.size());
   if (status != NamelistError::UNDEFINED)

@@ -24,8 +24,8 @@
 #include "cdo_options.h"
 #include "printinfo.h"
 #include "cdo_zaxis.h"
-#include "param_conversion.h"
 #include "field_functions.h"
+#include "param_conversion.h"
 #include "pmlist.h"
 #include "progress.h"
 
@@ -345,7 +345,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 2, 0, NoRestriction },
   };
-  inline static RegisterEntry<Diff> registration = RegisterEntry<Diff>();
+  inline static auto registration = RegisterEntry<Diff>();
 
 private:
   int operfunc{};
@@ -415,7 +415,7 @@ public:
     cdo::Progress progress(get_id());
 
     int numSets = 0;
-    int numFields, numFields2;
+    int numFields{}, numFields2{};
     int tsID = 0;
     while (true)
     {

@@ -21,7 +21,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Recttocomplex> registration = RegisterEntry<Recttocomplex>();
+  inline static auto registration = RegisterEntry<Recttocomplex>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

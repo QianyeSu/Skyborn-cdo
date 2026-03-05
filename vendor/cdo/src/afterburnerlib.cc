@@ -109,10 +109,7 @@ AddVector(double *dest, const double *src, size_t len, size_t *numMissVals, doub
     *numMissVals = array_num_mv(len, dest, missval);
     if (*numMissVals == 0) *numMissVals = 1;
   }
-  else
-  {
-    array_add_array(len, dest, src);
-  }
+  else { array_add_array(len, dest, src); }
 }
 
 static void
@@ -885,8 +882,8 @@ geopot_height_half(double *gheight, const double *ta_fl, const double *hus_fl, c
   // hus_fl:  specific humidity on full levels
   // p_hl:    pressure on half levels
 
-  double z2log2 = 2.0 * std::log(2.0);
-  double vtmp = (C_RV / PlanetRD) - 1.0;
+  auto z2log2 = 2.0 * std::log(2.0);
+  auto vtmp = (C_RV / PlanetRD) - 1.0;
 
   if (hus_fl)  // Humidity is present
   {
@@ -918,7 +915,7 @@ geopot_height_half(double *gheight, const double *ta_fl, const double *hus_fl, c
     for (long i = 0; i < ngp; ++i) gheight[i] = gheight[i + ngp] + PlanetRD * ta_fl[i] * z2log2;
   }
 
-  double zrg = 1.0 / PlanetGrav;
+  auto zrg = 1.0 / PlanetGrav;
   for (long i = 0; i < ngp * (nlev + 1); ++i) gheight[i] *= zrg;
 }
 
@@ -932,8 +929,8 @@ geopot_height_full(double *gheight, const double *ta_fl, const double *hus_fl, c
   // hus_fl:  specific humidity on full levels
   // p_hl:    pressure on half levels
 
-  double zlog2 = std::log(2.0);
-  double vtmp = (C_RV / PlanetRD) - 1.0;
+  auto zlog2 = std::log(2.0);
+  auto vtmp = (C_RV / PlanetRD) - 1.0;
 
   if (hus_fl)  // Humidity is present
   {
@@ -987,7 +984,7 @@ geopot_height_full(double *gheight, const double *ta_fl, const double *hus_fl, c
     }
   }
 
-  double zrg = 1.0 / PlanetGrav;
+  auto zrg = 1.0 / PlanetGrav;
   for (long i = 0; i < ngp * (nlev + 1); ++i) gheight[i] *= zrg;
 }
 
@@ -1638,10 +1635,7 @@ after_processML(AfterControl &globs, struct Variable *vars)
         cdo_warning("log surface pressure (code 152) not found - using surface pressure (code 134)!");
         array_copy(globs.DimGP, vars[PS].hybrid, vars[PS_PROG].hybrid);
       }
-      else
-      {
-        afterAbort("surface pressure not found!");
-      }
+      else { afterAbort("surface pressure not found!"); }
     }
     vars[LNPS].needed = vars[LNPS].selected;
 
@@ -1760,10 +1754,7 @@ after_processML(AfterControl &globs, struct Variable *vars)
       height_to_pressure(globs.LevelRequest, globs.p_of_height.data(), globs.NumLevelRequest);
       pressureLevel = globs.p_of_height.data();
     }
-    else
-    {
-      pressureLevel = globs.LevelRequest;
-    }
+    else { pressureLevel = globs.LevelRequest; }
 
     gen_vert_index(globs.vertIndex.data(), pressureLevel, vars[FULL_PRESS].hybrid, globs.DimGP, globs.NumLevelRequest,
                    globs.NumLevel);

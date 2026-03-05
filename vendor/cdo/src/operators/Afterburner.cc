@@ -623,10 +623,7 @@ after_control(AfterControl &globs, struct Variable *vars)
       if (afterReadAsync) { afterWorkerThread->wait(); }
       tsFirst = false;
     }
-    else
-    {
-      afterWorkerThread->wait();
-    }
+    else { afterWorkerThread->wait(); }
 
     numFields = readArgs.numFieldsNext;
 
@@ -1337,10 +1334,7 @@ after_precntl(AfterControl &globs, struct Variable *vars)
             {
               if (numlevel != 191) cdo_warning("VCT missing for hybrid level data with %d levels!", numlevel);
             }
-            else
-            {
-              cdo_warning("Skip %d hybrid level data with %d levels!", (nvct / 2 - 1), numlevel);
-            }
+            else { cdo_warning("Skip %d hybrid level data with %d levels!", (nvct / 2 - 1), numlevel); }
             continue;
           }
         }
@@ -1374,10 +1368,7 @@ after_precntl(AfterControl &globs, struct Variable *vars)
                 zaxisInqVct(zaxisID, globs.vct.data());
               }
             }
-            else
-            {
-              afterAbort("VCT not defined in inputfile!");
-            }
+            else { afterAbort("VCT not defined in inputfile!"); }
           }
 
           if (numlevel == globs.numHalfLevels) { globs.NumLevelFound--; }
@@ -1789,7 +1780,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Afterburner> registration = RegisterEntry<Afterburner>();
+  inline static auto registration = RegisterEntry<Afterburner>();
 
   AfterControl globs = {};
   struct Variable vars[MaxCodes + 5];

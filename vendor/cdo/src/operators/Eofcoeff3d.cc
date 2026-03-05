@@ -33,7 +33,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Eofcoeff3d> registration = RegisterEntry<Eofcoeff3d>();
+  inline static auto registration = RegisterEntry<Eofcoeff3d>();
 
   double missval1 = -999, missval2 = -999;
   int numFields{};

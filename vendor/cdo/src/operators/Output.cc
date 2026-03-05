@@ -257,7 +257,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { -1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Output> registration = RegisterEntry<Output>();
+  inline static auto registration = RegisterEntry<Output>();
 
   int OUTPUT{}, OUTPUTINT{}, OUTPUTSRV{}, OUTPUTEXT{}, OUTPUTF{}, OUTPUTTS{}, OUTPUTFLD{}, OUTPUTARR{}, OUTPUTXYZ{}, OUTPUTTAB{};
   size_t numMissVals{};

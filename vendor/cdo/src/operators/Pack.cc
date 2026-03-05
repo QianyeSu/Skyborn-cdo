@@ -233,7 +233,7 @@ private:
   void
   run_method1()
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
     DateTimeList dtlist;
 
     int tsID = 0;
@@ -243,16 +243,16 @@ private:
       if (numFields == 0) break;
 
       constexpr size_t NALLOC_INC = 1024;
-      if ((size_t) tsID >= varsData.size()) varsData.resize(varsData.size() + NALLOC_INC);
+      if ((size_t) tsID >= varDataList.size()) varDataList.resize(varDataList.size() + NALLOC_INC);
 
       dtlist.taxis_inq_timestep(taxisID1, tsID);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -278,7 +278,7 @@ private:
         {
           if (t > 0 && var.isConstant) continue;
 
-          auto const &field = varsData[t][varID][levelID];
+          auto const &field = varDataList[t][varID][levelID];
           auto numMissVals = field.numMissVals;
 
           if (numMissVals) numMissValspv += numMissVals;
@@ -312,7 +312,7 @@ private:
             {
               if (t > 0 && var.isConstant) continue;
 
-              auto &field = varsData[t][varID][levelID];
+              auto &field = varDataList[t][varID][levelID];
               if (field.numMissVals) field_change_missval(field, var.missval, missval2);
             }
           }
@@ -346,7 +346,7 @@ private:
         if (tsID > 0 && var.isConstant) continue;
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
-          auto &field = varsData[tsID][varID][levelID];
+          auto &field = varDataList[tsID][varID][levelID];
           if (field.hasData())
           {
             cdo_def_field(streamID2, varID, levelID);

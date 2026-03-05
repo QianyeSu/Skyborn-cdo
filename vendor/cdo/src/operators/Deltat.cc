@@ -75,7 +75,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Deltat> registration = RegisterEntry<Deltat>();
+  inline static auto registration = RegisterEntry<Deltat>();
 
 private:
   CdoStreamID streamID1{};
@@ -119,8 +119,8 @@ public:
   run() override
   {
     Field field1, field2;
-    FieldVector2D varsData;
-    field2D_init(varsData, varList1, FIELD_VEC | FIELD_NAT);
+    FieldVector2D varDataList;
+    field2D_init(varDataList, varList1, FIELD_VEC | FIELD_NAT);
 
     int tsID = 0;
     auto numFields = cdo_stream_inq_timestep(streamID1, tsID);
@@ -130,7 +130,7 @@ public:
     for (int fieldID = 0; fieldID < numFields; ++fieldID)
     {
       auto [varID, levelID] = cdo_inq_field(streamID1);
-      cdo_read_field(streamID1, varsData[varID][levelID]);
+      cdo_read_field(streamID1, varDataList[varID][levelID]);
     }
 
     tsID++;
@@ -154,7 +154,7 @@ public:
         field1.init(var1);
         cdo_read_field(streamID1, field1);
 
-        auto &field0 = varsData[varID][levelID];
+        auto &field0 = varDataList[varID][levelID];
 
         field2.init(var1);
         field_deltat(field0, field1, field2, idtInSec);

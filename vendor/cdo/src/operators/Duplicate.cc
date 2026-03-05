@@ -24,7 +24,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Duplicate> registration = RegisterEntry<Duplicate>();
+  inline static auto registration = RegisterEntry<Duplicate>();
 
 private:
   CdoStreamID streamID1{};
@@ -81,7 +81,7 @@ public:
   run() override
   {
     std::vector<CdiDateTime> vDateTimes;
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
 
     int tsID = 0;
     while (true)
@@ -91,16 +91,16 @@ public:
 
       constexpr size_t NALLOC_INC = 1024;
       if ((size_t) tsID >= vDateTimes.size()) vDateTimes.resize(vDateTimes.size() + NALLOC_INC);
-      if ((size_t) tsID >= varsData.size()) varsData.resize(varsData.size() + NALLOC_INC);
+      if ((size_t) tsID >= varDataList.size()) varDataList.resize(varDataList.size() + NALLOC_INC);
 
       vDateTimes[tsID] = taxisInqVdatetime(taxisID1);
 
-      field2D_init(varsData[tsID], varList1);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -124,7 +124,7 @@ public:
           fieldOut.init(var1);
           for (int levelID = 0; levelID < var1.nlevels; ++levelID)
           {
-            auto const &field = varsData[tsID][varID][levelID];
+            auto const &field = varDataList[tsID][varID][levelID];
             if (field.hasData())
             {
               field_copy(field, fieldOut);

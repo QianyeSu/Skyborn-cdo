@@ -283,7 +283,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Magvector> registration = RegisterEntry<Magvector>();
+  inline static auto registration = RegisterEntry<Magvector>();
 
   int VECTOR, STREAM;
   CdoStreamID streamID;

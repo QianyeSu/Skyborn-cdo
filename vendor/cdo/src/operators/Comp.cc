@@ -68,10 +68,10 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Comp> registration = RegisterEntry<Comp>();
+  inline static auto registration = RegisterEntry<Comp>();
 
   FillType fillType{ FillType::NONE };
-  Varray2D<double> vardata;
+  Varray2D<double> varDataList;
 
   CdoStreamID streamID1;
   int taxisID1{ CDI_UNDEFID };
@@ -152,7 +152,7 @@ public:
         std::swap(taxisID1, taxisID2);
       }
 
-      if (fillType == FillType::TS) cdo_fill_ts(vlistID2, vardata);
+      if (fillType == FillType::TS) cdo_fill_ts(vlistID2, varDataList);
     }
 
     varList1 = VarList(vlistID1);
@@ -215,14 +215,14 @@ public:
           {
             auto gridsize = varList2.vars[varID].gridsize;
             auto offset = gridsize * levelID;
-            array_copy(gridsize, arrayx2, &vardata[varID][offset]);
+            array_copy(gridsize, arrayx2, &varDataList[varID][offset]);
           }
         }
         else if (fillType == FillType::TS)
         {
           auto gridsize = varList2.vars[varID].gridsize;
           auto offset = gridsize * levelID;
-          array_copy(gridsize, &vardata[varID][offset], arrayx2);
+          array_copy(gridsize, &varDataList[varID][offset], arrayx2);
         }
 
         auto const &var1 = varList1.vars[varID];

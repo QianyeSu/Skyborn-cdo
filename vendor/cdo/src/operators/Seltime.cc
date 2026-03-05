@@ -179,7 +179,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Seltime> registration = RegisterEntry<Seltime>();
+  inline static auto registration = RegisterEntry<Seltime>();
 
   int SELTIMESTEP, SELDATE, SELTIME, SELHOUR, SELDAY, SELMONTH, SELYEAR, SELSEASON, SELSMON;
   CdoStreamID streamID1;
@@ -207,15 +207,12 @@ public:
   bool isConstOut = false;
   bool process_nts1 = false, process_nts2 = false;
   bool dataIsUnchanged = false;
-  bool lnts1;
   bool haveConstVars;
 
   std::vector<int> intarr;
   std::vector<double> fltarr;
 
   VarList varList1;
-  FieldVector3D varsData;
-  std::vector<CdiDateTime> vDateTimes;
 
 public:
   void
@@ -390,30 +387,6 @@ public:
     numVars = varList1.numVars();
     haveConstVars = (varList1.numConstVars() > 0);
 
-    lnts1 = (operatorID == SELSMON) && (nts1 > 0);
-
-    if (lnts1 || haveConstVars)
-    {
-      if (lnts1) { vDateTimes.resize(nts1); }
-      else { nts1 = 1; }
-
-      varsData.resize(nts1);
-
-      for (int tsID = 0; tsID < nts1; ++tsID)
-      {
-        field2D_init(varsData[tsID], varList1);
-
-        for (int varID = 0; varID < numVars; ++varID)
-        {
-          auto const &var = varList1.vars[varID];
-          if (lnts1 || var.isConstant)
-          {
-            for (int levelID = 0; levelID < var.nlevels; ++levelID) varsData[tsID][varID][levelID].resize(var.gridsize);
-          }
-        }
-      }
-    }
-
     if (operatorID == SELTIMESTEP)
       for (int i = 0; i < numSel; ++i) tsmax = std::max(tsmax, intarr[i]);
   }
@@ -421,6 +394,32 @@ public:
   void
   run() override
   {
+    FieldVector3D varDataList;
+    std::vector<CdiDateTime> vDateTimes;
+
+    auto lnts1 = (operatorID == SELSMON) && (nts1 > 0);
+    if (lnts1 || haveConstVars)
+    {
+      if (lnts1) { vDateTimes.resize(nts1); }
+      else { nts1 = 1; }
+
+      varDataList.resize(nts1);
+
+      for (int tsID = 0; tsID < nts1; ++tsID)
+      {
+        field2D_init(varDataList[tsID], varList1);
+
+        for (int varID = 0; varID < numVars; ++varID)
+        {
+          auto const &var = varList1.vars[varID];
+          if (lnts1 || var.isConstant)
+          {
+            for (int levelID = 0; levelID < var.nlevels; ++levelID) varDataList[tsID][varID][levelID].resize(var.gridsize);
+          }
+        }
+      }
+    }
+
     std::vector<bool> selfound(numSel, false);
     Field field;
 
@@ -500,23 +499,17 @@ public:
 
         if (process_nts1)
         {
+          process_nts1 = false;
           process_nts2 = true;
           its2 = 0;
-          process_nts1 = false;
         }
 
-        if (process_nts2)
-        {
-          if (its2++ < nts2)
-            copy_nts2 = true;
-          else
-            process_nts2 = false;
-        }
+        if (process_nts2) { (its2++ < nts2) ? copy_nts2 = true : process_nts2 = false; }
       }
 
       if (copytimestep || copy_nts2)
       {
-        cdo_taxis_copy_timestep(taxisID2, taxisID1);
+        // cdo_taxis_copy_timestep(taxisID2, taxisID1);
         if (tsID2 == 0)
         {
           streamID2 = cdo_open_write(1);
@@ -544,9 +537,7 @@ public:
               for (int levelID = 0; levelID < var.nlevels; ++levelID)
               {
                 cdo_def_field(streamID2, varID, levelID);
-                auto single = varsData[it][varID][levelID].vec_d.data();
-                auto numMissVals = varsData[it][varID][levelID].numMissVals;
-                cdo_write_field(streamID2, single, numMissVals);
+                cdo_write_field(streamID2, varDataList[it][varID][levelID]);
               }
             }
           }
@@ -561,6 +552,7 @@ public:
           process_nts1 = true;
         }
 
+        taxisDefVdatetime(taxisID2, vDateTime);
         cdo_def_timestep(streamID2, tsID2++);
 
         if (tsID > 0 && isConstOut)
@@ -575,9 +567,7 @@ public:
               for (int levelID = 0; levelID < var.nlevels; ++levelID)
               {
                 cdo_def_field(streamID2, varID, levelID);
-                auto single = varsData[nts][varID][levelID].vec_d.data();
-                auto numMissVals = varsData[nts][varID][levelID].numMissVals;
-                cdo_write_field(streamID2, single, numMissVals);
+                cdo_write_field(streamID2, varDataList[nts][varID][levelID]);
               }
             }
           }
@@ -620,8 +610,8 @@ public:
                   if (var.isConstant) continue;
                   for (int levelID = 0; levelID < var.nlevels; ++levelID)
                   {
-                    varsData[it][varID][levelID].vec_d = varsData[it + 1][varID][levelID].vec_d;
-                    varsData[it][varID][levelID].numMissVals = varsData[it + 1][varID][levelID].numMissVals;
+                    varDataList[it][varID][levelID].vec_d = varDataList[it + 1][varID][levelID].vec_d;
+                    varDataList[it][varID][levelID].numMissVals = varDataList[it + 1][varID][levelID].numMissVals;
                   }
                 }
               }
@@ -635,11 +625,7 @@ public:
           {
             auto [varID, levelID] = cdo_inq_field(streamID1);
             auto const &var = varList1.vars[varID];
-            if (lnts1 || var.isConstant)
-            {
-              auto single = varsData[nts][varID][levelID].vec_d.data();
-              cdo_read_field(streamID1, single, &varsData[nts][varID][levelID].numMissVals);
-            }
+            if (lnts1 || var.isConstant) { cdo_read_field(streamID1, varDataList[nts][varID][levelID]); }
           }
         }
       }

@@ -33,9 +33,9 @@ namespace
 {
 struct SmoothPoint
 {
-  double arc_radius{ 0.0 };
+  double arcRadius{ 0.0 };
   double radius{ 1.0 };
-  size_t maxpoints{ SIZE_MAX };
+  size_t maxPoints{ SIZE_MAX };
   KnnParams knnParams;
 
   SmoothPoint()
@@ -53,23 +53,23 @@ smooth(int gridID, double mv, Varray<T1> const &array1, Varray<T2> &array2, cons
 {
   T1 missval = mv;
   auto gridID0 = gridID;
-  auto gridsize = gridInqSize(gridID);
-  auto numNeighbors = spoint.maxpoints;
-  if (numNeighbors > gridsize) numNeighbors = gridsize;
+  auto gridSize = gridInqSize(gridID);
+  auto numNeighbors = spoint.maxPoints;
+  if (numNeighbors > gridSize) numNeighbors = gridSize;
 
-  Vmask mask(gridsize);
-  for (size_t i = 0; i < gridsize; ++i) mask[i] = fp_is_not_equal(array1[i], missval);
+  Vmask mask(gridSize);
+  for (size_t i = 0; i < gridSize; ++i) mask[i] = fp_is_not_equal(array1[i], missval);
 
   gridID = generate_full_point_grid(gridID);
   if (!gridHasCoordinates(gridID)) cdo_abort("Cell center coordinates missing!");
 
-  Varray<double> xvals(gridsize), yvals(gridsize);
-  gridInqXvals(gridID, xvals.data());
-  gridInqYvals(gridID, yvals.data());
+  Varray<double> xVals(gridSize), yVals(gridSize);
+  gridInqXvals(gridID, xVals.data());
+  gridInqYvals(gridID, yVals.data());
 
   // Convert lat/lon units if required
-  cdo_grid_to_radian(gridID, CDI_XAXIS, xvals, "grid center lon");
-  cdo_grid_to_radian(gridID, CDI_YAXIS, yvals, "grid center lat");
+  cdo_grid_to_radian(gridID, CDI_XAXIS, xVals, "grid center lon");
+  cdo_grid_to_radian(gridID, CDI_YAXIS, yVals, "grid center lat");
 
   auto knnParams = spoint.knnParams;
   knnParams.k = numNeighbors;
@@ -77,34 +77,35 @@ smooth(int gridID, double mv, Varray<T1> const &array1, Varray<T2> &array2, cons
   knnParams.searchRadius = spoint.radius;
 
   std::vector<KnnData> knnDataList;
+  knnDataList.reserve(Threading::ompNumMaxThreads);
   for (int i = 0; i < Threading::ompNumMaxThreads; ++i) knnDataList.emplace_back(knnParams);
 
   cdo::timer timer;
 
   GridPointsearch gps;
-  gps.set_radius((spoint.arc_radius > 0.0) ? arc_to_chord_length(spoint.arc_radius) : spoint.radius);
-  grid_pointsearch_create_unstruct(gps, xvals, yvals, true);
+  gps.set_radius((spoint.arcRadius > 0.0) ? arc_to_chord_length(spoint.arcRadius) : spoint.radius);
+  grid_pointsearch_create_unstruct(gps, xVals, yVals, true);
 
-  if (Options::cdoVerbose) cdo_print("Point search created: %.2f seconds (%zu points)", timer.elapsed(), gridsize);
+  if (Options::cdoVerbose) cdo_print("Point search created: %.2f seconds (%zu points)", timer.elapsed(), gridSize);
 
   cdo::Progress progress;
 
   timer.reset();
 
-  size_t numWeightsMin = gridsize, numWeightsMax = 0;
+  size_t numWeightsMin = gridSize, numWeightsMax = 0;
   std::atomic<size_t> atomicCount{ 0 }, atomicSum{ 0 }, atomicNumMiss{ 0 };
 
 #ifdef HAVE_OPENMP4
 #pragma omp parallel for default(shared) schedule(dynamic) reduction(min : numWeightsMin) reduction(max : numWeightsMax)
 #endif
-  for (size_t i = 0; i < gridsize; ++i)
+  for (size_t i = 0; i < gridSize; ++i)
   {
     atomicCount++;
     auto ompthID = cdo_omp_get_thread_num();
-    if (ompthID == 0 && gridsize > progressMinSize) progress.update((double) atomicCount / gridsize);
+    if (ompthID == 0 && gridSize > progressMinSize) progress.update((double) atomicCount / gridSize);
 
     auto &knnData = knnDataList[ompthID];
-    grid_search_point_smooth(gps, PointLonLat{ xvals[i], yvals[i] }, knnData);
+    grid_search_point_smooth(gps, PointLonLat{ xVals[i], yVals[i] }, knnData);
 
     // Compute weights if mask is false, eliminate those points
     auto numWeights = knnData.compute_weights(mask);
@@ -146,7 +147,7 @@ smooth9(int gridID, double mv, Varray<T1> const &array1, Varray<T2> &array2)
   auto gridsize = gridInqSize(gridID);
   auto nlon = gridInqXsize(gridID);
   auto nlat = gridInqYsize(gridID);
-  auto gridIsCyclic = gridIsCircular(gridID);
+  auto isCyclicGrid = gridIsCyclic(gridID);
 
   Vmask mask(gridsize);
 
@@ -181,26 +182,26 @@ smooth9(int gridID, double mv, Varray<T1> const &array1, Varray<T2> &array2)
           divavg += 1;
           // upper left corner
           if      (i != 0 && j != 0)                   smooth9_sum(0.3, (i - 1) * nlon + j - 1);
-          else if (i != 0 && gridIsCyclic)             smooth9_sum(0.3, (i - 1) * nlon + j - 1 + nlon);
+          else if (i != 0 && isCyclicGrid)             smooth9_sum(0.3, (i - 1) * nlon + j - 1 + nlon);
           // upper cell
           if      (i != 0)                             smooth9_sum(0.5, (i - 1) * nlon + j);
           // upper right corner
           if      (i != 0 && j != (nlon - 1))          smooth9_sum(0.3, (i - 1) * nlon + j + 1);
-          else if (i != 0 && gridIsCyclic)             smooth9_sum(0.3, (i - 1) * nlon + j + 1 - nlon);
+          else if (i != 0 && isCyclicGrid)             smooth9_sum(0.3, (i - 1) * nlon + j + 1 - nlon);
           // left cell
           if      (j != 0)                             smooth9_sum(0.5, i * nlon + j - 1);
-          else if (gridIsCyclic)                       smooth9_sum(0.5, i * nlon - 1 + nlon);
+          else if (isCyclicGrid)                       smooth9_sum(0.5, i * nlon - 1 + nlon);
           // right cell
           if      (j != (nlon - 1))                    smooth9_sum(0.5, i * nlon + j + 1);
-          else if (gridIsCyclic)                       smooth9_sum(0.5, i * nlon + j + 1 - nlon);
+          else if (isCyclicGrid)                       smooth9_sum(0.5, i * nlon + j + 1 - nlon);
           // lower left corner
           if      (i != (nlat - 1) && j != 0)          smooth9_sum(0.3, (i + 1) * nlon + j - 1);
-          else if (i != (nlat - 1) && gridIsCyclic)    smooth9_sum(0.3, (i + 1) * nlon - 1 + nlon);
+          else if (i != (nlat - 1) && isCyclicGrid)    smooth9_sum(0.3, (i + 1) * nlon - 1 + nlon);
           // lower cell
           if      (i != (nlat - 1))                    smooth9_sum(0.5, (i + 1) * nlon + j);
           // lower right corner
           if      (i != (nlat - 1) && j != (nlon - 1)) smooth9_sum(0.3, (i + 1) * nlon + j + 1);
-          else if (i != (nlat - 1) && gridIsCyclic)    smooth9_sum(0.3, (i + 1) * nlon + j + 1 - nlon);
+          else if (i != (nlat - 1) && isCyclicGrid)    smooth9_sum(0.3, (i + 1) * nlon + j + 1 - nlon);
         }
         // clang-format on
       }
@@ -267,9 +268,9 @@ get_parameter(int &xnsmooth, SmoothPoint &spoint)
 
       // clang-format off
       if      (key == "nsmooth")     xnsmooth = parameter_to_int(value);
-      else if (key == "maxpoints")   spoint.maxpoints = parameter_to_size_t(value);
+      else if (key == "maxpoints")   spoint.maxPoints = parameter_to_size_t(value);
       else if (key == "radius")      spoint.radius = radius_str_to_deg(value);
-      else if (key == "arc_radius")  spoint.arc_radius = radius_str_to_deg(value);
+      else if (key == "arc_radius")  spoint.arcRadius = radius_str_to_deg(value);
       else if (key == "weighted")    knnParams.weighted = string_to_weightingMethod(parameter_to_word(value));
       else if (key == "gauss_scale") knnParams.gaussScale = parameter_to_double(value);
       else if (key == "weight0")     knnParams.weight0 = parameter_to_double(value);
@@ -286,12 +287,12 @@ print_parameter(SmoothPoint const &sp)
   auto const &kp = sp.knnParams;
   std::stringstream outbuffer;
 
-  if (sp.arc_radius > 0.0)
-    outbuffer << "arc_radius=" << sp.arc_radius << "deg(" << radiusDegToKm(sp.arc_radius) << "km)";
+  if (sp.arcRadius > 0.0)
+    outbuffer << "arc_radius=" << sp.arcRadius << "deg(" << radiusDegToKm(sp.arcRadius) << "km)";
   else
     outbuffer << "radius=" << sp.radius << "deg(" << radiusDegToKm(sp.radius) << "km)";
 
-  outbuffer << ", maxpoints=" << sp.maxpoints;
+  outbuffer << ", maxpoints=" << sp.maxPoints;
   outbuffer << ", weighted=" << weightingMethod_to_string(kp.weighted);
   if (kp.weighted == WeightingMethod::linear) outbuffer << ", weight0=" << kp.weight0 << ", weightR=" << kp.weightR;
   if (kp.weighted == WeightingMethod::gaussWeighted) outbuffer << ", gauss_scale=" << kp.gaussScale;
@@ -317,7 +318,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Smooth> registration = RegisterEntry<Smooth>();
+  inline static auto registration = RegisterEntry<Smooth>();
 
   int SMOOTH{}, SMOOTH9{};
   int numVars{};
@@ -349,7 +350,7 @@ public:
     if (operatorID == SMOOTH) get_parameter(xnsmooth, spoint);
 
     check_radius_range(spoint.radius, "radius");
-    check_radius_range(spoint.arc_radius, "arc_radius");
+    check_radius_range(spoint.arcRadius, "arc_radius");
 
     streamID1 = cdo_open_read(0);
 
@@ -369,21 +370,21 @@ public:
     {
       auto const &var = varList1.vars[varID];
       auto gridID = var.gridID;
-      auto gridtype = gridInqType(gridID);
-      if (gridtype == GRID_GAUSSIAN || gridtype == GRID_LONLAT || gridtype == GRID_CURVILINEAR || gridtype == GRID_PROJECTION
-          || (operatorID == SMOOTH9 && gridtype == GRID_GENERIC && gridInqXsize(gridID) > 0 && gridInqYsize(gridID) > 0))
+      auto gridType = gridInqType(gridID);
+      if (gridType == GRID_GAUSSIAN || gridType == GRID_LONLAT || gridType == GRID_CURVILINEAR || gridType == GRID_PROJECTION
+          || (operatorID == SMOOTH9 && gridType == GRID_GENERIC && gridInqXsize(gridID) > 0 && gridInqYsize(gridID) > 0))
       {
         varIDs[varID] = true;
       }
-      else if (operatorID == SMOOTH && gridtype == GRID_UNSTRUCTURED) { varIDs[varID] = true; }
+      else if (operatorID == SMOOTH && gridType == GRID_UNSTRUCTURED) { varIDs[varID] = true; }
       else { cdo_warning("Unsupported grid for variable %s", var.name); }
     }
 
-    if (varList1.gridsizeMax() < spoint.maxpoints) spoint.maxpoints = varList1.gridsizeMax();
+    if (varList1.gridsizeMax() < spoint.maxPoints) spoint.maxPoints = varList1.gridsizeMax();
     if (Options::cdoVerbose && operatorID == SMOOTH) print_parameter(spoint);
 
     spoint.radius *= DEG2RAD;
-    spoint.arc_radius *= DEG2RAD;
+    spoint.arcRadius *= DEG2RAD;
 
     streamID2 = cdo_open_write(1);
   }

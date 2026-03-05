@@ -22,7 +22,7 @@
 #include "cdo_zaxis.h"
 #include "param_conversion.h"
 
-#define MAXARG 10
+constexpr int MAXARG = 10;
 
 // NOTE: Variable with codes (3[3,4],105,10) will get from CDO typically a name:
 // "10u", resp. "10v" Mostly u & v at level type 105 is not staggered, but test it to be sure..
@@ -705,7 +705,7 @@ rot_uv_north(int gridID, double *us, double *vs)
     cdo_print("%s(gridname=%s) .. processing grid with UV [nx*ny] (%zu * %zu)", __func__, gridNamePtr(gridInqType(gridID)), nx, ny);
 
   if (gridInqSize(gridID) != (nx * ny)) cdo_abort("Incorrect gridsize (%zu) != nx*ny (%zu * %zu)", gridInqSize(gridID), nx, ny);
-  // this should never happen
+    // this should never happen
 
 #define OPTrotuvNorth 1  // ACTIVATE SPEED - OPTIMIZATION
 
@@ -895,7 +895,7 @@ rot_uv_north(int gridID, double *us, double *vs)
           }
 
       }  // end of for ( i = 0; i < nx; i++ )
-  }  // end of if (rotationMatrixArray== nullptr)
+  }      // end of if (rotationMatrixArray== nullptr)
 
   // Take the rotation matrix from the cache
   for (j = 0; j < ny; ++j)
@@ -1111,7 +1111,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Windtrans> registration = RegisterEntry<Windtrans>();
+  inline static auto registration = RegisterEntry<Windtrans>();
   int UVDESTAG{}, ROTUVNORTH{}, ROTUVN{}, PROJUVLATLON{};
   int operatorID{};
 
@@ -1169,7 +1169,7 @@ public:
     std::vector<FieldInfo> fieldInfoList(maxFields);
 
     std::vector<std::vector<size_t>> varnumMissVals(numVars);
-    Varray3D<double> vardata(numVars);
+    Varray3D<double> varDataList(numVars);
 
     // U & V are NOT grid relative
     for (int varID = 0; varID < numVars; ++varID) cdiDefKeyInt(vlistID2, varID, CDI_KEY_UVRELATIVETOGRID, 0);
@@ -1231,8 +1231,8 @@ public:
                     varList2.vars[varID].code, gridsize, nlevs, gridsize * nlevs,
                     gridsize * nlevs * sizeof(double) / (1024.0 * 1024));
         varnumMissVals[varID].resize(nlevs);
-        vardata[varID].resize(nlevs);
-        for (int levelID = 0; levelID < nlevs; ++levelID) vardata[varID][levelID].resize(gridsize);
+        varDataList[varID].resize(nlevs);
+        for (int levelID = 0; levelID < nlevs; ++levelID) varDataList[varID][levelID].resize(gridsize);
       }
     }
 
@@ -1266,7 +1266,7 @@ public:
         ltype = zaxis_to_ltype(zaxisID);
         level = zaxisInqLevel(zaxisID, levelID);
 
-        if (vardata[varID].empty())
+        if (varDataList[varID].empty())
         {                                     // This means that it is not eighter U neither V.
           fieldInfoList[fieldID].varID = -1;  // We will NOT record/store this field in memory
           fieldInfoList[fieldID].levelID = -1;
@@ -1287,7 +1287,7 @@ public:
             cdo_print("Memmory-read data record:   %05d (timestep:%d); Var.id [%4d]; (code=%3d; ltype=%3d; level=%4d; "
                       "levelID=%3d)",
                       fieldID, tsID, varID, code, ltype, level, levelID);
-          cdo_read_field(streamID1, vardata[varID][levelID].data(), &varnumMissVals[varID][levelID]);
+          cdo_read_field(streamID1, varDataList[varID][levelID].data(), &varnumMissVals[varID][levelID]);
           if (varnumMissVals[varID][levelID]) cdo_abort("Missing values unsupported for this operator!");
         }
       }  // end of for ( fieldID = 0; fieldID < numFields; ..
@@ -1300,9 +1300,9 @@ public:
 
       // find u-variables:
       for (varID1 = 0; varID1 < numVars; ++varID1)
-        if (vardata[varID1].empty())
+        if (varDataList[varID1].empty())
         {
-          // if ( cdoDebugExt ) cdo_print("Checking U-wind: vardata[%d]== nullptr ",varID1);
+          // if ( cdoDebugExt ) cdo_print("Checking U-wind: varDataList[%d]== nullptr ",varID1);
         }
         else  // This means that it is U or V.
         {
@@ -1325,9 +1325,9 @@ public:
           auto usvarID = varID1;
           // find corresponding v-variable to u-variable:
           for (varID2 = 0; varID2 < numVars; ++varID2)
-            if (vardata[varID2].empty())
+            if (varDataList[varID2].empty())
             {
-              // if ( cdoDebugExt ) cdo_print("Checking V-wind: vardata[%d]== nullptr ",varID1);
+              // if ( cdoDebugExt ) cdo_print("Checking V-wind: varDataList[%d]== nullptr ",varID1);
             }
             else  // This means that it is U or V.
             {
@@ -1417,7 +1417,7 @@ public:
                   }  // end of if (cdoDebugExt)
                   Debug(cdoDebugExt, "LAT-LON grid created.");
                 }  // end of if (gridIDcurvl==-1)
-              }  // end of if (operatorID != ROTUVN)
+              }    // end of if (operatorID != ROTUVN)
 
               int uRelativeToGrid = -1, vRelativeToGrid = -1;
               cdiInqKeyInt(vlistID1, varID1, CDI_KEY_UVRELATIVETOGRID, &uRelativeToGrid);
@@ -1437,8 +1437,8 @@ public:
                 {
                   if (cdoDebugExt)
                     cdo_print("RotuvNorth(): processing  level type: %d; level %d (out of [0:%d])", ltype1, levelID, nlevel1 - 1);
-                  auto usvar = vardata[usvarID][levelID].data();
-                  auto vsvar = vardata[vsvarID][levelID].data();
+                  auto usvar = varDataList[usvarID][levelID].data();
+                  auto vsvar = varDataList[vsvarID][levelID].data();
                   if (operatorID == ROTUVNORTH)
                   {
                     rot_uv_north(gridIDcurvl, usvar, vsvar);
@@ -1455,7 +1455,7 @@ public:
               Debug(cdoDebugExt, "Finished processing level type: %d", ltype1);
               break;
             }  // end  for varID2
-        }  // end  for varID1
+        }      // end  for varID1
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
@@ -1473,7 +1473,7 @@ public:
                       fieldID, tsID, varID, code, ltype, level, levelID);
 
           cdo_def_field(streamID2, varID, levelID);
-          cdo_write_field(streamID2, vardata[varID][levelID].data(), varnumMissVals[varID][levelID]);
+          cdo_write_field(streamID2, varDataList[varID][levelID].data(), varnumMissVals[varID][levelID]);
         }
       }
 

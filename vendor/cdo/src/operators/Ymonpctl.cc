@@ -35,7 +35,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ymonpctl> registration = RegisterEntry<Ymonpctl>();
+  inline static auto registration = RegisterEntry<Ymonpctl>();
 
   constexpr static int MaxMonths = 17;
 
@@ -96,7 +96,7 @@ public:
   run() override
   {
     Field field1, field2;
-    std::vector<bool> varsData1(MaxMonths, false);
+    std::vector<bool> varDataList1(MaxMonths, false);
     CdiDateTime vDateTimes1[MaxMonths]{};
     CdiDateTime vDateTimes2[MaxMonths]{};
     HistogramSet hsets[MaxMonths];
@@ -133,9 +133,9 @@ public:
 
       vDateTimes2[month] = vDateTime2;
 
-      if (!varsData1[month])
+      if (!varDataList1[month])
       {
-        varsData1[month] = true;
+        varDataList1[month] = true;
         hsets[month].create(numVars, numSteps);
         for (auto const &var : varList1.vars) hsets[month].createVarLevels(var.ID, var.nlevels, var.gridsize);
       }
@@ -172,7 +172,7 @@ public:
 
       vDateTimes1[month] = vDateTime;
 
-      if (!varsData1[month]) cdo_abort("No data for month %d in %s and %s", month, cdo_get_stream_name(1), cdo_get_stream_name(2));
+      if (!varDataList1[month]) cdo_abort("No data for month %d in %s and %s", month, cdo_get_stream_name(1), cdo_get_stream_name(2));
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {

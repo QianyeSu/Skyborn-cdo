@@ -26,14 +26,14 @@ struct CirclePoint
   double radius{ 1.0 };
   double lon{ 0.0 };
   double lat{ 0.0 };
-  size_t maxpoints{ SIZE_MAX };
+  size_t maxPoints{ SIZE_MAX };
 };
 
 struct RegionInfo
 {
   std::vector<int64_t> cellIndices;
-  long nvals{ 0 };
-  int gridtype{ -1 };
+  long numVals{ 0 };
+  int gridType{ -1 };
   int gridID1{ -1 };
   int gridID2{ -1 };
 };
@@ -174,7 +174,7 @@ generate_circle_grid(int gridID1, long &gridsize2, std::vector<int64_t> &cellInd
     gps.set_radius(arc_to_chord_length(cpoint.radius));
     grid_pointsearch_create_unstruct(gps, xvals, yvals);
 
-    auto numNeighbors = cpoint.maxpoints;
+    auto numNeighbors = cpoint.maxPoints;
     if (numNeighbors > gridsize1) numNeighbors = gridsize1;
 
     KnnData knnData(numNeighbors);
@@ -198,7 +198,7 @@ generate_circle_grid(int gridID1, long &gridsize2, std::vector<int64_t> &cellInd
 }
 
 static void
-selcircle_get_parameter(CirclePoint &cpoint)
+get_parameter(CirclePoint &cpoint)
 {
   auto numArgs = cdo_operator_argc();
   if (numArgs)
@@ -218,7 +218,7 @@ selcircle_get_parameter(CirclePoint &cpoint)
       auto const &value = kv.values[0];
 
       // clang-format off
-      if      (key == "maxpoints") cpoint.maxpoints = parameter_to_size_t(value);
+      if      (key == "maxpoints") cpoint.maxPoints = parameter_to_size_t(value);
       else if (key == "lon")       cpoint.lon = parameter_to_double(value);
       else if (key == "lat")       cpoint.lat = parameter_to_double(value);
       else if (key == "radius")    cpoint.radius = radius_str_to_deg(value);
@@ -255,7 +255,7 @@ public:
   VarList varList1;
   VarList varList2;
   std::vector<bool> varIDs;
-  std::vector<RegionInfo> regions;
+  std::vector<RegionInfo> regionInfoList;
 
 public:
   void
@@ -283,7 +283,7 @@ public:
     varIDs.resize(numVars, false);
 
     numGrids = varList1.numGrids();
-    regions.resize(numGrids);
+    regionInfoList.resize(numGrids);
 
     int numFiles = 0;
     CirclePoint cpoint;
@@ -295,10 +295,10 @@ public:
     }
     else if (operatorID == SELCIRCLE)
     {
-      selcircle_get_parameter(cpoint);
+      get_parameter(cpoint);
       if (cpoint.radius < 0.0 || cpoint.radius > 180.0) cdo_abort("radius=%g out of bounds (0-180 deg)!", cpoint.radius);
 
-      if (varList1.gridsizeMax() < cpoint.maxpoints) cpoint.maxpoints = varList1.gridsizeMax();
+      if (varList1.gridsizeMax() < cpoint.maxPoints) cpoint.maxPoints = varList1.gridsizeMax();
       if (Options::cdoVerbose)
         cdo_print("lon = %g, lat = %g, radius = %gdeg(%gkm)", cpoint.lon, cpoint.lat, cpoint.radius, radiusDegToKm(cpoint.radius));
 
@@ -309,7 +309,7 @@ public:
 
     for (int index = 0; index < numGrids; ++index)
     {
-      auto &region = regions[index];
+      auto &region = regionInfoList[index];
       auto gridID1 = vlistGrid(vlistID1, index);
       auto gridtype = gridInqType(gridID1);
       if (is_point_grid(gridID1))
@@ -321,15 +321,15 @@ public:
 
         int gridID2 = CDI_UNDEFID;
         if (operatorID == SELREGION)
-          gridID2 = generate_region_grid(gridID1, region.nvals, region.cellIndices, numFiles);
+          gridID2 = generate_region_grid(gridID1, region.numVals, region.cellIndices, numFiles);
         else if (operatorID == SELCIRCLE)
-          gridID2 = generate_circle_grid(gridID1, region.nvals, region.cellIndices, cpoint);
+          gridID2 = generate_circle_grid(gridID1, region.numVals, region.cellIndices, cpoint);
 
         region.cellIndices.shrink_to_fit();
 
         if (gridID2 != CDI_UNDEFID)
         {
-          region.gridtype = gridtype;
+          region.gridType = gridtype;
           region.gridID1 = gridID1;
           region.gridID2 = gridID2;
 
@@ -376,11 +376,11 @@ public:
           auto gridID1 = var.gridID;
           int index;
           for (index = 0; index < numGrids; ++index)
-            if (gridID1 == regions[index].gridID1) break;
+            if (gridID1 == regionInfoList[index].gridID1) break;
           if (index == numGrids) cdo_abort("Internal problem, grid not found!");
 
           field2.init(varList2.vars[varID]);
-          window_cell(field1, field2, regions[index].cellIndices);
+          window_cell(field1, field2, regionInfoList[index].cellIndices);
 
           if (field1.numMissVals) field_num_mv(field2);
 

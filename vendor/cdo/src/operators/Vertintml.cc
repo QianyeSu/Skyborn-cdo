@@ -138,20 +138,6 @@ change_hybrid_zaxis(int vlistID1, int vlistID2, int vctSize, const double *vct, 
 }
 
 static void
-print_vars_found(const VarIDs &varIDs, const CdoVars &vars)
-{
-  cdo_print("Found:");
-  // clang-format off
-  if (-1 != varIDs.taID)      cdo_print("  %s -> %s", var_stdname(air_temperature), vars[varIDs.taID].name);
-  if (-1 != varIDs.psID)      cdo_print("  %s -> %s", var_stdname(surface_air_pressure), vars[varIDs.psID].name);
-  if (-1 != varIDs.lnpsID)    cdo_print("  LOG(%s) -> %s", var_stdname(surface_air_pressure), vars[varIDs.lnpsID].name);
-  if (-1 != varIDs.sgeopotID) cdo_print("  %s -> %s", var_stdname(surface_geopotential), vars[varIDs.sgeopotID].name);
-  if (-1 != varIDs.geopotID)  cdo_print("  %s -> %s", var_stdname(geopotential), vars[varIDs.geopotID].name);
-  if (-1 != varIDs.gheightID) cdo_print("  %s -> %s", var_stdname(geopotential_height), vars[varIDs.gheightID].name);
-  // clang-format on
-}
-
-static void
 pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel, bool extrapolate)
 {
   int numPL = pressureLevels.size();
@@ -196,7 +182,7 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
     int i = vctSize / 2 + 1;
     for (; i < vctSize; ++i)
       if (vct[i] > vct[i - 1]) break;
-    if (i == vctSize) vctIsInverted = true;
+    if (i == vctSize) { vctIsInverted = true; }
   }
 
   if (Options::cdoVerbose) cdo_print("vctIsInverted = %d", static_cast<int>(vctIsInverted));
@@ -207,7 +193,8 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
 
   std::vector<bool> processVars(numVars), interpVars(numVars);
   Varray2D<size_t> varnumMissVals(numVars);
-  Field3DVector vardata1(numVars), vardata2(numVars);
+  Field3DVector varDataList1(numVars);
+  Field3DVector varDataList2(numVars);
 
   auto maxLevels = std::max(numHalfLevels, numPL);
 
@@ -258,36 +245,36 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
     varIDs.gheightID = -1;
   }
 
-  if (Options::cdoVerbose) print_vars_found(varIDs, varList1.vars);
+  if (Options::cdoVerbose) print_found_variables(varIDs, varList1.vars);
 
   for (int varID = 0; varID < numVars; ++varID)
   {
     auto &var1 = varList1.vars[varID];
-    auto nlevels = var1.nlevels;
+    auto numLevels = var1.nlevels;
 
     if (var1.gridType == GRID_SPECTRAL && zaxis_is_hybrid(var1.zaxisType)) cdo_abort("Spectral data on model level unsupported!");
 
     if (var1.gridType == GRID_SPECTRAL) cdo_abort("Spectral data unsupported!");
 
-    // if (varID == varIDs.gheightID) var1.nlevels = nlevels + 1;
-    vardata1[varID].init(var1);
-    // if (varID == varIDs.gheightID) var1.nlevels = nlevels;
+    // if (varID == varIDs.gheightID) var1.nlevels = numLevels + 1;
+    varDataList1[varID].init(var1);
+    // if (varID == varIDs.gheightID) var1.nlevels = numLevels;
 
     // interpVars[varID] = (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && nlevels == numHybridLevels);
     interpVars[varID]
         = (var1.zaxisID == zaxisID_ML
-           || (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && (nlevels == numHalfLevels || nlevels == numFullLevels)));
+           || (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && (numLevels == numHalfLevels || numLevels == numFullLevels)));
 
     if (interpVars[varID])
     {
       varnumMissVals[varID].resize(maxLevels, 0);
-      vardata2[varID].init(varList2.vars[varID]);
+      varDataList2[varID].init(varList2.vars[varID]);
     }
     else
     {
-      varnumMissVals[varID].resize(nlevels);
-      if (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && nlevels > 1)
-        cdo_warning("Parameter %d has wrong number of levels, skipped! (param=%s nlevel=%d)", varID + 1, var1.name, nlevels);
+      varnumMissVals[varID].resize(numLevels);
+      if (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && numLevels > 1)
+        cdo_warning("Parameter %d has wrong number of levels, skipped! (param=%s nlevel=%d)", varID + 1, var1.name, numLevels);
     }
   }
 
@@ -374,7 +361,7 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
 
       if (vctIsInverted && zaxisID_ML != -1 && var.zaxisID == zaxisID_ML) levelID = var.nlevels - 1 - levelID;
 
-      cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+      cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
 
       processVars[varID] = true;
     }
@@ -384,18 +371,18 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
       if (sgeopotNeeded)
       {
         if (varIDs.sgeopotID != -1)
-          field_copy(vardata1[varIDs.sgeopotID], sgeopot);
+          field_copy(varDataList1[varIDs.sgeopotID], sgeopot);
         else if (varIDs.geopotID != -1)
-          field_copy(vardata1[varIDs.geopotID], numFullLevels - 1, sgeopot);
+          field_copy(varDataList1[varIDs.geopotID], numFullLevels - 1, sgeopot);
 
         // check range of surface geopot
         if (extrapolate && (varIDs.sgeopotID != -1 || varIDs.geopotID != -1)) check_range_sgeopot(tsID + 1, sgeopot);
       }
 
       if (presID == varIDs.lnpsID)
-        field_transform(vardata1[varIDs.lnpsID], psProg, unary_op_exp);
+        field_transform(varDataList1[varIDs.lnpsID], psProg, unary_op_exp);
       else if (presID != -1)
-        field_copy(vardata1[presID], psProg);
+        field_copy(varDataList1[presID], psProg);
 
       // check range of psProg
       check_range_ps(tsID + 1, psProg);
@@ -434,22 +421,22 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
           {
             if (var.nlevels == numHalfLevels) cdo_abort("Temperature on half level unsupported!");
 
-            vertical_interp_T(var.nlevels, pressure_FL, pressure_HL, vardata1[varID], vardata2[varID], sgeopot, vertIndex_FL,
-                              pressureLevels, gridsize);
+            vertical_interp_T(var.nlevels, pressure_FL, pressure_HL, varDataList1[varID], varDataList2[varID], sgeopot,
+                              vertIndex_FL, pressureLevels, gridsize);
           }
           else if (varID == varIDs.gheightID)
           {
-            // field_copy_div_2d_to_3d(memType, gridsize, var.nlevels, sgeopot, vardata1[varID]);
-            field_check_sgeopot(memType, gridsize, var.nlevels, sgeopot, vardata1[varID]);
+            // field_copy_div_2d_to_3d(memType, gridsize, var.nlevels, sgeopot, varDataList1[varID]);
+            field_check_sgeopot(memType, gridsize, var.nlevels, sgeopot, varDataList1[varID]);
 
-            vertical_interp_Z(numFullLevels, pressure_FL, pressure_HL, vardata1[varID], vardata2[varID], vardata1[varIDs.taID],
-                              sgeopot, vertIndex_FL, pressureLevels, gridsize);
+            vertical_interp_Z(numFullLevels, pressure_FL, pressure_HL, varDataList1[varID], varDataList2[varID],
+                              varDataList1[varIDs.taID], sgeopot, vertIndex_FL, pressureLevels, gridsize);
           }
           else
           {
             auto const &levels3D = (var.nlevels == numFullLevels) ? pressure_FL : pressure_HL;
             auto const &vertIndex3D = (var.nlevels == numFullLevels) ? vertIndex_FL : vertIndex_HL;
-            vertical_interp_X(levels3D, vardata1[varID], vardata2[varID], vertIndex3D, pressureLevels, gridsize);
+            vertical_interp_X(levels3D, varDataList1[varID], varDataList2[varID], vertIndex3D, pressureLevels, gridsize);
           }
 
           if (!extrapolate) varray_copy(numPL, pnumMissVals, varnumMissVals[varID]);
@@ -458,7 +445,7 @@ pressure_level_interpolation(Varray<double> &pressureLevels, bool useHeightLevel
         for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
         {
           cdo_def_field(streamID2, varID, levelID);
-          cdo_write_field(streamID2, interpVars[varID] ? vardata2[varID] : vardata1[varID], levelID,
+          cdo_write_field(streamID2, interpVars[varID] ? varDataList2[varID] : varDataList1[varID], levelID,
                           varnumMissVals[varID][levelID]);
         }
       }
@@ -486,7 +473,7 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
   auto vlistID2 = vlistDuplicate(vlistID1);
 
   VarList varList1(vlistID1);
-  varList_setUniqueMemtype(varList1);
+  varList_set_unique_memtype(varList1);
   auto memType = varList1.vars[0].memType;
 
   auto taxisID1 = vlistInqTaxis(vlistID1);
@@ -509,7 +496,7 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
   change_hybrid_zaxis(vlistID1, vlistID2, vctSize, vct.data(), zaxisID_HL, numFullLevels, numHalfLevels);
 
   VarList varList2(vlistID2);
-  varList_setMemtype(varList2, memType);
+  varList_set_memtype(varList2, memType);
   /*
   auto vctIsInverted = false;
   if (vctSize && vctSize % 2 == 0)
@@ -530,7 +517,8 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
 
   std::vector<bool> processVars(numVars), interpVars(numVars);
   Varray2D<size_t> varnumMissVals(numVars);
-  Field3DVector vardata1(numVars), vardata2(numVars);
+  Field3DVector varDataList1(numVars);
+  Field3DVector varDataList2(numVars);
 
   auto maxLevels = std::max(numHalfLevels, numHeightLevels);
 
@@ -550,33 +538,33 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
 
   VarIDs varIDs = search_varIDs(varList1.vars, vlistID1, numFullLevels);
 
-  if (Options::cdoVerbose) print_vars_found(varIDs, varList1.vars);
+  if (Options::cdoVerbose) print_found_variables(varIDs, varList1.vars);
 
   for (int varID = 0; varID < numVars; ++varID)
   {
     auto const &var1 = varList1.vars[varID];
-    auto nlevels = var1.nlevels;
+    auto numLevels = var1.nlevels;
 
     if (var1.gridType == GRID_SPECTRAL && zaxis_is_hybrid(var1.zaxisType)) cdo_abort("Spectral data on model level unsupported!");
     if (var1.gridType == GRID_SPECTRAL) cdo_abort("Spectral data unsupported!");
 
-    vardata1[varID].init(var1);
+    varDataList1[varID].init(var1);
 
-    // interpVars[varID] = (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && nlevels == numHybridLevels);
+    // interpVars[varID] = (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && numLevels == numHybridLevels);
     interpVars[varID]
         = (var1.zaxisID == zaxisID_ML
-           || (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && (nlevels == numHalfLevels || nlevels == numFullLevels)));
+           || (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && (numLevels == numHalfLevels || numLevels == numFullLevels)));
 
     if (interpVars[varID])
     {
       varnumMissVals[varID].resize(maxLevels, 0);
-      vardata2[varID].init(varList2.vars[varID]);
+      varDataList2[varID].init(varList2.vars[varID]);
     }
     else
     {
-      varnumMissVals[varID].resize(nlevels);
-      if (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && nlevels > 1)
-        cdo_warning("Parameter %d has wrong number of levels, skipped! (param=%s nlevel=%d)", varID + 1, var1.name, nlevels);
+      varnumMissVals[varID].resize(numLevels);
+      if (zaxis_is_hybrid(var1.zaxisType) && zaxisID_ML != -1 && numLevels > 1)
+        cdo_warning("Parameter %d has wrong number of levels, skipped! (param=%s nlevel=%d)", varID + 1, var1.name, numLevels);
     }
   }
 
@@ -621,7 +609,7 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
     for (int fieldID = 0; fieldID < numFields; ++fieldID)
     {
       auto [varID, levelID] = cdo_inq_field(streamID1);
-      cdo_read_field(streamID1, vardata1[varID], levelID, &varnumMissVals[varID][levelID]);
+      cdo_read_field(streamID1, varDataList1[varID], levelID, &varnumMissVals[varID][levelID]);
 
       processVars[varID] = true;
     }
@@ -629,11 +617,11 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
     if (zaxisID_ML != -1)
     {
       auto lreverse = true;
-      gen_vert_index(vertIndex, heightLevels, vardata1[varIDs.gheightID], gridsize, lreverse);
+      gen_vert_index(vertIndex, heightLevels, varDataList1[varIDs.gheightID], gridsize, lreverse);
       if (!extrapolate)
       {
         heightBottom.init(varList1.vars[varIDs.gheightID]);
-        field_copy(vardata1[varIDs.gheightID], numFullLevels - 1, heightBottom);
+        field_copy(varDataList1[varIDs.gheightID], numFullLevels - 1, heightBottom);
         gen_vert_index_mv(vertIndex, heightLevels, gridsize, heightBottom, pnumMissVals, lreverse);
       }
     }
@@ -655,8 +643,8 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
             if (varnumMissVals[varID][levelID]) cdo_abort("Missing values unsupported for this operator!");
           }
 
-          auto const &levels3D = vardata1[varIDs.gheightID];
-          vertical_interp_X(levels3D, vardata1[varID], vardata2[varID], vertIndex, heightLevels, gridsize);
+          auto const &levels3D = varDataList1[varIDs.gheightID];
+          vertical_interp_X(levels3D, varDataList1[varID], varDataList2[varID], vertIndex, heightLevels, gridsize);
 
           if (!extrapolate) varray_copy(numHeightLevels, pnumMissVals, varnumMissVals[varID]);
         }
@@ -664,7 +652,7 @@ height_level_interpolation(Varray<double> &heightLevels, bool extrapolate)
         for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
         {
           cdo_def_field(streamID2, varID, levelID);
-          cdo_write_field(streamID2, interpVars[varID] ? vardata2[varID] : vardata1[varID], levelID,
+          cdo_write_field(streamID2, interpVars[varID] ? varDataList2[varID] : varDataList1[varID], levelID,
                           varnumMissVals[varID][levelID]);
         }
       }
@@ -706,7 +694,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertintml> registration = RegisterEntry<Vertintml>();
+  inline static auto registration = RegisterEntry<Vertintml>();
 
   bool doHeightInterpolation{ false };
   bool useHeightLevel{ false };

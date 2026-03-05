@@ -17,6 +17,8 @@
 
 #include "cdo_options.h"
 #include "process_int.h"
+#include "param_conversion.h"
+#include "pmlist.h"
 #include <mpim_grid.h>
 
 void cdoPrintZaxis(int zaxisID);
@@ -244,6 +246,45 @@ filedes(CdoStreamID streamID)
   printf("\n");
 }
 
+namespace
+{
+struct Parameter
+{
+  bool genBounds{ false };
+};
+}  // namespace
+
+static Parameter
+get_parameter(void)
+{
+  Parameter params;
+
+  auto numArgs = cdo_operator_argc();
+  if (numArgs)
+  {
+    auto const &argList = cdo_get_oper_argv();
+
+    KVList kvlist;
+    kvlist.name = cdo_module_name();
+    if (kvlist.parse_arguments(argList) != 0) cdo_abort("Parse error!");
+    if (Options::cdoVerbose) kvlist.print();
+
+    for (auto const &kv : kvlist)
+    {
+      auto const &key = kv.key;
+      if (kv.nvalues > 1) cdo_abort("Too many values for parameter key >%s<!", key);
+      if (kv.nvalues < 1) cdo_abort("Missing value for parameter key >%s<!", key);
+      auto const &value = kv.values[0];
+
+      // clang-format off
+      if      (key == "genbounds")   params.genBounds = parameter_to_bool(value);
+      // clang-format on
+    }
+  }
+
+  return params;
+}
+
 class Filedes : public Process
 {
 public:
@@ -266,7 +307,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Filedes> registration = RegisterEntry<Filedes>();
+  inline static auto registration = RegisterEntry<Filedes>();
 
 public:
   void
@@ -291,7 +332,7 @@ public:
     if (not loadGrid && this_is_the_only_process()) { cdiDefGlobal("READ_CELL_CORNERS", false); }
     if (not loadGrid && this_is_the_only_process()) { cdiDefGlobal("READ_CELL_CENTER", false); }
 
-    operator_check_argc(0);
+    if (!(operatorID == GRIDDES || operatorID == GRIDDES2)) operator_check_argc(0);
 
     auto streamID = cdo_open_read(0);
     auto vlistID = cdo_stream_inq_vlist(streamID);
@@ -300,20 +341,19 @@ public:
 
     if (operatorID == GRIDDES || operatorID == GRIDDES2)
     {
+      auto params = get_parameter();
       auto opt = (operatorID == GRIDDES) ? 1 : 0;
-      auto numGrids = vlistNumGrids(vlistID);
-      for (int index = 0; index < numGrids; ++index)
+      for (int index = 0; index < varList.numGrids(); ++index)
       {
         printf("#\n# gridID %d\n#\n", index + 1);
-        cdo_print_griddes(vlistGrid(vlistID, index), opt);
+        cdo_print_griddes(vlistGrid(vlistID, index), opt, params.genBounds);
         auto nsubtypes = vlistNsubtypes(vlistID);
         for (int i = 0; i < nsubtypes; ++i) subtypePrint(vlistSubtype(vlistID, i));
       }
     }
     else if (operatorID == ZAXISDES)
     {
-      auto numZaxes = vlistNumZaxis(vlistID);
-      for (int index = 0; index < numZaxes; ++index)
+      for (int index = 0; index < varList.numZaxes(); ++index)
       {
         printf("#\n# zaxisID %d\n#\n", index + 1);
         cdoPrintZaxis(vlistZaxis(vlistID, index));

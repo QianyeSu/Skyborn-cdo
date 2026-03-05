@@ -37,7 +37,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Cat> registration = RegisterEntry<Cat>();
+  inline static auto registration = RegisterEntry<Cat>();
 
   StreamMode streamMode{ StreamMode::APPEND };
   bool hasConstVars{ true };

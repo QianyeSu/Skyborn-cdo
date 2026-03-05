@@ -1032,7 +1032,7 @@ varray_prevarsum0(size_t n, Varray<T> const &v, double &rsum, double &rsumw)
 #endif
     for (size_t i = 0; i < n; ++i) { rsum += v[i]; }
   }
-  rsumw = n;
+  rsumw = static_cast<double>(n);
 }
 
 template <typename T>
@@ -1101,8 +1101,8 @@ varray_prevarsum(size_t n, Varray<T> const &v, double &rsum, double &rsumw, doub
     for (size_t i = 0; i < n; ++i) { f_prevarsum((double) v[i], rsum, rsumq); }
   }
 
-  rsumw = n;
-  rsumwq = n;
+  rsumw = static_cast<double>(n);
+  rsumwq = static_cast<double>(n);
 }
 
 template <typename T>
@@ -1317,7 +1317,7 @@ varray_prekurtsum(size_t n, Varray<T> const &v, double mean, double &rsum3w, dou
     for (size_t i = 0; i < n; ++i) { f_prekurtsum(v[i] - mean, rsum2diff, rsum4diff); }
   }
 
-  rsum3w = n;
+  rsum3w = static_cast<double>(n);
 }
 
 template <typename T>
@@ -1363,9 +1363,9 @@ varray_kurt(size_t n, Varray<T> const &v, size_t numMissVals, double mv)
 {
   T missval = mv;
 
-  double rsum3w;  // 3rd moment variables
-  double rsum2diff, rsum4diff;
-  double rsum, rsumw;
+  double rsum3w{};  // 3rd moment variables
+  double rsum2diff{}, rsum4diff{};
+  double rsum{}, rsumw{};
 
   if (numMissVals > 0)
   {
@@ -1422,7 +1422,7 @@ varray_preskewsum(size_t n, Varray<T> const &v, double mean, double &rsum3w, dou
     for (size_t i = 0; i < n; ++i) { f_preskewsum(v[i] - mean, rsum3diff, rsum2diff); }
   }
 
-  rsum3w = n;
+  rsum3w = static_cast<double>(n);
 }
 
 template <typename T>
@@ -1468,9 +1468,9 @@ varray_skew(size_t n, Varray<T> const &v, size_t numMissVals, double mv)
 {
   T missval = mv;
 
-  double rsum3w;  // 3rd moment variables
-  double rsum3diff, rsum2diff;
-  double rsum, rsumw;
+  double rsum3w{};  // 3rd moment variables
+  double rsum3diff{}, rsum2diff{};
+  double rsum{}, rsumw{};
 
   if (numMissVals > 0)
   {
@@ -1579,7 +1579,7 @@ varray_count(size_t n, Varray<T> const &v, size_t numMissVals, double mv)
     }
   }
 
-  return count;
+  return static_cast<double>(count);
 }
 
 // Explicit instantiation

@@ -139,7 +139,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Mergetime> registration = RegisterEntry<Mergetime>();
+  inline static auto registration = RegisterEntry<Mergetime>();
 
   int tsID2{ 0 };
   int vlistID2{ CDI_UNDEFID };

@@ -236,7 +236,7 @@ set_default_datatype(std::string const &datatypeString)
 
   if (std::isdigit((int) *datatypestr))
   {
-    auto nbits = atoi(datatypestr);
+    auto nbits = std::atoi(datatypestr);
     datatypestr++;
     if (nbits >= 10) datatypestr++;
 
@@ -320,6 +320,12 @@ set_filterspec(std::string const &arg)
   else { cdo_abort("Filter spec missing!"); }
 }
 
+static bool
+is_separator(int c)
+{
+  return (c == '_' || c == ',');
+}
+
 void
 set_compression_type(std::string const &arg)
 {
@@ -343,12 +349,12 @@ set_compression_type(std::string const &arg)
   else if (arg.starts_with("zip"))
   {
     Options::cdoCompType = CDI_COMPRESS_ZIP;
-    Options::cdoCompLevel = (len == 5 && arg[3] == '_' && std::isdigit(arg[4])) ? std::atoi(&arg.c_str()[4]) : 1;
+    Options::cdoCompLevel = (len == 5 && is_separator(arg[3]) && std::isdigit(arg[4])) ? std::atoi(&arg.c_str()[4]) : 1;
   }
   else if (arg.starts_with("zstd"))
   {
     int filterIdZstd = 32015;
-    int zstdLevel = (len >= 6 && len <= 7 && arg[4] == '_' && std::isdigit(arg[5])) ? std::atoi(&arg.c_str()[5]) : 1;
+    int zstdLevel = (len >= 6 && len <= 7 && is_separator(arg[4]) && std::isdigit(arg[5])) ? std::atoi(&arg.c_str()[5]) : 1;
     if (Options::filterSpec.size() > 0) { cdo_abort("Filter specs already defined! Only one filter specs is allowed."); }
     Options::filterSpec = std::to_string(filterIdZstd) + "," + std::to_string(zstdLevel);
   }
@@ -387,7 +393,7 @@ setup_openMP(int numThreads)
   Threading::ompNumMaxThreads = omp_get_max_threads();
   if (omp_get_max_threads() > omp_get_num_procs())
     std::fprintf(stderr, "Warning: Number of OMP threads=%d is greater than number of Cores=%d!\n", omp_get_max_threads(),
-            omp_get_num_procs());
+                 omp_get_num_procs());
 
   if (Threading::ompNumMaxThreads < numThreads)
     std::fprintf(stderr, "Warning: omp_get_max_threads() returns %d!\n", Threading::ompNumMaxThreads);

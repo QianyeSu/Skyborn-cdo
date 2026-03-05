@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <stdlib.h>
 
 #include "ensure_array_size.h"
 #include "interval_tree.h"

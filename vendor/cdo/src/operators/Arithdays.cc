@@ -74,7 +74,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Arithdays> registration = RegisterEntry<Arithdays>();
+  inline static auto registration = RegisterEntry<Arithdays>();
 
 private:
   int MULDOY{};

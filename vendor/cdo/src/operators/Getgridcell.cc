@@ -125,7 +125,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 0, NoRestriction },
   };
-  inline static RegisterEntry<Getgridcell> registration = RegisterEntry<Getgridcell>();
+  inline static auto registration = RegisterEntry<Getgridcell>();
 
   CdoStreamID streamID1{};
   Parameter params{};

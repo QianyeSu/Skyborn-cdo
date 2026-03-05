@@ -269,7 +269,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 0, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vargen> registration = RegisterEntry<Vargen>();
+  inline static auto registration = RegisterEntry<Vargen>();
 
   int RANDOM, SINCOS, COSHILL, TESTFIELD, CONST, SEQ, TOPO, TEMP, MASK, STDATM;
 

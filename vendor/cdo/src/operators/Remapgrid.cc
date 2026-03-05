@@ -68,20 +68,16 @@ maptype_to_operfunc(const RemapSwitches &remapSwitches)
   int operfunc = -1;
 
   if (remapSwitches.mapType == RemapMethod::CONSERV)
+  {
     operfunc = (remapSwitches.submapType == SubmapType::LAF) ? REMAPLAF : ((remapSwitches.remapOrder == 2) ? REMAPYCON2 : REMAPCON);
-  else if (remapSwitches.mapType == RemapMethod::BILINEAR)
-    operfunc = REMAPBIL;
-  else if (remapSwitches.mapType == RemapMethod::BICUBIC)
-    operfunc = REMAPBIC;
+  }
+  else if (remapSwitches.mapType == RemapMethod::BILINEAR) { operfunc = REMAPBIL; }
+  else if (remapSwitches.mapType == RemapMethod::BICUBIC) { operfunc = REMAPBIC; }
   else if (remapSwitches.mapType == RemapMethod::KNN)
   {
-    if (remapSwitches.numNeighbors == -1)
-      operfunc = REMAPKNN;
-    else
-      operfunc = (remapSwitches.numNeighbors == 1) ? REMAPNN : REMAPDIS;
+    operfunc = (remapSwitches.numNeighbors == -1) ? REMAPKNN : ((remapSwitches.numNeighbors == 1) ? REMAPNN : REMAPDIS);
   }
-  else
-    cdo_abort("Unsupported mapping method (mapType = %d)", remapSwitches.mapType);
+  else { cdo_abort("Unsupported mapping method (mapType = %d)", remapSwitches.mapType); }
 
   return operfunc;
 }
@@ -225,7 +221,7 @@ remap_read_weights(std::string const &remapWeightsFile, int gridID1, int gridID2
   remap0.gridsize = gridInqSize(gridID1);
 
   if (remapSwitches.mapType == RemapMethod::KNN && !extrapolateIsSet) remapExtrapolate = true;
-  if (gridIsCircular(gridID1) && !extrapolateIsSet) remapExtrapolate = true;
+  if (gridIsCyclic(gridID1) && !extrapolateIsSet) remapExtrapolate = true;
 
   if (remapSwitches.mapType == RemapMethod::KNN)
   {
@@ -394,7 +390,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Remapgrid> registration = RegisterEntry<Remapgrid>();
+  inline static auto registration = RegisterEntry<Remapgrid>();
 
   KnnParams knnParams{};
   RemapSwitches remapSwitches{};
@@ -471,10 +467,7 @@ public:
           if (inum < 1) cdo_abort("Number of nearest neighbors out of range (>0)!");
           numNeighbors = inum;
         }
-        else
-        {
-          operator_check_argc(1);
-        }
+        else { operator_check_argc(1); }
         targetGridName = cdo_operator_argv(0);
       }
     }
@@ -631,7 +624,7 @@ public:
   void
   grid_search_init(RemapType &remap, const CdoVar &var)
   {
-    if (gridIsCircular(var.gridID) && !extrapolateIsSet) remapExtrapolate = true;
+    if (gridIsCyclic(var.gridID) && !extrapolateIsSet) remapExtrapolate = true;
 
     //  remap.srcGrid.luse_cell_area = false;
     //  remap.tgtGrid.luse_cell_area = false;
@@ -719,7 +712,7 @@ public:
           if (mapType != RemapMethod::CONSERV && var.gridType == GRID_GME)
             cdo_abort("Only conservative remapping is available to remap between GME grids!");
 
-          if (gridIsCircular(var.gridID) && !extrapolateIsSet) remapExtrapolate = true;
+          if (gridIsCyclic(var.gridID) && !extrapolateIsSet) remapExtrapolate = true;
 
           remap_set_mask(field1, var.gridsize, numMissVals1, var.missval, imask);
 
@@ -760,10 +753,7 @@ public:
             else
               remap_field(field2, var.missval, gridsize2, remap.vars, field1, gradients);
           }
-          else
-          {
-            remap_field(remapSwitches.mapType, knnParams, remap, field1, field2);
-          }
+          else { remap_field(remapSwitches.mapType, knnParams, remap, field1, field2); }
 
           if (operfunc == REMAPCON || operfunc == REMAPYCON2)
           {

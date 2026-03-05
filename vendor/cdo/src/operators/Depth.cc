@@ -36,7 +36,7 @@ calc_full_depth(size_t gridsize, size_t nlevels, Varray<T> const &thick_c, Varra
 }
 
 static void
-calc_full_depth(const Field3D &thick_c, const Field3D &stretch_c, const Field3D &zos, Field3D &fullDepth)
+calc_full_depth(Field3D const &thick_c, Field3D const &stretch_c, Field3D const &zos, Field3D &fullDepth)
 {
   auto gridsize = thick_c.gridsize;
   auto nlevels = thick_c.nlevels;
@@ -59,7 +59,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Depth> registration = RegisterEntry<Depth>();
+  inline static auto registration = RegisterEntry<Depth>();
 
 private:
   CdoStreamID streamID1{};
@@ -143,8 +143,8 @@ public:
   run() override
   {
     auto numVars = varList1.numVars();
-    Field3DVector vardata1(numVars);
-    for (int varID = 0; varID < numVars; ++varID) vardata1[varID].init(varList1.vars[varID]);
+    Field3DVector varDataList1(numVars);
+    for (int varID = 0; varID < numVars; ++varID) varDataList1[varID].init(varList1.vars[varID]);
     Field3D fullDepth;
     fullDepth.init(varList1.vars[thickID]);
 
@@ -161,12 +161,12 @@ public:
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
         size_t numMissVals;
-        cdo_read_field(streamID1, vardata1[varID], levelID, &numMissVals);
+        cdo_read_field(streamID1, varDataList1[varID], levelID, &numMissVals);
         if (numMissVals) cdo_abort("Missing values unsupported!");
       }
 
-      if (-1 != draftaveID) field2_add(vardata1[zosID], vardata1[draftaveID]);
-      calc_full_depth(vardata1[thickID], vardata1[stretchID], vardata1[zosID], fullDepth);
+      if (-1 != draftaveID) field2_add(varDataList1[zosID], varDataList1[draftaveID]);
+      calc_full_depth(varDataList1[thickID], varDataList1[stretchID], varDataList1[zosID], fullDepth);
 
       for (int levelID = 0; levelID < numLevels; ++levelID)
       {

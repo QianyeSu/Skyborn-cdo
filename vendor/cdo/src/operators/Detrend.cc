@@ -63,7 +63,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Detrend> registration = RegisterEntry<Detrend>();
+  inline static auto registration = RegisterEntry<Detrend>();
 
   static const int numWork = 5;
 
@@ -143,7 +143,7 @@ public:
   }
 
   static void
-  vars_sub_trend(FieldVector3D &work, FieldVector2D &varsData, VarList const &varList, double zj)
+  vars_sub_trend(FieldVector3D &work, FieldVector2D &varDataList, VarList const &varList, double zj)
   {
     auto numVars = varList.numVars();
     for (int varID = 0; varID < numVars; ++varID)
@@ -152,7 +152,7 @@ public:
       if (var.isConstant) continue;
       for (int levelID = 0; levelID < var.nlevels; ++levelID)
       {
-        auto &field = varsData[varID][levelID];
+        auto &field = varDataList[varID][levelID];
         auto const &paramA = work[0][varID][levelID];
         auto const &paramB = work[1][varID][levelID];
         sub_trend(zj, field, paramA, paramB);
@@ -161,7 +161,7 @@ public:
   }
 
   static void
-  vars_trend_sum(FieldVector3D &work, FieldVector2D const &varsData, VarList const &varList, double zj)
+  vars_trend_sum(FieldVector3D &work, FieldVector2D const &varDataList, VarList const &varList, double zj)
   {
     auto numVars = varList.numVars();
     for (int varID = 0; varID < numVars; ++varID)
@@ -170,7 +170,7 @@ public:
       if (var.isConstant) continue;
       for (int levelID = 0; levelID < var.nlevels; ++levelID)
       {
-        calc_trend_sum(work, varsData[varID][levelID], zj, varID, levelID);
+        calc_trend_sum(work, varDataList[varID][levelID], zj, varID, levelID);
       }
     }
   }
@@ -188,8 +188,8 @@ public:
     auto numSteps = varList1.numSteps();
     cdo::Progress progress(get_id());
 
-    FieldVector3D varsData{};
-    if (numSteps > 0) varsData.resize(numSteps);
+    FieldVector3D varDataList{};
+    if (numSteps > 0) varDataList.resize(numSteps);
 
     FieldVector3D work(numWork);
     for (auto &w : work) field2D_init(w, varList1, FIELD_VEC, 0);
@@ -208,13 +208,13 @@ public:
       auto zj = tstepIsEqual ? (double) tsID : delta_time_step_0(tsID, calendar, vDateTime, julianDate0, deltat1);
 
       constexpr size_t NALLOC_INC = 1024;
-      if ((size_t) tsID >= varsData.size()) varsData.resize(varsData.size() + NALLOC_INC);
-      field2D_init(varsData[tsID], varList1);
+      if ((size_t) tsID >= varDataList.size()) varDataList.resize(varDataList.size() + NALLOC_INC);
+      field2D_init(varDataList[tsID], varList1);
 
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field = varsData[tsID][varID][levelID];
+        auto &field = varDataList[tsID][varID][levelID];
         field.init(varList1.vars[varID]);
         cdo_read_field(streamID1, field);
       }
@@ -222,7 +222,7 @@ public:
       if (runAsync && tsID > 0) workerThread->wait();
 
       std::function<void()> vars_trend_sum_task
-          = std::bind(vars_trend_sum, std::ref(work), std::cref(varsData[tsID]), std::cref(varList1), zj);
+          = std::bind(vars_trend_sum, std::ref(work), std::cref(varDataList[tsID]), std::cref(varList1), zj);
 
       runAsync ? workerThread->doAsync(vars_trend_sum_task) : vars_trend_sum_task();
 
@@ -241,7 +241,7 @@ public:
       auto vDateTime = dtlist.vDateTime(step);
       auto zj = tstepIsEqual ? (double) step : delta_time_step_0(step, calendar, vDateTime, julianDate0, deltat1);
       std::function<void()> vars_sub_trend_func
-          = std::bind(vars_sub_trend, std::ref(work), std::ref(varsData[step]), std::ref(varList1), zj);
+          = std::bind(vars_sub_trend, std::ref(work), std::ref(varDataList[step]), std::ref(varList1), zj);
       workerThread->doAsync(vars_sub_trend_func);
     }
 
@@ -258,7 +258,7 @@ public:
         auto zj = tstepIsEqual ? (double) step : delta_time_step_0(step, calendar, vDateTime, julianDate0, deltat1);
 
         std::function<void()> vars_sub_trend_func
-            = std::bind(vars_sub_trend, std::ref(work), std::ref(varsData[step]), std::cref(varList1), zj);
+            = std::bind(vars_sub_trend, std::ref(work), std::ref(varDataList[step]), std::cref(varList1), zj);
 
         runAsync ? workerThread->doAsync(vars_sub_trend_func) : vars_sub_trend_func();
       }
@@ -273,7 +273,7 @@ public:
         if (tsID && var.isConstant) continue;
         for (int levelID = 0; levelID < var.nlevels; ++levelID)
         {
-          auto &field = varsData[tsID][varID][levelID];
+          auto &field = varDataList[tsID][varID][levelID];
           cdo_def_field(streamID2, varID, levelID);
           cdo_write_field(streamID2, field);
         }

@@ -36,7 +36,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Seaspctl> registration = RegisterEntry<Seaspctl>();
+  inline static auto registration = RegisterEntry<Seaspctl>();
 
   TimeStat timestatDate{ TimeStat::MEAN };
   int seas0{ 0 };

@@ -53,7 +53,10 @@
 #define SSIZE_MAX LONG_MAX
 #endif
 
-#define MAX_FILES 8192
+enum
+{
+  MAX_FILES = 8192
+};
 static int _file_max = MAX_FILES;
 
 static void file_initialize(void);
@@ -1024,12 +1027,12 @@ fileOpen_serial(const char *filename, const char *mode)
 #endif
 
     // clang-format off
-      if      (fmode == 'r') fileptr->type = FileTypeRead;
-      else if (fmode == 'w') fileptr->type = FileTypeWrite;
-      else                   fileptr->type = FILE_TYPE_FOPEN;
+    if      (fmode == 'r') { fileptr->type = FileTypeRead; }
+    else if (fmode == 'w') { fileptr->type = FileTypeWrite; }
+    else                   { fileptr->type = FILE_TYPE_FOPEN; }
     // clang-format on
 
-    if (fmode == 'r') fileptr->size = filestat.st_size;
+    if (fmode == 'r') { fileptr->size = filestat.st_size; }
 
     // if (fileptr->type == FILE_TYPE_FOPEN) file_set_buffer(fileptr);
     file_set_buffer(fileptr);

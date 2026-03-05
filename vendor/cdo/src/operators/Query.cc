@@ -27,7 +27,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, FilesOnly },
   };
-  inline static RegisterEntry<Query> registration = RegisterEntry<Query>();
+  inline static auto registration = RegisterEntry<Query>();
 
   int streamID1{};  // QueryStream
   CdoStreamID streamID2{};

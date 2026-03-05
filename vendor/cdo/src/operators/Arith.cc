@@ -57,15 +57,15 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Arith> registration = RegisterEntry<Arith>();
+  inline static auto registration = RegisterEntry<Arith>();
 
   FillType fillType{ FillType::NONE };
   int nlevels2 = 1;
   int levelID2 = -1;
   Varray2D<size_t> varnumMissVals;
-  Varray2D<double> vardata;
+  Varray2D<double> varDataList;
   std::vector<size_t> varnumMissVals2;
-  Varray<double> vardata2;
+  Varray<double> varDataList2;
 
   CdoStreamID streamID1;
   int taxisID1{ CDI_UNDEFID };
@@ -200,7 +200,7 @@ public:
 
     if (fillStream1x || fillType == FillType::VAR || fillType == FillType::VARTS)
     {
-      vardata2.resize(gridsizeMax * nlevels2);
+      varDataList2.resize(gridsizeMax * nlevels2);
       varnumMissVals2.resize(nlevels2);
     }
 
@@ -229,7 +229,7 @@ public:
         fieldx2 = &field1;
       }
 
-      if (fillType == FillType::TS) cdo_fill_ts(vlistID2x, vardata, varnumMissVals);
+      if (fillType == FillType::TS) cdo_fill_ts(vlistID2x, varDataList, varnumMissVals);
     }
 
     vlistID3 = vlistDuplicate(streamsSwaped ? vlistID1 : vlistID1x);
@@ -260,8 +260,8 @@ public:
   void
   run() override
   {
-    int numFields1;
-    int numFields2;
+    int numFields1{};
+    int numFields2{};
     int tsID = 0;
     int tsID2 = 0;
     while (true)
@@ -321,7 +321,7 @@ public:
           if (fillStream1x)
           {
             auto gridsize = nwpv * varList1.vars[varID].gridsize;
-            array_copy(gridsize, fieldx1->vec_d.data(), &vardata2[0]);
+            array_copy(gridsize, fieldx1->vec_d.data(), &varDataList2[0]);
             varnumMissVals2[0] = fieldx1->numMissVals;
           }
         }
@@ -345,14 +345,14 @@ public:
           {
             auto gridsize = nwpv * varList2.vars[varID].gridsize;
             auto offset = gridsize * levelID;
-            array_copy(gridsize, fieldx2->vec_d.data(), &vardata[varID][offset]);
+            array_copy(gridsize, fieldx2->vec_d.data(), &varDataList[varID][offset]);
             varnumMissVals[varID][levelID] = fieldx2->numMissVals;
           }
           else if (lstatus && (fillType == FillType::VAR || fillType == FillType::VARTS))
           {
             auto gridsize = nwpv * varList2.vars[0].gridsize;
             auto offset = gridsize * levelID2;
-            array_copy(gridsize, fieldx2->vec_d.data(), &vardata2[offset]);
+            array_copy(gridsize, fieldx2->vec_d.data(), &varDataList2[offset]);
             varnumMissVals2[levelID2] = fieldx2->numMissVals;
           }
         }
@@ -360,14 +360,14 @@ public:
         {
           auto gridsize = nwpv * varList2.vars[varID2].gridsize;
           auto offset = gridsize * levelID;
-          array_copy(gridsize, &vardata[varID][offset], fieldx2->vec_d.data());
+          array_copy(gridsize, &varDataList[varID][offset], fieldx2->vec_d.data());
           fieldx2->numMissVals = varnumMissVals[varID][levelID];
         }
 
         if (fillStream1x)
         {
           auto gridsize = nwpv * varList1.vars[0].gridsize;
-          array_copy(gridsize, &vardata2[0], fieldx1->vec_d.data());
+          array_copy(gridsize, &varDataList2[0], fieldx1->vec_d.data());
           fieldx1->numMissVals = varnumMissVals2[0];
         }
 
@@ -380,7 +380,7 @@ public:
           levelID2 = (nlevels2 > 1) ? levelID : 0;
           auto gridsize = nwpv * varList2.vars[0].gridsize;
           auto offset = gridsize * levelID2;
-          array_copy(gridsize, &vardata2[offset], fieldx2->vec_d.data());
+          array_copy(gridsize, &varDataList2[offset], fieldx2->vec_d.data());
           fieldx2->numMissVals = varnumMissVals2[levelID2];
           fieldx2->grid = varList2.vars[0].gridID;
           fieldx2->missval = varList2.vars[0].missval;

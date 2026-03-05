@@ -142,22 +142,21 @@ table_is_used(VarList const &varList)
 static int
 get_code(VarIDs const &varIDs, GribCodes const &gribCodes, std::string const &varname, std::string const &stdname)
 {
-  int code = -1;
   //                                  ECHAM                 ECMWF
   // clang-format off
-  if      (-1 == varIDs.sgeopotID && (varname == "geosp" || varname == "z")) code = gribCodes.geopot;
-  else if (-1 == varIDs.taID      && (varname == "st"    || varname == "t")) code = gribCodes.ta;
-  else if (-1 == varIDs.psID      && (varname == "aps"   || varname == "sp")) code = gribCodes.ps;
-  else if (-1 == varIDs.psID      &&  varname == "ps") code = gribCodes.ps;
-  else if (-1 == varIDs.lnpsID    && (varname == "lsp"   || varname == "lnsp")) code = gribCodes.lsp;
-  else if (-1 == varIDs.lnpsID2   &&  varname == "lnps") code = 777;
-  else if (-1 == varIDs.geopotID  &&  stdname == "geopotential_full") code = gribCodes.geopot;
-  else if (-1 == varIDs.taID      &&  varname == "t") code = gribCodes.ta;
-  else if (-1 == varIDs.husID     &&  varname == "q") code = gribCodes.hus;
-  // else if (varname == "clwc") code = 246;
-  // else if (varname == "ciwc") code = 247;
+  if (-1 == varIDs.sgeopotID && (varname == "geosp" || varname == "z")) return gribCodes.geopot;
+  if (-1 == varIDs.taID      && (varname == "st"    || varname == "t")) return gribCodes.ta;
+  if (-1 == varIDs.psID      && (varname == "aps"   || varname == "sp")) return gribCodes.ps;
+  if (-1 == varIDs.psID      &&  varname == "ps") return gribCodes.ps;
+  if (-1 == varIDs.lnpsID    && (varname == "lsp"   || varname == "lnsp" || varname.ends_with("lnsp"))) return gribCodes.lsp;
+  if (-1 == varIDs.lnpsID2   &&  varname == "lnps") return 777;
+  if (-1 == varIDs.geopotID  &&  stdname == "geopotential_full") return gribCodes.geopot;
+  if (-1 == varIDs.taID      &&  varname == "t") return gribCodes.ta;
+  if (-1 == varIDs.husID     &&  varname == "q") return gribCodes.hus;
+  // if (varname == "clwc") return 246;
+  // if (varname == "ciwc") return 247;
   // clang-format on
-  return code;
+  return -1;
 }
 
 VarIDs
@@ -198,8 +197,8 @@ varList_search_varIDs(VarList const &varList, int numFullLevels)
     else { gribCodes = echam_gribcodes(); }
 
     if (Options::cdoVerbose)
-      cdo_print("Center=%d  TableNum=%d  Code=%d  Param=%s  Varname=%s  varID=%d", instNum, tableNum, code, paramstr, var.name,
-                varID);
+      cdo_print("Center=%d  TableNum=%d  Code=%d  Param=%s  Varname=%s  Stdname=%s  varID=%d", instNum, tableNum, code, paramstr,
+                var.name, var.stdname, varID);
 
     if (code <= 0 || code == 255)
     {
@@ -210,17 +209,17 @@ varList_search_varIDs(VarList const &varList, int numFullLevels)
     }
 
     // clang-format off
-    if      (code == gribCodes.geopot  && numLevels == 1)                 varIDs.sgeopotID = varID;
-    else if (code == gribCodes.geopot  && numLevels == numFullLevels)     varIDs.geopotID = varID;
-    else if (code == gribCodes.ta      && numLevels == numFullLevels)     varIDs.taID = varID;
-    else if (code == gribCodes.ps      && numLevels == 1)                 varIDs.psID = varID;
-    else if (code == gribCodes.lsp     && numLevels == 1)                 varIDs.lnpsID = varID;
-    else if (code == 777               && numLevels == 1)                 varIDs.lnpsID2 = varID;
-    else if (code == gribCodes.gheight && numLevels == numFullLevels)     varIDs.gheightID = varID;
-    else if (code == gribCodes.gheight && numLevels == numFullLevels + 1) varIDs.gheightID = varID;
-    else if (code == gribCodes.hus     && numLevels == numFullLevels)     varIDs.husID = varID;
-    // else if (code == 246 && nlevels == numFullLevels) varIDs.clwcID = varID;
-    // else if (code == 247 && nlevels == numFullLevels) varIDs.ciwcID = varID;
+    if      (code == gribCodes.geopot  && numLevels == 1)                 { varIDs.sgeopotID = varID; }
+    else if (code == gribCodes.geopot  && numLevels == numFullLevels)     { varIDs.geopotID = varID; }
+    else if (code == gribCodes.ta      && numLevels == numFullLevels)     { varIDs.taID = varID; }
+    else if (code == gribCodes.ps      && numLevels == 1)                 { varIDs.psID = varID; }
+    else if (code == gribCodes.lsp     && numLevels == 1)                 { varIDs.lnpsID = varID; }
+    else if (code == 777               && numLevels == 1)                 { varIDs.lnpsID2 = varID; }
+    else if (code == gribCodes.gheight && numLevels == numFullLevels)     { varIDs.gheightID = varID; }
+    else if (code == gribCodes.gheight && numLevels == numFullLevels + 1) { varIDs.gheightID = varID; }
+    else if (code == gribCodes.hus     && numLevels == numFullLevels)     { varIDs.husID = varID; }
+    // else if (code == 246 && nlevels == numFullLevels) { varIDs.clwcID = varID; }
+    // else if (code == 247 && nlevels == numFullLevels) { varIDs.ciwcID = varID; }
     // clang-format on
   }
 
@@ -435,4 +434,19 @@ vlist_compare(int vlistID1, int vlistID2, int cmpFlag)
   VarList varList1(vlistID1);
   VarList varList2(vlistID2);
   varList_compare(varList1, varList2, cmpFlag);
+}
+
+void
+print_found_variables(VarIDs const &varIDs, CdoVars const &vars)
+{
+  cdo_print("Found:");
+  // clang-format off
+  if (-1 != varIDs.husID)     cdo_print("  %s -> %s", var_stdname(specific_humidity), vars[varIDs.husID].name);
+  if (-1 != varIDs.taID)      cdo_print("  %s -> %s", var_stdname(air_temperature), vars[varIDs.taID].name);
+  if (-1 != varIDs.psID)      cdo_print("  %s -> %s", var_stdname(surface_air_pressure), vars[varIDs.psID].name);
+  if (-1 != varIDs.lnpsID)    cdo_print("  LOG(%s) -> %s", var_stdname(surface_air_pressure), vars[varIDs.lnpsID].name);
+  if (-1 != varIDs.sgeopotID) cdo_print("  %s -> %s", var_stdname(surface_geopotential), vars[varIDs.sgeopotID].name);
+  if (-1 != varIDs.geopotID)  cdo_print("  %s -> %s", var_stdname(geopotential), vars[varIDs.geopotID].name);
+  if (-1 != varIDs.gheightID) cdo_print("  %s -> %s", var_stdname(geopotential_height), vars[varIDs.gheightID].name);
+  // clang-format on
 }

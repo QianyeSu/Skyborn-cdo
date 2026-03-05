@@ -371,7 +371,7 @@ get_tableformat(std::string const &partab, int &tableFormat)
       parbuf[fsize] = 0;
       std::fseek(fobj.get(), 0L, SEEK_SET);
 
-      if (atoi(parbuf.data()) == 0) { tableFormat = 1; }
+      if (std::atoi(parbuf.data()) == 0) { tableFormat = 1; }
     }
   }
 }
@@ -391,7 +391,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Setpartab> registration = RegisterEntry<Setpartab>();
+  inline static auto registration = RegisterEntry<Setpartab>();
 
 private:
   bool deleteVars = false;

@@ -4,6 +4,7 @@
 #include "cdo_getopt.h"
 #include "percentiles.h"
 #include "cdo_options.h"
+#include "cdo_rlimit.h"
 #include "cdo_default_values.h"
 #include "util_string.h"
 #include "cdo_features.h"
@@ -251,6 +252,11 @@ setup_options()
       ->set_category("History")
       ->add_help("Do append to NetCDF \"history\" global attribute.");
 
+  CLIOptions::option("nofile")
+      ->describe_argument("num")
+      ->add_effect([&](std::string const &argument) { cdo::set_numfiles(parameter_to_int(argument) + 8); })
+      ->add_help("Set maximum number of files that can be opened.");
+
   CLIOptions::option("no_history")
       ->add_effect([&]() { Options::CDO_Append_History = false; })
       ->set_category("History")
@@ -314,7 +320,7 @@ setup_options()
       ->describe_argument("grid")
       ->add_effect([&](std::string const &argument) { cdo_set_grids(argument); })
       ->add_help("Set default grid name or file. Available grids: ",
-                 "global_<DXY>, zonal_<DY>, r<NX>x<NY>, lon=<LON>/lat=<LAT>, F<N>, gme<NI>, hpz<ZOOM>")
+                 "global_<DXY>, zonal_<DY>, r<NX>x<NY>, lon=<LON>/lat=<LAT>, F<N>, gme<NI>, hpr<ZOOM>")
       ->shortform('g');
 
   CLIOptions::option("institution")
@@ -390,15 +396,20 @@ setup_options()
       ->add_help("Set HAS_MISSVAL to true.")
       ->shortform('M');
 
+  // clang-format off
   CLIOptions::option("query")
-      ->set_internal(true)
-      ->describe_argument("<query params>")
+      ->describe_argument("name|cell|layer|step")
       ->add_effect([&](std::string const &argument) { Options::cdoQueryParameter = argument; })
-      ->add_help("Set query parameter.");
+      ->add_help("Pre-selects a subset of the data cube from a dataset. Available parameter:",
+                 "    name      Variable names (name=var1,var2,...)",
+                 "    cell      Cell index range (cell=first/to/last)",
+                 "    layer     Layer index range (layer=first/to/last)",
+                 "    step      Time step index range (step=first/to/last)");
+  // clang-format on
 
   CLIOptions::option("varnames")
       ->set_internal(true)
-      ->describe_argument("<varname| file>")
+      ->describe_argument("varname| file")
       ->add_effect([&](std::string const &argument) { Options::cdoVarnames = split_string(argument, ","); })
       ->add_help("Set default varnames or file.")
       ->shortform('n');

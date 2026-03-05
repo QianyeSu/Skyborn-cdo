@@ -52,7 +52,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Timselstat> registration = RegisterEntry<Timselstat>();
+  inline static auto registration = RegisterEntry<Timselstat>();
 
 private:
   CdoStreamID streamID1{};

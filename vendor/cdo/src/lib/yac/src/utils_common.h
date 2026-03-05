@@ -5,31 +5,24 @@
 #ifndef UTILS_COMMON_H
 #define UTILS_COMMON_H
 
-#ifndef YAC_FOR_CDO
-#include "yac_config.h"
-#endif
-
-#ifdef YAC_OPENMP_ENABLED
-#include <omp.h>
-#endif
-
 #include <stdlib.h>
 #ifdef YAC_FOR_CDO
 #include <stdint.h> // uint64_t
 #include <limits.h> // SIZE_MAX
-#define UNUSED(x) (void)(x)
-#define YAC_ASSERT(exp, msg) ASSERT(exp)
-#define YAC_ASSERT_F(exp, format, ...) ASSERT(exp)
-#define die(msg) abort()
 #define xmalloc(size) malloc(size)
 #define xrealloc(ptr,size) realloc(ptr,size)
 #define xcalloc(nmemb,size) calloc(nmemb,size)
 #else
+#include "yac_config.h"
 #include "ppm/ppm_xfuncs.h"
 #include "ppm/core.h"
-#include "yac_assert.h"
 #endif
+#include "yac_assert.h"
 #include "yac_types.h"
+
+#ifdef YAC_OPENMP_ENABLED
+#include <omp.h>
+#endif
 
 /**
  * remove duplicated entries from a list of integers

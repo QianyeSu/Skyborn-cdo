@@ -147,10 +147,10 @@ void yac_compute_overlap_info (size_t N,
     for (size_t i = 0; i < N; ++i) {
       if (overlap_buffer[i].num_corners > 1) {
         if (overlap_barycenters == NULL)
-          overlap_areas[i] = yac_huiliers_area (overlap_buffer[i]);
+          overlap_areas[i] = yac_grid_cell_area (overlap_buffer[i]);
         else {
           overlap_areas[i] =
-            yac_huiliers_area_info(
+            yac_grid_cell_area_info(
               overlap_buffer[i], overlap_barycenters[i], 1.0);
           if (overlap_areas[i] < 0.0) {
             overlap_areas[i] = -overlap_areas[i];
@@ -232,10 +232,10 @@ void yac_compute_overlap_info (size_t N,
 
       if (overlap_barycenters == NULL)
         overlap_areas[n] +=
-          yac_huiliers_area(overlap_buffer[n]) * edge_direction;
+          yac_grid_cell_area(overlap_buffer[n]) * edge_direction;
       else
         overlap_areas[n] +=
-          yac_huiliers_area_info(
+          yac_grid_cell_area_info(
             overlap_buffer[n], overlap_barycenters[n], edge_direction);
     }
   }
@@ -650,29 +650,26 @@ static void circle_clipping(
             *clipping_circle, *cell_edge_circle,
             intersection[0], intersection[1]);
 
-        YAC_ASSERT(
-          (num_circle_intersections >= -1) && (num_circle_intersections <= 2),
-          "ERROR(circle_clipping): invalid number of intersections")
-
         // determine the intersections of the clipping circle with the cell
         // edge based on the circle intersections
         switch (num_circle_intersections) {
-
+          YAC_UNREACHABLE_DEFAULT(
+            "ERROR(circle_clipping): Unexpected number of intersections");
           // special case:
-          // both circles are on the same plane
           case (-1): {
+            YAC_UNREACHABLE("Unexpected case: both circles are on the same plane");
+            /** Pseudo code if implementation needed:
+             start_is_inside = 2;
+             end_is_inside = 2;
+             num_edge_intersections = 0;
 
-            // MoHa: this part of the code should not be reachable...but I
-            // leave it just in case...
-            start_is_inside = 2;
-            end_is_inside = 2;
-            num_edge_intersections = 0;
+             one_intersect_expected = 0;
 
-            one_intersect_expected = 0;
-
-            // if this is the first iteration
-            if (cell_edge_idx == 0) first_start_is_inside = 2;
-            break;
+             // if this is the first iteration
+             if (cell_edge_idx == 0) first_start_is_inside = 2;
+             break;
+             */
+            __attribute__((fallthrough));
           }
           // special case:
           // no intersections between the two circles
@@ -682,11 +679,10 @@ static void circle_clipping(
             num_edge_intersections = 0;
             break;
           }
-          // standart case:
+          // standard case:
           // two intersections between the two circles
           // (one intersection between two circles is a special case, but is
           //  being handled here anyway)
-          default:
           case (1):
           case (2): {
 

@@ -5,6 +5,9 @@
 #ifndef UTILS_CORE_H
 #define UTILS_CORE_H
 
+#include <string.h>
+#include <stdint.h>
+
 #include "utils_common.h"
 
 void yac_quicksort_index ( int * a, size_t n, int * idx);
@@ -62,7 +65,7 @@ static inline void yac_remove_duplicates_uint(unsigned * array, size_t * n) {
 }
 
 /**
- * remove duplicated entries from a list of integers
+ * remove duplicated entries from a list of doubles
  * @param[in,out] array array containing a sorted (ascending) list of integers
  * @param[in,out] n     number of entries in array
  */
@@ -77,7 +80,8 @@ static inline void yac_remove_duplicates_double(double * array, size_t * n) {
 
    for (size_t i = 1; i < N; ++i) {
 
-      if (array[i] == prev) continue;
+      // use memcmp to handle NaNs correctly
+      if (!memcmp(&array[i], &prev, sizeof(prev))) continue;
 
       prev = array[i];
       ++pos;
@@ -89,7 +93,7 @@ static inline void yac_remove_duplicates_double(double * array, size_t * n) {
 }
 
 /**
- * remove duplicated entries from a list of integers
+ * remove duplicated entries from a list of size_t
  * @param[in,out] array array containing a sorted (ascending) list of integers
  * @param[in,out] n     number of entries in array
  */
@@ -116,7 +120,7 @@ static inline void yac_remove_duplicates_size_t(size_t * array, size_t * n) {
 }
 
 /**
- * remove duplicated entries from a list of integers
+ * remove duplicated entries from a list of size_t[2]
  * @param[in,out] array array containing a sorted (ascending) list of integers
  * @param[in,out] n     number of entries in array
  */
@@ -150,7 +154,7 @@ static inline void yac_remove_duplicates_size_t_2(
 }
 
 /**
- * remove duplicated entries from a list of integers
+ * remove duplicated entries from a list of size_t[3]
  * @param[in,out] array array containing a sorted (ascending) list of integers
  * @param[in,out] n     number of entries in array
  */
@@ -188,7 +192,7 @@ static inline void yac_remove_duplicates_size_t_3(
 }
 
 /**
- * remove duplicated entries from a list of integers
+ * remove duplicated entries from a list of yac_int
  * @param[in,out] array array containing a sorted (ascending) list of integers
  * @param[in,out] n     number of entries in array
  */
@@ -213,6 +217,35 @@ static inline void yac_remove_duplicates_yac_int(
    }
 
    *n = pos + 1;
+}
+
+// Sorts the provided arrays based on a flag-array (containing the
+// values "0" and "!= 0"). After the sort, all array elements whose associated
+// flag value is "0" are the front of the array.
+//
+// This sort is:
+//   * not stable
+//   * has a time complexity of O(n)
+static inline void yac_flag_sort_size_t(
+  size_t * array_size_t, int * flag, size_t false_count) {
+
+  // The number of "true" elements in the 0...false_count-1 range of the
+  // array is identical to the number of "false" elements in the
+  // false_count...false_count+true_count-1. We just have to find matching
+  // pairs and swap them.
+  for (size_t i = 0, j = false_count; i < false_count; ++i) {
+    // if there is a wrongfully placed "true" element
+    if (flag[i]) {
+      // find a wrongfully place "false" element
+      for (; flag[j]; ++j);
+      // swap elements
+      size_t temp_size_t = array_size_t[i];
+      array_size_t[i] = array_size_t[j];
+      array_size_t[j] = temp_size_t;
+      // set to next element in "true" list
+      ++j;
+    }
+  }
 }
 
 #define ASSERT(c) \

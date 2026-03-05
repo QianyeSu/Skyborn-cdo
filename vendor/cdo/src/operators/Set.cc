@@ -78,7 +78,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Set> registration = RegisterEntry<Set>();
+  inline static auto registration = RegisterEntry<Set>();
 
   int SETCODE{}, SETPARAM{}, SETNAME{}, SETSTDNAME{}, SETUNIT{}, SETLEVEL{}, SETLTYPE{}, SETTABNUM{}, SETMAXSTEPS{};
   int maxSteps = -1;

@@ -671,7 +671,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Remapstat> registration = RegisterEntry<Remapstat>();
+  inline static auto registration = RegisterEntry<Remapstat>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

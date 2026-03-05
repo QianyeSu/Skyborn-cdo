@@ -32,37 +32,30 @@
 #include "cdi_lockedIO.h"
 #include "field_functions.h"
 
-#define IS_SURFACE_LEVEL(zaxisID) (zaxisInqType(zaxisID) == ZAXIS_SURFACE && zaxisInqSize(zaxisID) == 1)
+static bool
+is_surface_level(int zaxisID)
+{
+  return (zaxisInqType(zaxisID) == ZAXIS_SURFACE && zaxisInqSize(zaxisID) == 1);
+}
 
 int
 get_surface_ID(int vlistID)
 {
-  int surfaceID = -1;
-
-  auto numZaxes = vlistNumZaxis(vlistID);
-  for (int index = 0; index < numZaxes; ++index)
+  for (int index = 0, n = vlistNumZaxis(vlistID); index < n; ++index)
   {
-    auto zaxisID = vlistZaxis(vlistID, index);
-    if (IS_SURFACE_LEVEL(zaxisID))
-    {
-      surfaceID = vlistZaxis(vlistID, index);
-      break;
-    }
+    if (is_surface_level(vlistZaxis(vlistID, index))) { return vlistZaxis(vlistID, index); }
   }
 
-  if (surfaceID == -1) surfaceID = zaxis_from_name("surface");
-
-  return surfaceID;
+  return zaxis_from_name("surface");
 }
 
 static void
 set_surface_ID(int vlistID, int surfaceID)
 {
-  auto numZaxes = vlistNumZaxis(vlistID);
-  for (int index = 0; index < numZaxes; ++index)
+  for (int index = 0, n = vlistNumZaxis(vlistID); index < n; ++index)
   {
     auto zaxisID = vlistZaxis(vlistID, index);
-    if (zaxisID != surfaceID || !IS_SURFACE_LEVEL(zaxisID)) vlistChangeZaxisIndex(vlistID, index, surfaceID);
+    if (zaxisID != surfaceID || !is_surface_level(zaxisID)) vlistChangeZaxisIndex(vlistID, index, surfaceID);
   }
 }
 
@@ -117,7 +110,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Vertstat> registration = RegisterEntry<Vertstat>();
+  inline static auto registration = RegisterEntry<Vertstat>();
 
 private:
   struct VertInfo
@@ -314,12 +307,13 @@ public:
           {
             if (rsamp1.empty()) rsamp1.resize(gridsize, rvar1.nsamp);
 
-            auto func = [&](auto const &v1, auto &v2, std::decay_t<decltype(v1[0])> missval)
+            auto func = [&](auto const &v1, auto &v2, auto n, auto mv)
             {
-              for (size_t i = 0; i < gridsize; ++i)
+              std::decay_t<decltype(v1[0])> missval = mv;
+              for (size_t i = 0; i < n; ++i)
                 if (fp_is_not_equal(v1[i], missval)) { v2[i] += layerWeight; }
             };
-            field_operation2(func, field, rsamp1, rvar1.missval);
+            field_operation2(func, field, rsamp1, gridsize, rvar1.missval);
           }
 
           if (stepStat.lvarstd)

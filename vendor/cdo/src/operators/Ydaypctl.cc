@@ -35,7 +35,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ydaypctl> registration = RegisterEntry<Ydaypctl>();
+  inline static auto registration = RegisterEntry<Ydaypctl>();
 
   static const int MaxDays = 373;
 

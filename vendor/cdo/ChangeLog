@@ -1,4 +1,64 @@
-2025-11-20  Uwe Schulzweida
+2026-02-25  Uwe Schulzweida
+
+	* Using YAC version 3.13.1
+	* Using CDI library version 2.6.0
+	* Version 2.6.0 release
+
+2026-02-18  Uwe Schulzweida
+
+	* VarsStat: add operator varsskew, varskurt, varsmedian, varspctl
+	* New operator splitensemble - Split ensembles
+
+2026-02-11  Uwe Schulzweida
+
+	* gheight: add support for surface_air_pressure with name avg_lnsp
+
+2026-02-06  Uwe Schulzweida
+
+	* Call open_lock()/open_unlock() around streanClose() (bug fix)
+
+2026-01-30  Uwe Schulzweida
+
+	* grid coordinates with proj_params;: add support for bounds
+
+2026-01-28  Uwe Schulzweida
+
+	* New operator symmetrize - Mirrors data at the equator
+
+2026-01-26  Uwe Schulzweida
+
+	* fillmiss: wrong result for n<4 [Bug #12341]
+
+2026-01-12  Uwe Schulzweida
+
+	* Rename predefined healpix grid hpz to hpr
+
+2026-01-02  Uwe Schulzweida
+
+	* query: added hplonlatbox key (experimental)
+
+2025-11-25  Uwe Schulzweida
+
+	* chparam: failed since release 2.5.3 [Bug: #12328]
+
+2025-11-18  Uwe Schulzweida
+
+	* gradsdes: add parameter genbounds=true to generate bounds for regular lonlat grids
+	* Predefined reg2d grids: add _b1 to generate bounds
+
+2025-11-15  Uwe Schulzweida
+
+	* Add option --nofile to set maximum number of files that can be opened
+
+2025-11-13  Uwe Schulzweida
+
+	* delattribute: add support for standard_name attribute
+
+2025-11-11  Uwe Schulzweida
+
+	* Seltime: wrong timestamp of first timestep if selsmon::nts1 is set
+
+2025-11-07  Uwe Schulzweida
 
 	* Using YAC version 3.7.1
 	* Using CDI library version 2.5.4

@@ -69,11 +69,10 @@ cdiUnitNamePtr(int cdi_unit)
   };
   enum
   {
-    numUnits = (int) (sizeof(cdiUnits) / sizeof(char *))
+    numUnits = (int) (sizeof(cdiUnits) / sizeof(cdiUnits[0]))
   };
-  const char *name = (cdi_unit > 0 && cdi_unit < numUnits) ? cdiUnits[cdi_unit] : NULL;
 
-  return name;
+  return (cdi_unit > 0 && cdi_unit < numUnits) ? cdiUnits[cdi_unit] : NULL;
 }
 
 size_t

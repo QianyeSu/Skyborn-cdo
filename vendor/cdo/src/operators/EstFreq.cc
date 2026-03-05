@@ -22,7 +22,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<EstFreq> registration = RegisterEntry<EstFreq>();
+  inline static auto registration = RegisterEntry<EstFreq>();
 
 private:
   int fyear = 0, lyear{}, fmonth = 0, lmonth{}, dummy{};

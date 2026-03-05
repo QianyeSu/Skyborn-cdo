@@ -31,7 +31,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 2, 1, NoRestriction },
   };
-  inline static RegisterEntry<Selyearidx> registration = RegisterEntry<Selyearidx>();
+  inline static auto registration = RegisterEntry<Selyearidx>();
 
   CdoStreamID streamID1;
   CdoStreamID streamID2;
@@ -84,9 +84,9 @@ public:
     auto maxFields = varList1.maxFields();
     std::vector<FieldInfo> fieldInfoList(maxFields);
 
-    FieldVector2D varsData1, varsData2;
-    field2D_init(varsData1, varList1, FIELD_VEC);
-    field2D_init(varsData2, varList2, FIELD_VEC);
+    FieldVector2D varDataList1, varDataList2;
+    field2D_init(varDataList1, varList1, FIELD_VEC);
+    field2D_init(varDataList2, varList2, FIELD_VEC);
 
     auto numVars = varList1.numVars();
     for (int varID = 0; varID < numVars; ++varID)
@@ -95,7 +95,7 @@ public:
       auto missval = varList2.vars[varID].missval;
       for (int levelID = 0; levelID < var.nlevels; ++levelID)
       {
-        for (size_t i = 0; i < var.gridsize; ++i) varsData2[varID][levelID].vec_d[i] = missval;
+        for (size_t i = 0; i < var.gridsize; ++i) varDataList2[varID][levelID].vec_d[i] = missval;
       }
     }
 
@@ -114,13 +114,13 @@ public:
       for (int fieldID = 0; fieldID < numFields; ++fieldID)
       {
         auto [varID, levelID] = cdo_inq_field(streamID1);
-        auto &field1 = varsData1[varID][levelID];
+        auto &field1 = varDataList1[varID][levelID];
         cdo_read_field(streamID1, field1);
 
         if (tsID == 0) fieldInfoList[fieldID].set(varID, levelID);
       }
 
-      int numFields2;
+      int numFields2{};
       int numSets = 0;
       while ((numFields2 = cdo_stream_inq_timestep(streamID2, tsID2)))
       {
@@ -135,8 +135,8 @@ public:
           field.init(var);
           cdo_read_field(streamID2, field);
 
-          auto const &field1 = varsData1[varID][levelID];
-          auto &field2 = varsData2[varID][levelID];
+          auto const &field1 = varDataList1[varID][levelID];
+          auto &field2 = varDataList2[varID][levelID];
           for (size_t i = 0; i < var.gridsize; ++i)
             if (numSets == (int) std::lround(field1.vec_d[i]))
             {
@@ -159,7 +159,7 @@ public:
           auto [varID, levelID] = fieldInfoList[fieldID].get();
           if (tsID && varList1.vars[varID].isConstant) continue;
 
-          auto &field2 = varsData2[varID][levelID];
+          auto &field2 = varDataList2[varID][levelID];
           field_num_mv(field2);
           cdo_def_field(streamID3, varID, levelID);
           cdo_write_field(streamID3, field2);

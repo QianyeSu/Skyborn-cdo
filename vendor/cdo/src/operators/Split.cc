@@ -17,6 +17,8 @@
       Split      splittabnum     Split table numbers
 */
 
+#include <list>
+
 #include <cdi.h>
 
 #include "process_int.h"
@@ -167,6 +169,74 @@ class Split : public Process
       gen_filename(formatted, swapObase, cdo_get_obase(), fileSuffix);
 
       streamIDs[index] = open_write(formatted);
+    }
+
+    return nsplit;
+  }
+
+  int
+  split_ensemble(bool swapObase, std::string const &fileSuffix, std::string const &fileName)
+  {
+    auto numVars = varList1.numVars();
+    std::vector<int> varNumberList(numVars);
+    std::list<int> pNumbers;
+
+    int numberOfForecastsInEnsemble0 = 0;
+    for (int varID = 0; varID < numVars; ++varID)
+    {
+      // ensemble information
+      int perturbationNumber = 0, numberOfForecastsInEnsemble = 0;
+      auto r1 = cdiInqKeyInt(varList1.vlistID, varID, CDI_KEY_PERTURBATIONNUMBER, &perturbationNumber);
+      auto r2 = cdiInqKeyInt(varList1.vlistID, varID, CDI_KEY_NUMBEROFFORECASTSINENSEMBLE, &numberOfForecastsInEnsemble);
+      if (r1 != 0) cdo_abort("GRIB2 key perturbationNumber not found!");
+      if (r2 != 0) cdo_abort("GRIB2 key numberOfForecastsInEnsemble not found!");
+      if (perturbationNumber > numberOfForecastsInEnsemble)
+        cdo_abort("GRIB2 key perturbationNumber > numberOfForecastsInEnsemble!");
+
+      if (varID == 0) { numberOfForecastsInEnsemble0 = numberOfForecastsInEnsemble; }
+      else
+      {
+        if (numberOfForecastsInEnsemble0 != numberOfForecastsInEnsemble)
+          cdo_abort("GRIB2 key numberOfForecastsInEnsemble must be constant!");
+      }
+
+      auto it = std::find(pNumbers.begin(), pNumbers.end(), perturbationNumber);
+      if (it == pNumbers.end()) pNumbers.push_back(perturbationNumber);
+      varNumberList[varID] = perturbationNumber;
+    }
+
+    auto nsplit = (int) pNumbers.size();
+
+    vlistIDs.resize(nsplit);
+    streamIDs.resize(nsplit);
+
+    int index = 0;
+    for (auto perturbationNumber : pNumbers)
+    {
+      vlistClearFlag(vlistID1);
+
+      for (int varID = 0; varID < numVars; ++varID)
+      {
+        if (varNumberList[varID] == perturbationNumber)
+        {
+          auto const &var = varList1.vars[varID];
+          for (int levelID = 0; levelID < var.nlevels; ++levelID)
+          {
+            vlistDefIndex(vlistID1, varID, levelID, index);
+            vlistDefFlag(vlistID1, varID, levelID, true);
+          }
+        }
+      }
+
+      auto vlistID2 = vlistCreate();
+      cdo_vlist_copy_flag(vlistID2, vlistID1);
+      vlistIDs[index] = vlistID2;
+
+      auto formatted = fileName + string_format("%05d", perturbationNumber);
+      gen_filename(formatted, swapObase, cdo_get_obase(), fileSuffix);
+
+      streamIDs[index] = open_write(formatted);
+      index++;
     }
 
     return nsplit;
@@ -366,6 +436,7 @@ public:
     .operators = { { "splitcode", SplitHelp },
                    { "splitparam", SplitHelp },
                    { "splitname", SplitHelp },
+                   { "splitensemble", SplitHelp },
                    { "splitlevel", SplitHelp },
                    { "splitgrid", SplitHelp },
                    { "splitzaxis", SplitHelp },
@@ -375,9 +446,7 @@ public:
     .number = CDI_BOTH,  // Allowed number type
     .constraints = { 1, OBASE, OnlyFirst },
   };
-  inline static RegisterEntry<Split> registration = RegisterEntry<Split>();
-
-  int SPLITCODE{}, SPLITPARAM{}, SPLITNAME{}, SPLITLEVEL{}, SPLITGRID{}, SPLITZAXIS{}, SPLITTABNUM{};
+  inline static auto registration = RegisterEntry<Split>();
 
   std::vector<int> vlistIDs{};
   std::vector<CdoStreamID> streamIDs{};
@@ -395,13 +464,14 @@ public:
   {
     dataIsUnchanged = data_is_unchanged();
 
-    SPLITCODE = module.get_id("splitcode");
-    SPLITPARAM = module.get_id("splitparam");
-    SPLITNAME = module.get_id("splitname");
-    SPLITLEVEL = module.get_id("splitlevel");
-    SPLITGRID = module.get_id("splitgrid");
-    SPLITZAXIS = module.get_id("splitzaxis");
-    SPLITTABNUM = module.get_id("splittabnum");
+    int SPLITCODE = module.get_id("splitcode");
+    int SPLITPARAM = module.get_id("splitparam");
+    int SPLITNAME = module.get_id("splitname");
+    int SPLITENSEMBLE = module.get_id("splitensemble");
+    int SPLITLEVEL = module.get_id("splitlevel");
+    int SPLITGRID = module.get_id("splitgrid");
+    int SPLITZAXIS = module.get_id("splitzaxis");
+    int SPLITTABNUM = module.get_id("splittabnum");
 
     auto operatorID = cdo_operator_id();
 
@@ -431,6 +501,7 @@ public:
     else if (operatorID == SPLITPARAM) { numSplit = split_param(swapObase, fileSuffix, fileName); }
     else if (operatorID == SPLITTABNUM) { numSplit = split_tabnum(swapObase, fileSuffix, fileName); }
     else if (operatorID == SPLITNAME) { numSplit = split_name(swapObase, fileSuffix, fileName); }
+    else if (operatorID == SPLITENSEMBLE) { numSplit = split_ensemble(swapObase, fileSuffix, fileName); }
     else if (operatorID == SPLITLEVEL) { numSplit = split_level(swapObase, fileSuffix, fileName); }
     else if (operatorID == SPLITGRID) { numSplit = split_grid(swapObase, fileSuffix, fileName); }
     else if (operatorID == SPLITZAXIS) { numSplit = split_zaxis(swapObase, fileSuffix, fileName); }

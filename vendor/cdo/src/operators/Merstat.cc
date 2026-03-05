@@ -53,7 +53,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Merstat> registration = RegisterEntry<Merstat>();
+  inline static auto registration = RegisterEntry<Merstat>();
 
   int gridID2 = -1, lastgrid = -1;
 

@@ -84,8 +84,8 @@ grid_define_projection_healpix(GridDesciption const &grid)
 {
   if (grid.healpixNside <= 0) cdo_abort("healpix parameter nside undefined!");
   auto gridID = gridCreate(grid.type, grid.size);
-  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_DIMNAME, "cell");
-  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, "crs");
+  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_DIMNAME, "healpix_index");
+  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, "healpix");
   cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_NAME, grid.projection.c_str());
   cdiDefAttTxt(gridID, CDI_GLOBAL, "grid_mapping_name", (int) grid.projection.size(), grid.projection.c_str());
   cdiDefAttInt(gridID, CDI_GLOBAL, "healpix_nside", CDI_DATATYPE_INT32, 1, &grid.healpixNside);
@@ -98,8 +98,8 @@ grid_define_grid_healpix(GridDesciption const &grid)
 {
   if (grid.refinementLevel <= 0) cdo_abort("healpix parameter refinement_level undefined!");
   auto gridID = gridCreate(grid.type, grid.size);
-  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_DIMNAME, "cell");
-  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, "crs");
+  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_DIMNAME, "healpix_index");
+  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, "healpix");
   const std::string gridmapName = "healpix";
   cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_NAME, gridmapName.c_str());
   cdiDefAttTxt(gridID, CDI_GLOBAL, "grid_mapping_name", (int) gridmapName.size(), gridmapName.c_str());
@@ -507,7 +507,9 @@ cdo_define_grid(std::string const &gridFile)
       if (buffer[1] == 'H' && buffer[2] == 'D' && buffer[3] == 'F')  // HDF
       {
         Debug(cdoDebug, "Grid from HDF5 file");
+        open_lock();
         gridID = grid_from_h5_file(filename);
+        open_unlock();
       }
     }
 
@@ -532,7 +534,9 @@ cdo_define_grid(std::string const &gridFile)
         auto numGrids = vlistNumGrids(vlistID);
         if (gridNumber < 1 || gridNumber > numGrids) cdo_abort("Grid number %d not available in %s!", gridNumber, filename);
         gridID = vlistGrid(vlistID, gridNumber - 1);
+        open_lock();
         streamClose(streamID);
+        open_unlock();
       }
     }
 

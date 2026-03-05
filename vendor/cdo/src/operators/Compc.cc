@@ -80,7 +80,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Compc> registration = RegisterEntry<Compc>();
+  inline static auto registration = RegisterEntry<Compc>();
 
 private:
   CdoStreamID streamID1{};

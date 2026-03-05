@@ -125,7 +125,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 3, 1, NoRestriction },
   };
-  inline static RegisterEntry<Trendarith> registration = RegisterEntry<Trendarith>();
+  inline static auto registration = RegisterEntry<Trendarith>();
 
   CdoStreamID streamID1{};
   CdoStreamID streamID2{};

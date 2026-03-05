@@ -6,7 +6,9 @@
 #include <fftw3.h>
 #endif
 
+#ifdef HAVE_LIBFFTW3
 #include <vector>
+#endif
 
 #ifndef HAVE_LIBFFTW3
 #include "cdo_output.h"

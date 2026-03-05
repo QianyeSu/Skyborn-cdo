@@ -59,8 +59,9 @@ check_lon_range(const char *txt, size_t nlons, Varray<double> &lons)
     double minval = 1.e36;
     double maxval = -1.e36;
 #ifdef _OPENMP
-#pragma omp parallel for if (nlons > cdoMinLoopSize) default(shared) schedule(static) reduction(min : minval) \
-    reduction(max : maxval)
+#pragma omp parallel for if (nlons > cdoMinLoopSize) default(shared) schedule(static) reduction(min                     \
+                                                                                                : minval) reduction(max \
+                                                                                                                    : maxval)
 #endif
     for (size_t i = 0; i < nlons; ++i)
     {
@@ -95,8 +96,9 @@ check_lat_range(const char *txt, size_t nlats, Varray<double> &lats)
     double minval = 1.e36;
     double maxval = -1.e36;
 #ifdef _OPENMP
-#pragma omp parallel for if (nlats > cdoMinLoopSize) default(shared) schedule(static) reduction(min : minval) \
-    reduction(max : maxval)
+#pragma omp parallel for if (nlats > cdoMinLoopSize) default(shared) schedule(static) reduction(min                     \
+                                                                                                : minval) reduction(max \
+                                                                                                                    : maxval)
 #endif
     for (size_t i = 0; i < nlats; ++i)
     {
@@ -302,7 +304,7 @@ remap_define_grid(RemapMethod mapType, int gridID, RemapGrid &grid, char const *
     if (grid.dims[1] == 0) cdo_abort("%s grid without latitude coordinates!", gridNamePtr(gridType));
   }
 
-  grid.isCyclic = (gridIsCircular(gridID) > 0);
+  grid.isCyclic = (gridIsCyclic(gridID) > 0);
 
   grid.rank = (gridInqType(gridID) == GRID_UNSTRUCTURED || isHealpixGrid) ? 1 : 2;
 
@@ -548,10 +550,7 @@ remap_init_grids(RemapMethod mapType, bool doExtrapolate, int gridID1, RemapGrid
       if (Options::force == false && needCorners == NeedCorners::Yes) { print_healpix_warning_and_abort(); }
       gridID1 = gridToUnstructured(srcGrid.gridID, needCorners);
     }
-    else
-    {
-      gridID1 = gridToCurvilinear(srcGrid.gridID, needCorners);
-    }
+    else { gridID1 = gridToCurvilinear(srcGrid.gridID, needCorners); }
     srcGrid.gridID = gridID1;
     srcGrid.tmpgridID = srcGrid.gridID;
   }

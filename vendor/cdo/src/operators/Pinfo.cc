@@ -28,7 +28,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { 1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Pinfo> registration = RegisterEntry<Pinfo>();
+  inline static auto registration = RegisterEntry<Pinfo>();
 
   int PINFO{}, PINFOV{};
   CdoStreamID streamID1{};

@@ -2,10 +2,12 @@
 #
 # default configuration options and compiler flags for different hosts
 #
-#
 CONFPATH=`echo $0 | cut -c 1-6`
 if [ "$CONFPATH" != "../../" ] ; then
-  CONFPATH='./'
+  CONFPATH=`echo $0 | cut -c 1-3`
+  if [ "$CONFPATH" != "../" ] ; then
+    CONFPATH='./'
+  fi
 fi
 #
 COMP=""
@@ -180,8 +182,7 @@ case "${HOSTNAME}" in
 	            CXX=icpc CXXFLAGS="-g -Wall -O2 -qopt-report=5 -march=native" \
 	            CC=icc   CFLAGS="-g -std=c99 -Wall -O2 -qopt-report=5 -march=native"
         elif  test "$COMP" = clang ; then
-	            ${CONFPATH}configure --prefix=$HOME/local \
-                    --enable-maintainer-mode \
+	            ${CONFPATH}configure \
                     $CDOLIBS \
                     LDFLAGS="$LDFLAGS" \
                     CPPFLAGS="-DWARN_UNUSED" \
@@ -381,7 +382,7 @@ case "${HOSTNAME}" in
         ECCODESPATH=/sw/spack-levante/eccodes-2.40.0-xmvxhh
         MAGICSPATH=/sw/spack-levante/magics-4.9.3-z64bdu
         SZPATH=/sw/spack-levante/libaec-1.0.5-r5sdw5
-        #PROJPATH=/sw/spack-levante/proj-8.1.0-i6a6ah
+        PROJPATH=/sw/spack-levante/proj-6.3.2-nh73ko
         CDOLIBS="--with-eccodes=$ECCODESPATH \
                  --with-hdf5=$HDF5PATH \
                  --with-netcdf=$NETCDFPATH \
@@ -390,8 +391,8 @@ case "${HOSTNAME}" in
                  --with-szlib=$SZPATH \
                  --with-curl \
                  --with-ossp-uuid \
-                 --with-libxml2"
-        #        --with-proj=$PROJPATH"
+                 --with-libxml2 \
+                 --with-proj=$PROJPATH"
         #         --with-magics=$MAGICSPATH"
         # LDFLAGS="-L$MAGICSPATH/lib64 -Wl,-rpath,$MAGICSPATH/lib64"
         LDFLAGS="$LDFLAGS -L$ECCODESPATH/lib64 -Wl,-rpath,$ECCODESPATH/lib64"
@@ -399,14 +400,14 @@ case "${HOSTNAME}" in
         LDFLAGS="$LDFLAGS -L$HDF5PATH/lib64 -Wl,-rpath,$HDF5PATH/lib"
         LDFLAGS="$LDFLAGS -L$NETCDFPATH/lib64 -Wl,-rpath,$NETCDFPATH/lib64"
         LDFLAGS="$LDFLAGS -Wl,-rpath,$UDUNITS2PATH/lib"
-        # LDFLAGS="$LDFLAGS -Wl,-rpath,$PROJPATH/lib"
+        LDFLAGS="$LDFLAGS -Wl,-rpath,$PROJPATH/lib"
         LDFLAGS="$LDFLAGS -L$FFTW3PATH/lib -Wl,-rpath,$FFTW3PATH/lib"
         LDFLAGS="$LDFLAGS -Wl,-rpath,/sw/spack-levante/gcc-13.3.0-s2dxrt/lib64"
 
         if  test "$COMP" = intel ; then
           INTELONEAPI=/sw/spack-levante/intel-oneapi-compilers-2025.0.4-mcnoni/compiler/2025.0
           LDFLAGS="$LDFLAGS -Wl,-rpath,$INTELONEAPI/lib"
-          ${CONFPATH}configure --prefix=$HOME/local \
+          ${CONFPATH}configure \
                     $CDOLIBS \
                     LDFLAGS="$LDFLAGS" \
                     F77=ifx FFLAGS="-g -O2" \
@@ -420,19 +421,19 @@ case "${HOSTNAME}" in
 	            CXX=pgc++ CXXFLAGS="-g -O2 -D_REENTRANT -I${FFTW3PATH}/include" \
 	            CC=pgcc   CFLAGS="-g -O2 -D_REENTRANT"
         elif  test "$COMP" = clang ; then
-          ${CONFPATH}configure --disable-fortran \
+          ${CONFPATH}configure --disable-fortran --disable-openmp \
                     $CDOLIBS LIBS="-lm" \
                     LDFLAGS="$LDFLAGS" \
                     CXX=clang++ CXXFLAGS="-g -Wall -O3 -mavx2 -I${FFTW3PATH}/include" \
                     CC=clang  CFLAGS="-g -Wall -O2 -mavx2"
         elif  test "$COMP" = sanitize_address ; then
-          ${CONFPATH}configure --disable-fortran \
+          ${CONFPATH}configure --disable-fortran --disable-openmp \
                     $CDOLIBS LIBS="-lm" \
                     LDFLAGS="$LDFLAGS" \
                     CXX=clang++ CXXFLAGS="-g -Wall -O3 -mavx2 -fsanitize=address -fno-omit-frame-pointer -I${FFTW3PATH}/include" \
                     CC=clang  CFLAGS="-g -Wall -O2 -mavx2 -fsanitize=address -fno-omit-frame-pointer"
         elif  test "$COMP" = sanitize_memory ; then
-          ${CONFPATH}configure --disable-fortran \
+          ${CONFPATH}configure --disable-fortran --disable-openmp \
                     $CDOLIBS LIBS="-lm" \
                     LDFLAGS="$LDFLAGS" \
                     CXX=clang++ CXXFLAGS="-g -Wall -O3 -mavx2 -fsanitize=memory -fno-omit-frame-pointer -I${FFTW3PATH}/include" \
@@ -445,7 +446,7 @@ case "${HOSTNAME}" in
                     CXX=g++ CXXFLAGS="-g -Wall -O3 -mavx2 -fPIC -I${FFTW3PATH}/include" \
                     CC=gcc  CFLAGS="-g -Wall -O2 -mavx2 -fPIC"
 	else
-          ${CONFPATH}configure --prefix=$HOME/local \
+          ${CONFPATH}configure \
                     $CDOLIBS LIBS=-lm \
                     LDFLAGS="$LDFLAGS" \
                     F77=gfortran FFLAGS="-g -O2" \
@@ -631,8 +632,7 @@ case "${HOSTNAME}" in
 	;;
 
     *)
-      echo "Could not find host!!!";
-      echo "hostname used is: '${HOSTNAME}'"
+      echo "Could not find hostname '${HOSTNAME}'!";
       exit 1;
       ;;
 esac

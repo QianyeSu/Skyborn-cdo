@@ -41,7 +41,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Sorttimestamp> registration = RegisterEntry<Sorttimestamp>();
+  inline static auto registration = RegisterEntry<Sorttimestamp>();
 
   int lasttsID = -1;
   int nalloc = 0;
@@ -73,7 +73,7 @@ public:
   void
   run() override
   {
-    FieldVector3D varsData;
+    FieldVector3D varDataList;
     std::vector<CdiDateTime> vDateTimes;
     auto numFiles = cdo_stream_cnt() - 1;
 
@@ -111,17 +111,17 @@ public:
           constexpr int NALLOC_INC = 1024;
           nalloc += NALLOC_INC;
           vDateTimes.resize(nalloc);
-          varsData.resize(nalloc);
+          varDataList.resize(nalloc);
         }
 
         vDateTimes[xtsID] = taxisInqVdatetime(taxisID1);
 
-        field2D_init(varsData[xtsID], varList1);
+        field2D_init(varDataList[xtsID], varList1);
 
         for (int fieldID = 0; fieldID < numFields; ++fieldID)
         {
           auto [varID, levelID] = cdo_inq_field(streamID1);
-          auto &field = varsData[xtsID][varID][levelID];
+          auto &field = varDataList[xtsID][varID][levelID];
           field.init(varList1.vars[varID]);
           cdo_read_field(streamID1, field);
         }
@@ -172,8 +172,8 @@ public:
         {
           auto lskip = false;
           auto xtsID2 = timeinfo[lasttsID].index;
-          auto const &field1 = varsData[xtsID][0][0];
-          auto const &field2 = varsData[xtsID2][0][0];
+          auto const &field1 = varDataList[xtsID][0][0];
+          auto const &field2 = varDataList[xtsID2][0][0];
           if (field1.memType == MemType::Float)
           {
             if (field1.vec_f == field2.vec_f) lskip = true;
@@ -204,7 +204,7 @@ public:
       {
         for (int levelID = 0; levelID < varList2.vars[varID].nlevels; ++levelID)
         {
-          auto &field = varsData[xtsID][varID][levelID];
+          auto &field = varDataList[xtsID][varID][levelID];
           if (field.hasData())
           {
             cdo_def_field(streamID2, varID, levelID);

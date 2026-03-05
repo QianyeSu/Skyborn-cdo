@@ -56,7 +56,7 @@ static int
 get_date(const char *name)
 {
   const char *pname = strchr(name, '_');
-  int date = pname ? atoi(pname + 1) : 0;
+  int date = pname ? std::atoi(pname + 1) : 0;
   return date;
 }
 
@@ -205,11 +205,11 @@ public:
       {
         char *pstation = station;
         while (std::isalpha(*pstation)) pstation++;
-        // printf("station %s %d\n", pstation, atoi(pstation));
+        // printf("station %s %d\n", pstation, std::atoi(pstation));
         data[index][j * xsize + i] = value;
         data[4][j * xsize + i] = height1;
         data[5][j * xsize + i] = pressure;
-        // data[    6][j*xsize+i] = atoi(pstation);
+        // data[    6][j*xsize+i] = std::atoi(pstation);
       }
 
       /*

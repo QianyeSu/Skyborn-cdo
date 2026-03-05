@@ -90,7 +90,7 @@ public:
     .number = CDI_REAL,  // Allowed number type
     .constraints = { -1, 1, NoRestriction },
   };
-  inline static RegisterEntry<Ensstat3> registration = RegisterEntry<Ensstat3>();
+  inline static auto registration = RegisterEntry<Ensstat3>();
 
 private:
   size_t numMissVals = 0;
@@ -279,8 +279,8 @@ public:
 
     auto const &varList1 = ensFileList[0].varList;
 
-    int varID = 0, levelID;
-    int numFields0;
+    int varID = 0, levelID{};
+    int numFields0{};
     int tsID = 0;
     do {
       numFields0 = cdo_stream_inq_timestep(ensFileList[0].streamID, tsID);
