@@ -858,51 +858,42 @@ def main():
     # CDO 2.6.0 New Features
     print("\n=== 42. CDO 2.6.0 New Features ===")
 
-    # VarsStat: higher-moment ensemble statistics
-    # (varsskew / varskurt / varsmedian / varspctl require CDO >= 2.6.0)
-    # Guarded with has_operator() so old wheels skip cleanly.
+    # VarsStat operators require a single file with multiple variables on the SAME grid.
+    # Build varstest_nc: topo + renamed copy (elev), both on identical topo grid.
+    _topo_elev_nc = os.path.join(tmpdir, "topo_elev.nc")
+    varstest_nc = os.path.join(tmpdir, "varstest.nc")
+    run_test("varstest-prep", lambda: (
+        cdo.chname("topo,elev", input=topo_nc, output=_topo_elev_nc) or True) and (
+        cdo.merge(input=f"{topo_nc} {_topo_elev_nc}", output=varstest_nc) or
+        assert_file(varstest_nc)))
+
+    # VarsStat: statistics across variables within one file
     varsskew_nc = os.path.join(tmpdir, "varsskew.nc")
-    run_test("varsskew (2.6.0+)", lambda: (
-        None if not cdo.has_operator("varsskew")
-        else cdo.varsskew(
-            input=[topo_nc, topo_nc, topo_nc],
-            output=varsskew_nc) or assert_file(varsskew_nc)))
+    run_test("varsskew", lambda: cdo.varsskew(
+        input=varstest_nc, output=varsskew_nc) or assert_file(varsskew_nc))
 
     varskurt_nc = os.path.join(tmpdir, "varskurt.nc")
-    run_test("varskurt (2.6.0+)", lambda: (
-        None if not cdo.has_operator("varskurt")
-        else cdo.varskurt(
-            input=[topo_nc, topo_nc, topo_nc],
-            output=varskurt_nc) or assert_file(varskurt_nc)))
+    run_test("varskurt", lambda: cdo.varskurt(
+        input=varstest_nc, output=varskurt_nc) or assert_file(varskurt_nc))
 
     varsmedian_nc = os.path.join(tmpdir, "varsmedian.nc")
-    run_test("varsmedian (2.6.0+)", lambda: (
-        None if not cdo.has_operator("varsmedian")
-        else cdo.varsmedian(
-            input=[topo_nc, topo_nc, topo_nc],
-            output=varsmedian_nc) or assert_file(varsmedian_nc)))
+    run_test("varsmedian", lambda: cdo.varsmedian(
+        input=varstest_nc, output=varsmedian_nc) or assert_file(varsmedian_nc))
 
     varspctl_nc = os.path.join(tmpdir, "varspctl.nc")
-    run_test("varspctl,90 (2.6.0+)", lambda: (
-        None if not cdo.has_operator("varspctl")
-        else cdo.varspctl("90",
-                          input=[topo_nc, topo_nc, topo_nc],
-                          output=varspctl_nc) or assert_file(varspctl_nc)))
+    run_test("varspctl,90", lambda: cdo.varspctl(
+        "90", input=varstest_nc, output=varspctl_nc) or assert_file(varspctl_nc))
 
-    # symmetrize: mirrors data at the equator (2.6.0+)
+    # symmetrize: mirrors data at the equator
     symmetrize_nc = os.path.join(tmpdir, "symmetrize.nc")
-    run_test("symmetrize (2.6.0+)", lambda: (
-        None if not cdo.has_operator("symmetrize")
-        else cdo.symmetrize(
-            input=topo_nc, output=symmetrize_nc) or assert_file(symmetrize_nc)))
+    run_test("symmetrize", lambda: cdo.symmetrize(
+        input=topo_nc, output=symmetrize_nc) or assert_file(symmetrize_nc))
 
-    # fillmiss: verify basic operation (Bug #12341 fix: wrong result for n<4)
-    # Create a file with Southern-hemisphere-only valid values, then fill.
+    # fillmiss: bug #12341 fix (wrong result for n<4 neighbours)
     fillmiss_bugfix_nc = os.path.join(tmpdir, "fillmiss_bugfix.nc")
-    run_test("fillmiss bug#12341 (n<4)", lambda: (
-        cdo.fillmiss(
-            input="-setrtomiss,-10001,0 " + topo_nc,
-            output=fillmiss_bugfix_nc) or assert_file(fillmiss_bugfix_nc)))
+    run_test("fillmiss bug#12341 (n<4)", lambda: cdo.fillmiss(
+        input="-setrtomiss,-10001,0 " + topo_nc,
+        output=fillmiss_bugfix_nc) or assert_file(fillmiss_bugfix_nc))
 
     # ---- Summary ----
     elapsed = time.time() - t_start
