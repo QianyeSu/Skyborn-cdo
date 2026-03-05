@@ -4,12 +4,12 @@ Pre-compiled [CDO (Climate Data Operators)](https://code.mpimet.mpg.de/projects/
 
 This is a backend module for [Skyborn](https://github.com/QianyeSu/Skyborn) — an atmospheric science research toolkit.
 
-### About CDO 2.5.3
+### About CDO 2.6.0
 
-This package bundles **CDO 2.5.3** with all required dependencies. For detailed CDO documentation and release information, see:
+This package bundles **CDO 2.6.0** with all required dependencies. For detailed CDO documentation and release information, see:
 
 - **CDO Official Project**: https://code.mpimet.mpg.de/projects/cdo
-
+- **CDO 2.6.0 Release Notes**: https://code.mpimet.mpg.de/projects/cdo/wiki/Changelog
 
 ## Installation
 
@@ -43,7 +43,7 @@ pip install skyborn-cdo[test]
 from skyborn_cdo import Cdo
 
 cdo = Cdo()
-print(cdo.version())  # CDO 2.5.3
+print(cdo.version())  # CDO 2.6.0
 ```
 
 ## Usage
@@ -607,7 +607,7 @@ print(cdo.help("operator_name"))
 
 ## CDO Version
 
-This package bundles **CDO 2.5.3** with the following libraries:
+This package bundles **CDO 2.6.0** with the following libraries:
 - NetCDF-C 4.9.x
 - HDF5 1.14.x
 - ecCodes 2.40+
@@ -616,6 +616,53 @@ This package bundles **CDO 2.5.3** with the following libraries:
 - UDUNITS2 2.2.28
 
 Exact library versions vary by platform (Linux/macOS build from source, Windows uses MSYS2 packages).
+
+### What's New in CDO 2.6.0
+
+#### New operators
+
+| Operator | Description |
+|----------|-------------|
+| `varsskew` | Ensemble skewness across input files (VarsStat group) |
+| `varskurt` | Ensemble kurtosis across input files (VarsStat group) |
+| `varsmedian` | Ensemble median across input files (VarsStat group) |
+| `varspctl` | Ensemble percentile across input files, e.g. `varspctl,90` |
+| `symmetrize` | Mirrors data at the equator (creates symmetric fields) |
+| `splitensemble` | Splits GRIB2 ensemble members into separate files |
+
+#### New global options
+
+| Option | Description |
+|--------|-------------|
+| `--query` | Pre-selects a subset of the data cube from a dataset |
+| `--async_read true\|false` | Reads input data asynchronously; available for `diff`, `info`, `trend`, `detrend`, `Timstat` operators |
+
+#### Performance improvements
+
+- Significant performance improvement for reading HEALPix zarr datasets with NCZARR.
+
+#### Bug fixes
+
+- `fillmiss`: wrong result when fewer than 4 valid neighbours available [Bug #12341]
+- `chparam`: failed since release 2.5.3 [Bug #12328]
+
+#### Usage examples
+
+```python
+cdo = Cdo()
+
+# VarsStat: compute skewness / kurtosis / median across an ensemble
+cdo.varsskew(input=["mem1.nc", "mem2.nc", "mem3.nc"], output="skew.nc")
+cdo.varskurt(input=["mem1.nc", "mem2.nc", "mem3.nc"], output="kurt.nc")
+cdo.varsmedian(input=["mem1.nc", "mem2.nc", "mem3.nc"], output="median.nc")
+cdo.varspctl("90", input=["mem1.nc", "mem2.nc", "mem3.nc"], output="pct90.nc")
+
+# Symmetrize: mirror a field at the equator
+cdo.symmetrize(input="topo.nc", output="topo_symmetric.nc")
+
+# Global async read option (speeds up supported operators)
+cdo("--async_read true -diff file1.nc file2.nc")
+```
 
 ## API Reference
 
