@@ -137,12 +137,10 @@ PY
 fi
 
 # Defensive fix: disable CDI I/O threading on Windows to prevent ACCESS VIOLATION.
-# cdo_settings.cc calls cdiDefGlobal("THREADSAFE", 1) unconditionally at startup,
-# enabling CDI's internal pthread_mutex locks for file I/O.  On MSYS2/MinGW64 with
-# winpthreads, those mutexes cause a crash (NTSTATUS 0xC0000005) when reading
-# NetCDF files produced by piped CDO operators (chname, setname, etc.).
-# CDO's process threading (--with-threads=yes) is a separate mechanism and is
-# NOT affected by disabling CDI_Threadsafe.
+# cdo_settings.cc calls cdiDefGlobal("THREADSAFE", 1) unconditionally at startup.
+# This enables CDI's internal pthread_mutex protection for file I/O (the
+# loadSerialize mutex in cdf_lazy_grid.c).  On MSYS2/MinGW64 with winpthreads,
+# these mutexes cause ACCESS VIOLATION (0xC0000005) on any NC4 read.
 _cdo_settings="${CDO_SOURCE}/src/cdo_settings.cc"
 if [[ -f "${_cdo_settings}" ]]; then
   python - "${_cdo_settings}" <<'PY'
@@ -154,7 +152,7 @@ old = '  if (Threading::cdoLockIO == false) cdiDefGlobal("THREADSAFE", 1);'
 new = (
     '#ifndef _WIN32\n'
     '  // CDI I/O threading disabled on Windows: winpthreads + CDI lazy-grid\n'
-    '  // mutexes cause ACCESS VIOLATION (0xC0000005) on NetCDF files from pipes.\n'
+    '  // mutexes cause ACCESS VIOLATION (0xC0000005) on any NC4 file read.\n'
     '  if (Threading::cdoLockIO == false) cdiDefGlobal("THREADSAFE", 1);\n'
     '#endif'
 )
@@ -164,6 +162,52 @@ if old in text:
     print(f"[skyborn-cdo] Disabled CDI_Threadsafe on Windows: {fpath}")
 else:
     print(f"[skyborn-cdo] WARNING: CDI_Threadsafe pattern not found in {fpath}")
+PY
+fi
+
+# Defensive fix: disable winpthreads mutex in libcdi/src/cdf_lazy_grid.c.
+# CDI's lazy-grid code calls pthread_mutex_lock() to serialise deferred loading
+# of lat/lon/depth coordinate arrays from NC4 files.  On Windows, winpthreads
+# causes an ACCESS VIOLATION (0xC0000005) when this mutex is called — this is
+# the root cause of CDO crashing on any real-world NC4 dataset (e.g. IAPv4).
+# Single-operator CDO processes don't need this thread-safety layer.
+_lazy_grid="${CDO_SOURCE}/libcdi/src/cdf_lazy_grid.c"
+if [[ -f "${_lazy_grid}" ]]; then
+  python - "${_lazy_grid}" <<'PY'
+import sys
+fpath = sys.argv[1]
+text = open(fpath, encoding="utf-8", errors="ignore").read()
+original = text
+old = (
+    '#ifdef HAVE_CONFIG_H\n'
+    '#include "config.h"\n'
+    '#endif\n'
+    '\n'
+    '#ifdef HAVE_LIBNETCDF'
+)
+new = (
+    '#ifdef HAVE_CONFIG_H\n'
+    '#include "config.h"\n'
+    '#endif\n'
+    '\n'
+    '// Windows: winpthreads pthread_mutex_lock inside CDI\'s lazy-grid\n'
+    '// coordinate-loading code causes ACCESS VIOLATION (0xC0000005)\n'
+    '// when reading any NC4 file with explicit lat/lon/depth variables.\n'
+    '// Single-operator CDO processes don\'t require this thread-safety;\n'
+    '// disabling HAVE_LIBPTHREAD here uses the no-op mutex path without\n'
+    '// affecting CDO\'s process-level pipe threading.\n'
+    '#ifdef _WIN32\n'
+    '#undef HAVE_LIBPTHREAD\n'
+    '#endif\n'
+    '\n'
+    '#ifdef HAVE_LIBNETCDF'
+)
+if old in text:
+    text = text.replace(old, new, 1)
+    open(fpath, 'w', encoding="utf-8", newline="\n").write(text)
+    print(f"[skyborn-cdo] Disabled lazy-grid winpthreads mutex on Windows: {fpath}")
+else:
+    print(f"[skyborn-cdo] WARNING: cdf_lazy_grid.c pattern not found in {fpath}")
 PY
 fi
 

@@ -697,6 +697,50 @@ static int unsetenv(const char *name) {
                  "#endif"),
             ]),
 
+            # --- libcdi/src/cdf_lazy_grid.c: disable winpthreads mutex -------
+            # CDI's lazy-grid code uses pthread_mutex_lock() / pthread_once()
+            # to serialise deferred loading of coordinate variable arrays from
+            # NC4 files (lat/lon/depth values stored as actual float variables).
+            #
+            # On Windows (MSYS2/MinGW64 + winpthreads), these mutex calls cause
+            # an ACCESS VIOLATION (0xC0000005) when CDO opens any NetCDF file
+            # that has explicit coordinate variables — e.g. real-world climate
+            # datasets with lat/lon/depth arrays (the crash path NOT fixed by
+            # the cdo_settings.cc THREADSAFE guard above).
+            #
+            # With --host cross-compile (CDO 2.5.3) HAVE_LIBPTHREAD was never
+            # defined, so the branch was dead.  With native MSYS2 compilation
+            # (CDO 2.6.0+) HAVE_LIBPTHREAD is defined and the mutex activates.
+            #
+            # Fix: undefine HAVE_LIBPTHREAD at file scope in cdf_lazy_grid.c
+            # only.  CDO single-operator processes are inherently single-threaded
+            # per file; the grid-load serialisation is not needed.  CDO's own
+            # process-level parallelism (--with-threads=yes pipe chains) runs
+            # at the operator level and is entirely unaffected.
+            ("libcdi/src/cdf_lazy_grid.c", [
+                ("Disable winpthreads mutex in lazy-grid (ACCESS VIOLATION fix)",
+                 "#ifdef HAVE_CONFIG_H\n"
+                 "#include \"config.h\"\n"
+                 "#endif\n"
+                 "\n"
+                 "#ifdef HAVE_LIBNETCDF",
+                 "#ifdef HAVE_CONFIG_H\n"
+                 "#include \"config.h\"\n"
+                 "#endif\n"
+                 "\n"
+                 "// Windows: winpthreads pthread_mutex_lock inside CDI's lazy-grid\n"
+                 "// coordinate-loading code causes ACCESS VIOLATION (0xC0000005)\n"
+                 "// when reading any NC4 file with explicit lat/lon/depth variables.\n"
+                 "// Single-operator CDO processes don't require this thread-safety;\n"
+                 "// disabling HAVE_LIBPTHREAD here makes this translation unit use\n"
+                 "// the no-op mutex path without affecting CDO's process threading.\n"
+                 "#ifdef _WIN32\n"
+                 "#undef HAVE_LIBPTHREAD\n"
+                 "#endif\n"
+                 "\n"
+                 "#ifdef HAVE_LIBNETCDF"),
+            ]),
+
             # Keep unistd.h includes on MinGW: it is available and required by
             # multiple files for POSIX-like APIs (access, R_OK, etc.).
         ]

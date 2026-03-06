@@ -5,7 +5,7 @@ CI Wheel Comprehensive Stress Test — verifies CDO binary functionality.
 Executed by cibuildwheel after each wheel is installed.
 Tests as many CDO operations as possible within CI time constraints (~5 min).
 
-Test Coverage (~151 tests):
+Test Coverage (~153 tests):
   • Basic: version, operators, help
   • Synthetic data: topo, random, for, stdatm, const
   • Info queries: sinfo, griddes, showname, ntime, filedes, showformat
@@ -29,6 +29,7 @@ Test Coverage (~151 tests):
   • Date/Time: showdate, showtime, showtimestamp, shifttime
   • Chained: complex multi-operator pipes
   • CDO 2.6.0 new: varsskew, varskurt, varsmedian, varspctl, symmetrize, fillmiss
+  • Regression: explicit-coordinate NC4 (lazy-grid mutex — 0xC0000005 fix)
   • Error handling: invalid inputs
 """
 
@@ -895,6 +896,94 @@ def main():
         input="-setrtomiss,-10001,0 " + topo_nc,
         output=fillmiss_bugfix_nc) or assert_file(fillmiss_bugfix_nc))
 
+    # ======================================================================
+    # Regression test: explicit-coordinate NC4 (cdf_lazy_grid.c mutex bug)
+    # CDO 2.6.0 on Windows crashed with ACCESS VIOLATION (0xC0000005) when
+    # reading any NC4 file whose lat/lon/depth grid is stored as explicit
+    # float coordinate-variable arrays (the common CF-1 convention).
+    # Root cause: HAVE_LIBPTHREAD enabled cdf_lazy_grid.c's pthread_mutex_lock()
+    # which winpthreads mishandles.  CI tests previously used CDO-generated
+    # parametric grids (no explicit coordinate arrays) and missed the bug.
+    # This test creates an explicit-coordinate NC4 file via netCDF4-python,
+    # then exercises a CDO operator on it, guaranteeing the lazy-grid path
+    # is triggered.
+    # ======================================================================
+    print("\n=== 21. Explicit-Coordinate NC4 Regression (lazy-grid mutex) ===")
+    try:
+        import netCDF4 as _netcdf4  # type: ignore  # noqa: F401
+
+        import numpy as np  # type: ignore
+
+        explicit_coord_nc4 = os.path.join(tmpdir, "explicit_coord.nc4")
+
+        def _make_explicit_coord_nc4(path):
+            """Create a CF-1 NC4 file with explicit float lat/lon arrays."""
+            import netCDF4 as nc4  # type: ignore
+            import numpy as np  # type: ignore
+
+            nlat, nlon = 18, 36
+            lat = np.linspace(-85.0, 85.0, nlat, dtype=np.float32)
+            lon = np.linspace(0.0, 350.0, nlon, dtype=np.float32)
+            data = np.random.rand(1, nlat, nlon).astype(np.float32) * 300.0
+
+            with nc4.Dataset(path, "w", format="NETCDF4") as ds:
+                ds.Conventions = "CF-1.6"
+                ds.createDimension("time", None)
+                ds.createDimension("lat", nlat)
+                ds.createDimension("lon", nlon)
+
+                t = ds.createVariable("time", "f8", ("time",))
+                t.units = "days since 2000-01-01"
+                t.calendar = "standard"
+                t[:] = [0.0]
+
+                la = ds.createVariable("lat", "f4", ("lat",))
+                la.units = "degrees_north"
+                la.long_name = "latitude"
+                la.standard_name = "latitude"
+                la[:] = lat
+
+                lo = ds.createVariable("lon", "f4", ("lon",))
+                lo.units = "degrees_east"
+                lo.long_name = "longitude"
+                lo.standard_name = "longitude"
+                lo[:] = lon
+
+                v = ds.createVariable("temperature", "f4",
+                                      ("time", "lat", "lon"),
+                                      fill_value=1e20)
+                v.units = "K"
+                v.long_name = "air temperature"
+                v.standard_name = "air_temperature"
+                v.coordinates = "lat lon"
+                v[:] = data
+
+        _make_explicit_coord_nc4(explicit_coord_nc4)
+
+        # fldmean triggers CDI lazy-grid coordinate loading, which previously
+        # crashed on Windows via cdf_lazy_grid.c's pthread_mutex_lock().
+        explicit_mean_nc4 = os.path.join(tmpdir, "explicit_mean.nc4")
+        run_test(
+            "explicit-coord NC4 fldmean (lazy-grid mutex regression)",
+            lambda: cdo(
+                f"cdo fldmean {explicit_coord_nc4} {explicit_mean_nc4}",
+                timeout=30,
+            ) or assert_file(explicit_mean_nc4),
+        )
+
+        # Also verify sellonlatbox (requires grid coordinate access)
+        explicit_box_nc4 = os.path.join(tmpdir, "explicit_box.nc4")
+        run_test(
+            "explicit-coord NC4 sellonlatbox (lazy-grid mutex regression)",
+            lambda: cdo(
+                f"cdo sellonlatbox,0,90,-45,45 {explicit_coord_nc4} {explicit_box_nc4}",
+                timeout=30,
+            ) or assert_file(explicit_box_nc4),
+        )
+
+    except ImportError:
+        print("  [SKIP] netCDF4 not installed — skipping explicit-coordinate NC4 regression tests")
+
     # ---- Summary ----
     elapsed = time.time() - t_start
     total = passed + failed
@@ -942,12 +1031,6 @@ def assert_raises(exc_type, func):
 
 def _verify_nc_varname(nc_path: str, expected: str, original: str) -> None:
     """Verify a variable name in a NetCDF file without invoking CDO.
-
-    On Windows this build's CDO crashes (exit 0xC0000005 ACCESS VIOLATION)
-    when reading any NetCDF file.  The crash is in CDI's resource_handle.c
-    LIST_LOCK() which calls pthread_mutex_lock() — winpthreads causes an
-    ACCESS VIOLATION in the NC reader code path.  CDO's default output is
-    GRIB, which uses a different code path and works fine.
 
     NC3 classic stores variable names as plain ASCII in the file header
     (IETF RFC), so scanning the first 64 KB conclusively verifies the name.
