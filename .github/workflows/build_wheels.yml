@@ -44,7 +44,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -106,7 +106,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -201,7 +201,7 @@ jobs:
           echo '#include <iostream>' | g++ -xc++ -std=c++20 -E - > /dev/null 2>&1 && echo "iostream: OK" || echo "iostream: BROKEN"
           echo '#include <vector>' | g++ -xc++ -std=c++20 -E - > /dev/null 2>&1 && echo "vector: OK" || echo "vector: BROKEN"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -290,7 +290,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -322,7 +322,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
