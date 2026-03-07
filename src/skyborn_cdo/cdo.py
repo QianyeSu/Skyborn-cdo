@@ -110,17 +110,27 @@ class Cdo:
         """
         timeout = kwargs.get("timeout", self._timeout)
 
-        # Expand glob/wildcard patterns in the command string
+        # Expand glob/wildcard patterns in the command string.
+        # Collect all non-wildcard tokens first so that explicitly-named
+        # output files (e.g. "out.nc") are never included in wildcard
+        # expansion results – otherwise glob("*.nc") would match "out.nc"
+        # when it already exists, turning it into both an input and output.
         if any(c in cmd_string for c in ("*", "?", "[")):
             if os.name == 'nt':
                 parts = shlex.split(cmd_string, posix=False)
                 parts = [p.strip('"').strip("'") for p in parts]
             else:
                 parts = shlex.split(cmd_string)
+            explicit_files = {
+                p for p in parts
+                if not any(c in p for c in ("*", "?", "[", "]"))
+            }
             expanded_parts = []
             for p in parts:
                 if any(c in p for c in ("*", "?", "[", "]")):
-                    matches = sorted(glob.glob(p))
+                    matches = sorted(
+                        m for m in glob.glob(p) if m not in explicit_files
+                    )
                     if matches:
                         expanded_parts.extend(matches)
                     else:

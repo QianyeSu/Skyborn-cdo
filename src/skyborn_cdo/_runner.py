@@ -197,16 +197,27 @@ class CdoRunner:
         # Instead of blocking on proc.wait(timeout) for the full
         # duration, we poll every _POLL seconds.  Most CDO operations
         # finish in < 0.1 s; the exit-hang means the *process* stays
-        # alive but the work is done.  By checking the output file (or
-        # captured stdout for info operators) on every tick we can
-        # detect completion almost immediately and kill the zombie
-        # process without wasting the full timeout.
+        # alive but the work is done.
+        #
+        # Completion detection strategy (in priority order):
+        #   1. CDO prints "Processed N values from N variable" to stderr
+        #      → reliable, immediate signal.
+        #   2. stdout_chunks non-empty (info/read-only operators like showname)
+        #      → output is the result, no file needed.
+        #   3. Output-file SIZE STABILITY: the file exists AND its size has not
+        #      changed for _SIZE_STABLE_SECS seconds.  This guards against the
+        #      false positive where CDO creates the NC4/HDF5 header (size > 0)
+        #      before writing any data records – killing CDO at that point
+        #      produces a file with time=0.
         #
         _POLL = 0.3            # seconds between polls
-        _GRACE_AFTER = 0.5     # extra wait after output detected
+        _GRACE_AFTER = 0.3     # extra wait after completion detected, then kill
+        _SIZE_STABLE_SECS = 1.5  # seconds of unchanged file size = done writing
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
         _detected_at = None    # timestamp when completion first seen
+        _last_fsize = -1       # last observed output-file size
+        _last_fsize_changed = 0.0  # time when file size last changed
         hung = False
 
         while True:
@@ -219,16 +230,31 @@ class CdoRunner:
             # -- Quick-check: did CDO already finish its work? --------
             if _detected_at is None:
                 _done = False
-                # 1) output file exists with non-zero size
-                if output_file:
-                    try:
-                        _done = (os.path.isfile(output_file)
-                                 and os.path.getsize(output_file) > 0)
-                    except OSError:
-                        pass
-                # 2) stdout captured (info operators like showname)
+                # 1) stderr contains CDO completion message
+                if stderr_chunks:
+                    _stderr_so_far = b"".join(stderr_chunks).decode(
+                        "utf-8", errors="replace")
+                    if _CDO_DONE_RE.search(_stderr_so_far):
+                        _done = True
+                # 2) stdout data available (info / print operators)
                 if not _done and stdout_chunks:
                     _done = True
+                # 3) output file size has been stable for _SIZE_STABLE_SECS
+                if not _done and output_file:
+                    try:
+                        _cur_size = (
+                            os.path.getsize(output_file)
+                            if os.path.isfile(output_file) else -1
+                        )
+                        if _cur_size != _last_fsize:
+                            _last_fsize = _cur_size
+                            _last_fsize_changed = _elapsed
+                        elif (_cur_size > 0
+                              and (_elapsed - _last_fsize_changed)
+                              >= _SIZE_STABLE_SECS):
+                            _done = True
+                    except OSError:
+                        pass
                 if _done:
                     _detected_at = _elapsed
 

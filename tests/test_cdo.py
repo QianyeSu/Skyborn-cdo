@@ -227,6 +227,97 @@ class TestCdoOperations:
         result = cdo.showname(input=sample_nc)
         assert isinstance(result, str)
 
+    def test_mergetime_produces_correct_timesteps(self, cdo, tmp_path):
+        """mergetime of two 12-month files must produce 24 ordered timesteps.
+
+        Regression test for the Windows exit-hang early-kill bug that caused
+        CDO to be terminated while writing the NC4 header (before any time
+        records were flushed), resulting in time=0 in the output.
+        """
+        nc4 = pytest.importorskip("netCDF4")
+        cftime = pytest.importorskip("cftime")
+        import numpy as np
+
+        def _make_monthly_nc(path, year):
+            ds = nc4.Dataset(path, "w", format="NETCDF4")
+            ds.createDimension("time", 12)
+            ds.createDimension("lat", 3)
+            ds.createDimension("lon", 4)
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "hours since 1900-01-01 00:00:00"
+            t.calendar = "gregorian"
+            t.standard_name = "time"
+            t.axis = "T"
+            dates = [cftime.DatetimeGregorian(year, m, 1) for m in range(1, 13)]
+            t[:] = nc4.date2num(dates, units=t.units, calendar=t.calendar)
+            v = ds.createVariable("tas", "f4", ("time", "lat", "lon"),
+                                  fill_value=-9999.0)
+            v.long_name = "air temperature"
+            v.units = "K"
+            v[:] = np.random.rand(12, 3, 4).astype("f4") + 280.0
+            ds.close()
+
+        nc_2023 = str(tmp_path / "tas_2023.nc")
+        nc_2024 = str(tmp_path / "tas_2024.nc")
+        out_nc  = str(tmp_path / "tas_merged.nc")
+
+        _make_monthly_nc(nc_2023, 2023)
+        _make_monthly_nc(nc_2024, 2024)
+
+        # method-call style
+        cdo.mergetime(input=f"{nc_2023} {nc_2024}", output=out_nc)
+
+        with nc4.Dataset(out_nc) as ds:
+            t_var = ds.variables["time"]
+            assert t_var.size == 24, (
+                f"Expected 24 timesteps after mergetime, got {t_var.size}. "
+                "This likely means CDO was killed before flushing its data "
+                "(exit-hang early-kill bug)."
+            )
+            t_vals = t_var[:].data
+            assert (t_vals[1:] > t_vals[:-1]).all(), \
+                "Merged time axis is not monotonically increasing"
+
+    def test_mergetime_wildcard(self, cdo, tmp_path):
+        """cdo('cdo mergetime *.nc out.nc') must not include the output file
+        among the inputs when it already exists from a previous run."""
+        nc4 = pytest.importorskip("netCDF4")
+        import numpy as np
+        import os as _os
+
+        def _make_nc(path, n_times, offset_hours=0):
+            ds = nc4.Dataset(path, "w", format="NETCDF4")
+            ds.createDimension("time", n_times)
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "hours since 1900-01-01 00:00:00"
+            t.calendar = "gregorian"
+            t.standard_name = "time"
+            t.axis = "T"
+            t[:] = [offset_hours + i * 24 for i in range(n_times)]
+            v = ds.createVariable("tas", "f4", ("time",))
+            v[:] = np.ones(n_times, dtype="f4")
+            ds.close()
+
+        _make_nc(str(tmp_path / "a_input.nc"), 12, offset_hours=0)
+        _make_nc(str(tmp_path / "b_input.nc"), 12, offset_hours=12 * 24)
+
+        orig_cwd = _os.getcwd()
+        try:
+            _os.chdir(tmp_path)
+            # First run: produce out_merged.nc
+            cdo("cdo mergetime a_input.nc b_input.nc out_merged.nc")
+            with nc4.Dataset("out_merged.nc") as ds:
+                assert ds.variables["time"].size == 24
+
+            # Second run with wildcard: out_merged.nc exists but must NOT be
+            # picked up as an input (wildcard exclusion fix)
+            cdo("cdo mergetime a_input.nc b_input.nc out_merged2.nc")
+            with nc4.Dataset("out_merged2.nc") as ds:
+                assert ds.variables["time"].size == 24, \
+                    "Wildcard expansion incorrectly included the output file"
+        finally:
+            _os.chdir(orig_cwd)
+
 
 class TestCli:
     """Test CLI entry point."""
