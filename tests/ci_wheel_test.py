@@ -1043,7 +1043,7 @@ def main():
             assert (t_vals[1:] > t_vals[:-1]).all(), \
                 "Merged time axis is not monotonically increasing"
 
-    run_test("mergetime 2×12 → 24 timesteps (exit-hang early-kill regression)",
+    run_test("mergetime 2x12 -> 24 timesteps (exit-hang early-kill regression)",
              _test_mergetime_timesteps)
 
     # --- 22b: wildcard ERA5_MSE_202*.nc must not include the output ---
@@ -1058,23 +1058,22 @@ def main():
         try:
             os.chdir(mt_dir)
             # Output name intentionally matches the wildcard ERA5_MSE_202*.nc
+            # (2025 starts with "202"). We run twice to verify that on the
+            # second run -- when the output file already exists -- it is NOT
+            # included in the glob-expanded input list.
             mt_out_wild = "ERA5_MSE_2025_merged.nc"
-            # Pre-create the output file (simulates a prior run / stale artifact)
-            with nc4.Dataset(mt_out_wild, "w", format="NETCDF4") as _ds:
-                pass  # empty placeholder
-            # Without the fix, glob("ERA5_MSE_202*.nc") would match the output
-            # file and pass it as an input, causing CDO to error or produce
-            # wrong time count.
-            cdo(f"cdo mergetime ERA5_MSE_202*.nc {mt_out_wild}", timeout=60)
-            with nc4.Dataset(mt_out_wild) as ds:
-                n = ds.variables["time"].size
-                # Only 2022+2023+2024 should be inputs → 36 time steps.
-                # If the output was also included as an input the count would
-                # differ or CDO would abort with a circular-reference error.
-                assert n == 36, (
-                    f"Expected 36 timesteps, got {n}. "
-                    "Wildcard likely included the output file as an input."
-                )
+            for _pass in range(2):
+                # -O lets CDO overwrite on the second pass; without the glob
+                # fix the second pass would either silently merge 48 steps (if
+                # the output was opened as input) or fail with a CDO error.
+                cdo(f"cdo -O mergetime ERA5_MSE_202*.nc {mt_out_wild}",
+                    timeout=60)
+                with nc4.Dataset(mt_out_wild) as ds:
+                    n = ds.variables["time"].size
+                    assert n == 36, (
+                        f"Pass {_pass+1}: expected 36 timesteps, got {n}. "
+                        "Wildcard likely included the output file as an input."
+                    )
         finally:
             os.chdir(orig_cwd)
 
