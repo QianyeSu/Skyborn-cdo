@@ -57,6 +57,8 @@ class TestCdoBinaryDiscovery:
 
     def test_get_cdo_path_not_found(self):
         """Test FileNotFoundError when CDO not available anywhere."""
+        from unittest.mock import patch
+        from pathlib import Path
         from skyborn_cdo._cdo_binary import get_cdo_path
 
         original_env = os.environ.get("CDO")
@@ -64,8 +66,10 @@ class TestCdoBinaryDiscovery:
         try:
             os.environ.pop("CDO", None)
             os.environ["PATH"] = ""  # Empty path
-            with pytest.raises(FileNotFoundError, match="CDO binary not found"):
-                get_cdo_path("/nonexistent/cdo")
+            # Mock the bundled binary dir so the bundled check doesn't find it
+            with patch("skyborn_cdo._cdo_binary._package_bin_dir", return_value=Path("/nonexistent/bin")):
+                with pytest.raises(FileNotFoundError, match="CDO binary not found"):
+                    get_cdo_path("/nonexistent/cdo")
         finally:
             if original_env:
                 os.environ["CDO"] = original_env

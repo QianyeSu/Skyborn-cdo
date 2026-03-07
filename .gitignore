@@ -47,6 +47,8 @@ htmlcov/
 
 # CDO vendor source - included with Windows patches applied
 # vendor/cdo/ is tracked in git
+# Patch script backup files (auto-generated, not for commit)
+vendor/cdo/.patch_backup/
 
 # Local build directories
 build_win64/
