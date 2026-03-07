@@ -48,7 +48,8 @@ def _hdf5_file_is_closed(path: str):
             return None   # not HDF5 → caller uses fallback
         if hdr[8] < 2:
             return None   # superblock v0/v1: no flags at byte 11
-        return (hdr[11] & 0x01) == 0  # True = write-access bit cleared = closed
+        # True = write-access bit cleared = closed
+        return (hdr[11] & 0x01) == 0
     except OSError:
         return False
 

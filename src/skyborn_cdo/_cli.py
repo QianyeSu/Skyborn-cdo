@@ -154,8 +154,10 @@ def _run_windows(cmd, env, output_file=None):
         except (OSError, ValueError, AttributeError):
             pass
 
-    t_out = threading.Thread(target=_stream, args=(proc.stdout, sys.stdout), daemon=True)
-    t_err = threading.Thread(target=_stream, args=(proc.stderr, sys.stderr), daemon=True)
+    t_out = threading.Thread(target=_stream, args=(
+        proc.stdout, sys.stdout), daemon=True)
+    t_err = threading.Thread(target=_stream, args=(
+        proc.stderr, sys.stderr), daemon=True)
     t_out.start()
     t_err.start()
 
@@ -174,7 +176,8 @@ def _run_windows(cmd, env, output_file=None):
     #   True (wait) → False (phase A done, write_started → True) → True (done!)
     #
     initial_hdf5 = _hdf5_file_is_closed(output_file) if output_file else None
-    write_started = initial_hdf5 is not True  # True for new files; False for pre-existing
+    # True for new files; False for pre-existing
+    write_started = initial_hdf5 is not True
 
     # Size-stability fallback for non-HDF5 output (GRIB, NC3 classic, …)
     _last_fsize = -1
@@ -259,7 +262,6 @@ def _run_windows(cmd, env, output_file=None):
             return 0
 
     return 0  # unreachable, satisfies linters
-
 
 
 def _print_info():
