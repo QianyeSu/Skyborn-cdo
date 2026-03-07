@@ -1586,7 +1586,8 @@ def main():
     # 61b: divergence from U/V — force NC4 output so showname is fast
     divergence_nc = os.path.join(tmpdir, "divergence.nc")
     run_test("uv2dv_cfd (U+V -> divergence)", lambda: (
-        cdo.uv2dv_cfd(input=uv_wind_nc, output=divergence_nc, options="-f nc4"),
+        cdo.uv2dv_cfd(input=uv_wind_nc, output=divergence_nc,
+                      options="-f nc4"),
         assert_file(divergence_nc)))
 
     # ======================================================================
