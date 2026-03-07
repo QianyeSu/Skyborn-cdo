@@ -1024,7 +1024,7 @@ def main():
 
     nc_2023 = os.path.join(mt_dir, "ERA5_MSE_2023.nc")
     nc_2024 = os.path.join(mt_dir, "ERA5_MSE_2024.nc")
-    mt_out  = os.path.join(mt_dir, "ERA5_MSE_merged.nc")
+    mt_out = os.path.join(mt_dir, "ERA5_MSE_merged.nc")
 
     _make_monthly_nc(nc_2023, 2023)
     _make_monthly_nc(nc_2024, 2024)

@@ -248,7 +248,8 @@ class TestCdoOperations:
             t.calendar = "gregorian"
             t.standard_name = "time"
             t.axis = "T"
-            dates = [cftime.DatetimeGregorian(year, m, 1) for m in range(1, 13)]
+            dates = [cftime.DatetimeGregorian(
+                year, m, 1) for m in range(1, 13)]
             t[:] = nc4.date2num(dates, units=t.units, calendar=t.calendar)
             v = ds.createVariable("tas", "f4", ("time", "lat", "lon"),
                                   fill_value=-9999.0)
@@ -259,7 +260,7 @@ class TestCdoOperations:
 
         nc_2023 = str(tmp_path / "tas_2023.nc")
         nc_2024 = str(tmp_path / "tas_2024.nc")
-        out_nc  = str(tmp_path / "tas_merged.nc")
+        out_nc = str(tmp_path / "tas_merged.nc")
 
         _make_monthly_nc(nc_2023, 2023)
         _make_monthly_nc(nc_2024, 2024)
