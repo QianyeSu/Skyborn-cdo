@@ -9,7 +9,7 @@ This is a backend module for [Skyborn](https://github.com/QianyeSu/Skyborn) — 
 This package bundles **CDO 2.6.0** with all required dependencies. For detailed CDO documentation and release information, see:
 
 - **CDO Official Project**: https://code.mpimet.mpg.de/projects/cdo
-- **CDO 2.6.0 Release Notes**: https://code.mpimet.mpg.de/projects/cdo/wiki/Changelog
+- **CDO 2.6.0 Release Notes**: https://code.mpimet.mpg.de/projects/cdo/news
 
 ## Installation
 
