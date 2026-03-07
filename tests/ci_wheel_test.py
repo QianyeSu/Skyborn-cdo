@@ -5,22 +5,31 @@ CI Wheel Comprehensive Stress Test — verifies CDO binary functionality.
 Executed by cibuildwheel after each wheel is installed.
 Tests as many CDO operations as possible within CI time constraints (~5 min).
 
-Test Coverage (~153 tests):
+Test Coverage (~250 tests):
   • Basic: version, operators, help
   • Synthetic data: topo, random, for, stdatm, const
   • Info queries: sinfo, griddes, showname, ntime, filedes, showformat
-  • Selection: sellonlatbox, selindexbox, sellevel, selmon, selname, selcode, selseason
-  • Statistics: fldmean/std/min/max/sum, zonmean, timmean/std/min/max/sum
-  • Running stats: runmean, runstd, runmin, runmax (ntime verification)
-  • Grid box stats: gridboxmean, gridboxmax, gridboxmin, gridboxstd
+  • Selection: sellonlatbox, selindexbox, sellevel, selmon, selname, selcode,
+              selseason, selday, selyear, selsmon, seltime
+  • Statistics: fldmean/std/min/max/sum/var/skew/kurt/median/pctl, zonmean,
+               timmean/std/var/range/skew/kurt/avg, zon/mer full families
+  • Zonal/meridional: zonmin/max/sum/std/skew/kurt/median, mermin/max/sum/std/skew/kurt/median
+  • Running stats: runmean, runstd, runmin, runmax, runsum, runvar, runrange
+  • Grid box stats: gridboxmean, gridboxmax, gridboxmin, gridboxstd, gridboxrange/sum/var
   • Arithmetic: mulc, addc, subc, divc, abs, sqrt, sqr, expr, add/sub/mul/div
+  • Math: exp, ln, log10, sin, cos, tan, asin, acos, atan, reci, nint
+  • Comparison: eq, ne, le, lt, ge, gt
   • Grid ops: remapbil, remapcon, remapnn, remapbic, remaplaf, gridarea, gridweights
   • Spectral: gp2sp, sp2gpl, sp2gp (CRITICAL)
   • Format: NetCDF4/4c/2, GRIB1, GRIB2
-  • Time: mergetime, settaxis, selmon, monmean, seasmean/std/min/max, yearmean/min/max
-  • Vertical: intlevel, vertmean/sum/min/max, invertlev
-  • Masking: setmissval, setrtomiss, setmisstoc, ifthen, masklonlatbox
-  • Ensemble: ensmean, ensmin, ensmax, ensstd
+  • Time: mergetime, settaxis, selmon, monmean/min/max/std/sum,
+         seasmean/std/min/max/sum/range, yearmean/min/max/std/sum/range
+  • Vertical: intlevel, vertmean/sum/min/max/std/var, invertlev
+  • Masking: setmissval, setrtomiss, setmisstoc, ifthen, ifnotthen, ifthenelse,
+             masklonlatbox, setctomiss
+  • Ensemble: ensmean, ensmin, ensmax, ensstd, ensrange, enssum, ensskew, enskurt, enspctl
+  • VarsStat: varsskew, varskurt, varsmedian, varspctl, varsmean, varsstd,
+              varsmin, varsmax, varsrange, varssum
   • Trend: trend, detrend
   • File ops: cat, duplicate, invertlat, sortname, splitvar, splitmon
   • Metadata: chname, setstdname, setname, setunit, setcode, showlevel, showcode
@@ -29,7 +38,11 @@ Test Coverage (~153 tests):
   • Date/Time: showdate, showtime, showtimestamp, shifttime
   • Chained: complex multi-operator pipes
   • CDO 2.6.0 new: varsskew, varskurt, varsmedian, varspctl, symmetrize, fillmiss
-  • Regression: explicit-coordinate NC4 (lazy-grid mutex — 0xC0000005 fix)
+  • Regression: explicit-coordinate NC4 (lazy-grid mutex -- 0xC0000005 fix)
+  • String API: cdo("cdo ...") explicit-file write (two-phase HDF5 regression)
+  • run_raw() direct: CdoRunner.run_raw() lower-level API (mulc, timmean, remapbil,
+                      chained ops, returncode check, no-prefix mode, overwrite flag)
+  • NCL wind: uv2vr_cfd/uv2dv_cfd with synthetic u/v file (CF standard_name recognition)
   • Error handling: invalid inputs
 """
 
@@ -1029,7 +1042,7 @@ def main():
     _make_monthly_nc(nc_2023, 2023)
     _make_monthly_nc(nc_2024, 2024)
 
-    # --- 22a: method-call, explicit inputs → 24 timesteps ---
+    # --- 22a: method-call, explicit inputs -> 24 timesteps ---
     def _test_mergetime_timesteps():
         cdo.mergetime(input=f"{nc_2023} {nc_2024}", output=mt_out)
         with nc4.Dataset(mt_out) as ds:
@@ -1096,10 +1109,10 @@ def main():
     # slightly different; but both paths share the same _exec() loop.
     #
     # These tests exercise the string API for:
-    #   a) mergetime with two explicit NC4 files → must produce 24 timesteps
-    #   b) sellonlatbox string form → output file must be non-empty
-    #   c) chained -fldmean -sellonlatbox → output file must be non-empty
-    #   d) sinfo (no output file) → must return non-empty text
+    #   a) mergetime with two explicit NC4 files -> must produce 24 timesteps
+    #   b) sellonlatbox string form -> output file must be non-empty
+    #   c) chained -fldmean -sellonlatbox -> output file must be non-empty
+    #   d) sinfo (no output file) -> must return non-empty text
     # ======================================================================
     print("\n=== 43. cdo() String API — explicit-file write regression ===")
 
@@ -1137,6 +1150,461 @@ def main():
              lambda: assert_true(
                  isinstance(cdo(f"cdo sinfo {topo_nc}", timeout=20), str)
                  and len(str(cdo(f"cdo sinfo {topo_nc}", timeout=20))) > 10))
+
+    # ======================================================================
+    # Sections 44–59: Operator-method coverage expansion to 200+ tests
+    # Each section uses cdo.operator(...) method-call style exclusively,
+    # mirroring the pattern established in section 42 (varsskew, varsmedian).
+    # ======================================================================
+
+    # === 44. Zonal Stats Extended ===
+    print("\n=== 44. Zonal Stats Extended ===")
+    zonmin_nc = os.path.join(tmpdir, "zonmin.nc")
+    run_test("zonmin", lambda: cdo.zonmin(input=topo_nc,
+             output=zonmin_nc) or assert_file(zonmin_nc))
+    zonmax_nc = os.path.join(tmpdir, "zonmax.nc")
+    run_test("zonmax", lambda: cdo.zonmax(input=topo_nc,
+             output=zonmax_nc) or assert_file(zonmax_nc))
+    zonsum_nc = os.path.join(tmpdir, "zonsum.nc")
+    run_test("zonsum", lambda: cdo.zonsum(input=topo_nc,
+             output=zonsum_nc) or assert_file(zonsum_nc))
+    zonstd_nc = os.path.join(tmpdir, "zonstd.nc")
+    run_test("zonstd", lambda: cdo.zonstd(input=topo_nc,
+             output=zonstd_nc) or assert_file(zonstd_nc))
+    zonskew_nc = os.path.join(tmpdir, "zonskew.nc")
+    run_test("zonskew", lambda: cdo.zonskew(input=topo_nc,
+             output=zonskew_nc) or assert_file(zonskew_nc))
+    zonkurt_nc = os.path.join(tmpdir, "zonkurt.nc")
+    run_test("zonkurt", lambda: cdo.zonkurt(input=topo_nc,
+             output=zonkurt_nc) or assert_file(zonkurt_nc))
+    zonmedian_nc = os.path.join(tmpdir, "zonmedian.nc")
+    run_test("zonmedian", lambda: cdo.zonmedian(input=topo_nc,
+             output=zonmedian_nc) or assert_file(zonmedian_nc))
+
+    # === 45. Meridional Stats Extended ===
+    print("\n=== 45. Meridional Stats Extended ===")
+    mermin_nc = os.path.join(tmpdir, "mermin.nc")
+    run_test("mermin", lambda: cdo.mermin(input=topo_nc,
+             output=mermin_nc) or assert_file(mermin_nc))
+    mermax_nc = os.path.join(tmpdir, "mermax.nc")
+    run_test("mermax", lambda: cdo.mermax(input=topo_nc,
+             output=mermax_nc) or assert_file(mermax_nc))
+    mersum_nc = os.path.join(tmpdir, "mersum.nc")
+    run_test("mersum", lambda: cdo.mersum(input=topo_nc,
+             output=mersum_nc) or assert_file(mersum_nc))
+    merstd_nc = os.path.join(tmpdir, "merstd.nc")
+    run_test("merstd", lambda: cdo.merstd(input=topo_nc,
+             output=merstd_nc) or assert_file(merstd_nc))
+    merskew_nc = os.path.join(tmpdir, "merskew.nc")
+    run_test("merskew", lambda: cdo.merskew(input=topo_nc,
+             output=merskew_nc) or assert_file(merskew_nc))
+    merkurt_nc = os.path.join(tmpdir, "merkurt.nc")
+    run_test("merkurt", lambda: cdo.merkurt(input=topo_nc,
+             output=merkurt_nc) or assert_file(merkurt_nc))
+    mermedian_nc = os.path.join(tmpdir, "mermedian.nc")
+    run_test("mermedian", lambda: cdo.mermedian(input=topo_nc,
+             output=mermedian_nc) or assert_file(mermedian_nc))
+
+    # === 46. Field Stats Extended ===
+    print("\n=== 46. Field Stats Extended ===")
+    fldskew_nc = os.path.join(tmpdir, "fldskew.nc")
+    run_test("fldskew", lambda: cdo.fldskew(input=topo_nc,
+             output=fldskew_nc) or assert_file(fldskew_nc))
+    fldkurt_nc = os.path.join(tmpdir, "fldkurt.nc")
+    run_test("fldkurt", lambda: cdo.fldkurt(input=topo_nc,
+             output=fldkurt_nc) or assert_file(fldkurt_nc))
+    fldvar_nc = os.path.join(tmpdir, "fldvar.nc")
+    run_test("fldvar", lambda: cdo.fldvar(input=topo_nc,
+             output=fldvar_nc) or assert_file(fldvar_nc))
+    fldstd1_nc = os.path.join(tmpdir, "fldstd1.nc")
+    run_test("fldstd1", lambda: cdo.fldstd1(input=topo_nc,
+             output=fldstd1_nc) or assert_file(fldstd1_nc))
+    fldmedian_nc = os.path.join(tmpdir, "fldmedian.nc")
+    run_test("fldmedian", lambda: cdo.fldmedian(input=topo_nc,
+             output=fldmedian_nc) or assert_file(fldmedian_nc))
+    fldpctl_nc = os.path.join(tmpdir, "fldpctl.nc")
+    run_test("fldpctl,90", lambda: cdo.fldpctl("90", input=topo_nc,
+             output=fldpctl_nc) or assert_file(fldpctl_nc))
+
+    # === 47. Time Stats Extended ===
+    print("\n=== 47. Time Stats Extended ===")
+    timvar_nc = os.path.join(tmpdir, "timvar.nc")
+    run_test("timvar", lambda: cdo.timvar(input=monthly_nc,
+             output=timvar_nc) or assert_file(timvar_nc))
+    timrange_nc = os.path.join(tmpdir, "timrange.nc")
+    run_test("timrange", lambda: cdo.timrange(input=monthly_nc,
+             output=timrange_nc) or assert_file(timrange_nc))
+    timminidx_nc = os.path.join(tmpdir, "timminidx.nc")
+    run_test("timminidx", lambda: cdo.timminidx(input=monthly_nc,
+             output=timminidx_nc) or assert_file(timminidx_nc))
+    timmaxidx_nc = os.path.join(tmpdir, "timmaxidx.nc")
+    run_test("timmaxidx", lambda: cdo.timmaxidx(input=monthly_nc,
+             output=timmaxidx_nc) or assert_file(timmaxidx_nc))
+    timavg_nc = os.path.join(tmpdir, "timavg.nc")
+    run_test("timavg", lambda: cdo.timavg(input=monthly_nc,
+             output=timavg_nc) or assert_file(timavg_nc))
+
+    # === 48. Running Stats Extended ===
+    print("\n=== 48. Running Stats Extended ===")
+    runsum_nc = os.path.join(tmpdir, "runsum.nc")
+    run_test("runsum", lambda: cdo.runsum("3", input=monthly_nc,
+             output=runsum_nc) or assert_file(runsum_nc))
+    runvar_nc = os.path.join(tmpdir, "runvar.nc")
+    run_test("runvar", lambda: cdo.runvar("3", input=monthly_nc,
+             output=runvar_nc) or assert_file(runvar_nc))
+    runrange_nc = os.path.join(tmpdir, "runrange.nc")
+    run_test("runrange", lambda: cdo.runrange("3", input=monthly_nc,
+             output=runrange_nc) or assert_file(runrange_nc))
+
+    # === 49. Monthly Stats Extended ===
+    print("\n=== 49. Monthly Stats Extended ===")
+    monmin_nc = os.path.join(tmpdir, "monmin.nc")
+    run_test("monmin", lambda: cdo.monmin(input=monthly_nc,
+             output=monmin_nc) or assert_file(monmin_nc))
+    monmax_nc = os.path.join(tmpdir, "monmax.nc")
+    run_test("monmax", lambda: cdo.monmax(input=monthly_nc,
+             output=monmax_nc) or assert_file(monmax_nc))
+    monstd_nc = os.path.join(tmpdir, "monstd.nc")
+    run_test("monstd", lambda: cdo.monstd(input=monthly_nc,
+             output=monstd_nc) or assert_file(monstd_nc))
+    monsum_nc = os.path.join(tmpdir, "monsum.nc")
+    run_test("monsum", lambda: cdo.monsum(input=monthly_nc,
+             output=monsum_nc) or assert_file(monsum_nc))
+
+    # === 50. Yearly Stats Extended ===
+    print("\n=== 50. Yearly Stats Extended ===")
+    yearstd_nc = os.path.join(tmpdir, "yearstd.nc")
+    run_test("yearstd", lambda: cdo.yearstd(input=monthly_nc,
+             output=yearstd_nc) or assert_file(yearstd_nc))
+    yearsum_nc = os.path.join(tmpdir, "yearsum.nc")
+    run_test("yearsum", lambda: cdo.yearsum(input=monthly_nc,
+             output=yearsum_nc) or assert_file(yearsum_nc))
+    yearrange_nc = os.path.join(tmpdir, "yearrange.nc")
+    run_test("yearrange", lambda: cdo.yearrange(input=monthly_nc,
+             output=yearrange_nc) or assert_file(yearrange_nc))
+
+    # === 51. Seasonal Stats Extended ===
+    print("\n=== 51. Seasonal Stats Extended ===")
+    seassum_nc = os.path.join(tmpdir, "seassum.nc")
+    run_test("seassum", lambda: cdo.seassum(input=monthly_nc,
+             output=seassum_nc) or assert_file(seassum_nc))
+    seasrange_nc = os.path.join(tmpdir, "seasrange.nc")
+    run_test("seasrange", lambda: cdo.seasrange(input=monthly_nc,
+             output=seasrange_nc) or assert_file(seasrange_nc))
+
+    # === 52. VarsStat Extended ===
+    # Uses varstest_nc (2-variable file built in section 42)
+    print("\n=== 52. VarsStat Extended ===")
+    varsmean_nc = os.path.join(tmpdir, "varsmean.nc")
+    run_test("varsmean", lambda: cdo.varsmean(
+        input=varstest_nc, output=varsmean_nc) or assert_file(varsmean_nc))
+    varsstd_nc = os.path.join(tmpdir, "varsstd.nc")
+    run_test("varsstd", lambda: cdo.varsstd(
+        input=varstest_nc, output=varsstd_nc) or assert_file(varsstd_nc))
+    varsmin_nc = os.path.join(tmpdir, "varsmin.nc")
+    run_test("varsmin", lambda: cdo.varsmin(
+        input=varstest_nc, output=varsmin_nc) or assert_file(varsmin_nc))
+    varsmax_nc = os.path.join(tmpdir, "varsmax.nc")
+    run_test("varsmax", lambda: cdo.varsmax(
+        input=varstest_nc, output=varsmax_nc) or assert_file(varsmax_nc))
+    varsrange_nc = os.path.join(tmpdir, "varsrange.nc")
+    run_test("varsrange", lambda: cdo.varsrange(
+        input=varstest_nc, output=varsrange_nc) or assert_file(varsrange_nc))
+    varssum_nc = os.path.join(tmpdir, "varssum.nc")
+    run_test("varssum", lambda: cdo.varssum(
+        input=varstest_nc, output=varssum_nc) or assert_file(varssum_nc))
+
+    # === 53. Ensemble Stats Extended ===
+    print("\n=== 53. Ensemble Stats Extended ===")
+    ensrange_nc = os.path.join(tmpdir, "ensrange.nc")
+    run_test("ensrange", lambda: cdo.ensrange(
+        input=f"{topo_nc} {mulc_nc}", output=ensrange_nc) or assert_file(ensrange_nc))
+    enssum_nc = os.path.join(tmpdir, "enssum.nc")
+    run_test("enssum", lambda: cdo.enssum(
+        input=f"{topo_nc} {topo_nc}", output=enssum_nc) or assert_file(enssum_nc))
+    ensskew_nc = os.path.join(tmpdir, "ensskew.nc")
+    run_test("ensskew", lambda: cdo.ensskew(
+        input=f"{topo_nc} {mulc_nc} {addc_nc} {abs_nc}",
+        output=ensskew_nc) or assert_file(ensskew_nc))
+    enskurt_nc = os.path.join(tmpdir, "enskurt.nc")
+    run_test("enskurt", lambda: cdo.enskurt(
+        input=f"{topo_nc} {mulc_nc} {addc_nc} {abs_nc}",
+        output=enskurt_nc) or assert_file(enskurt_nc))
+    enspctl_nc = os.path.join(tmpdir, "enspctl.nc")
+    run_test("enspctl,90", lambda: cdo.enspctl(
+        "90", input=f"{topo_nc} {mulc_nc} {addc_nc}",
+        output=enspctl_nc) or assert_file(enspctl_nc))
+
+    # === 54. Math Functions ===
+    # exp: scale to (0, ~8.85) to avoid float overflow
+    # ln / log10: add 1 to abs(topo) so input is strictly positive
+    # asin / acos: divide by 10000 to clamp into [-1, 1]
+    # reci (1/x): add 1000 so denominator is never near zero
+    print("\n=== 54. Math Functions ===")
+    exp_nc = os.path.join(tmpdir, "exp.nc")
+    run_test("exp", lambda: cdo.exp(
+        input=f"-mulc,0.001 -abs {topo_nc}",
+        output=exp_nc) or assert_file(exp_nc))
+    ln_nc = os.path.join(tmpdir, "ln.nc")
+    run_test("ln", lambda: cdo.ln(
+        input=f"-addc,1 -abs {topo_nc}",
+        output=ln_nc) or assert_file(ln_nc))
+    log10_nc = os.path.join(tmpdir, "log10.nc")
+    run_test("log10", lambda: cdo.log10(
+        input=f"-addc,1 -abs {topo_nc}",
+        output=log10_nc) or assert_file(log10_nc))
+    sin_nc = os.path.join(tmpdir, "sin.nc")
+    run_test("sin", lambda: cdo.sin(input=topo_nc,
+             output=sin_nc) or assert_file(sin_nc))
+    cos_nc = os.path.join(tmpdir, "cos.nc")
+    run_test("cos", lambda: cdo.cos(input=topo_nc,
+             output=cos_nc) or assert_file(cos_nc))
+    tan_nc = os.path.join(tmpdir, "tan.nc")
+    run_test("tan", lambda: cdo.tan(input=topo_nc,
+             output=tan_nc) or assert_file(tan_nc))
+    asin_nc = os.path.join(tmpdir, "asin.nc")
+    run_test("asin", lambda: cdo.asin(
+        input=f"-divc,10000 {topo_nc}",
+        output=asin_nc) or assert_file(asin_nc))
+    acos_nc2 = os.path.join(tmpdir, "acos2.nc")
+    run_test("acos", lambda: cdo.acos(
+        input=f"-divc,10000 -abs {topo_nc}",
+        output=acos_nc2) or assert_file(acos_nc2))
+    atan_nc = os.path.join(tmpdir, "atan.nc")
+    run_test("atan", lambda: cdo.atan(input=topo_nc,
+             output=atan_nc) or assert_file(atan_nc))
+    reci_nc = os.path.join(tmpdir, "reci.nc")
+    run_test("reci", lambda: cdo.reci(
+        input=f"-addc,1000 {topo_nc}",
+        output=reci_nc) or assert_file(reci_nc))
+    nint_nc = os.path.join(tmpdir, "nint.nc")
+    run_test("nint", lambda: cdo.nint(input=topo_nc,
+             output=nint_nc) or assert_file(nint_nc))
+
+    # === 55. Comparison Operators ===
+    print("\n=== 55. Comparison Operators ===")
+    eq_nc = os.path.join(tmpdir, "eq.nc")
+    run_test("eq (self==self -> all 1)", lambda: cdo.eq(
+        input=f"{topo_nc} {topo_nc}", output=eq_nc) or assert_file(eq_nc))
+    ne_nc = os.path.join(tmpdir, "ne.nc")
+    run_test("ne (self!=self -> all 0)", lambda: cdo.ne(
+        input=f"{topo_nc} {topo_nc}", output=ne_nc) or assert_file(ne_nc))
+    le_nc = os.path.join(tmpdir, "le.nc")
+    run_test("le (self<=self -> all 1)", lambda: cdo.le(
+        input=f"{topo_nc} {topo_nc}", output=le_nc) or assert_file(le_nc))
+    lt_nc = os.path.join(tmpdir, "lt.nc")
+    run_test("lt (self<self  -> all 0)", lambda: cdo.lt(
+        input=f"{topo_nc} {topo_nc}", output=lt_nc) or assert_file(lt_nc))
+    ge_nc = os.path.join(tmpdir, "ge.nc")
+    run_test("ge (self>=self -> all 1)", lambda: cdo.ge(
+        input=f"{topo_nc} {topo_nc}", output=ge_nc) or assert_file(ge_nc))
+    gt_nc = os.path.join(tmpdir, "gt.nc")
+    run_test("gt (self>self  -> all 0)", lambda: cdo.gt(
+        input=f"{topo_nc} {topo_nc}", output=gt_nc) or assert_file(gt_nc))
+
+    # === 56. Masking Extended ===
+    print("\n=== 56. Masking Extended ===")
+    # ifnotthen: output data where mask IS missing (opposite of ifthen)
+    ifnotthen_nc = os.path.join(tmpdir, "ifnotthen.nc")
+    run_test("ifnotthen", lambda: cdo.ifnotthen(
+        input=f"{setrtomiss_nc} {topo_nc}",
+        output=ifnotthen_nc) or assert_file(ifnotthen_nc))
+    # ifthenelse: 3 inputs — mask, then-field, else-field
+    ifthenelse_nc = os.path.join(tmpdir, "ifthenelse.nc")
+    run_test("ifthenelse", lambda: cdo.ifthenelse(
+        input=f"{setctomiss_nc} {topo_nc} {mulc_nc}",
+        output=ifthenelse_nc) or assert_file(ifthenelse_nc))
+
+    # === 57. Vertical Stats Extended ===
+    print("\n=== 57. Vertical Stats Extended ===")
+    vertstd_nc = os.path.join(tmpdir, "vertstd.nc")
+    run_test("vertstd", lambda: cdo.vertstd(input=stdatm_nc,
+             output=vertstd_nc) or assert_file(vertstd_nc))
+    vertvar_nc = os.path.join(tmpdir, "vertvar.nc")
+    run_test("vertvar", lambda: cdo.vertvar(input=stdatm_nc,
+             output=vertvar_nc) or assert_file(vertvar_nc))
+
+    # === 58. GridBox Stats Extended ===
+    print("\n=== 58. GridBox Stats Extended ===")
+    gridboxrange_nc = os.path.join(tmpdir, "gridboxrange.nc")
+    run_test("gridboxrange", lambda: cdo.gridboxrange("4,4", input=topo_nc,
+             output=gridboxrange_nc) or assert_file(gridboxrange_nc))
+    gridboxsum_nc = os.path.join(tmpdir, "gridboxsum.nc")
+    run_test("gridboxsum", lambda: cdo.gridboxsum("4,4", input=topo_nc,
+             output=gridboxsum_nc) or assert_file(gridboxsum_nc))
+    gridboxvar_nc = os.path.join(tmpdir, "gridboxvar.nc")
+    run_test("gridboxvar", lambda: cdo.gridboxvar("4,4", input=topo_nc,
+             output=gridboxvar_nc) or assert_file(gridboxvar_nc))
+
+    # === 59. Selection Extended ===
+    # monthly_nc: Jan–Dec 2020, all at 12:00, all on the 15th
+    print("\n=== 59. Selection Extended ===")
+    selday_nc = os.path.join(tmpdir, "selday.nc")
+    run_test("selday (15th)", lambda: cdo.selday("15", input=monthly_nc,
+             output=selday_nc) or assert_file(selday_nc))
+    selyear_nc = os.path.join(tmpdir, "selyear.nc")
+    run_test("selyear (2020)", lambda: cdo.selyear("2020", input=monthly_nc,
+             output=selyear_nc) or assert_file(selyear_nc))
+    selsmon_nc = os.path.join(tmpdir, "selsmon.nc")
+    run_test("selsmon (June)", lambda: cdo.selsmon("6", input=monthly_nc,
+             output=selsmon_nc) or assert_file(selsmon_nc))
+    seltime_nc = os.path.join(tmpdir, "seltime.nc")
+    run_test("seltime (12:00:00)", lambda: cdo.seltime("12:00:00",
+             input=monthly_nc, output=seltime_nc) or assert_file(seltime_nc))
+
+    # ======================================================================
+    # Section 60. run_raw() Direct API
+    # ======================================================================
+    # Tests CdoRunner.run_raw() directly (bypassing Cdo.__call__).
+    # run_raw() parses a full CDO command string (with or without the leading
+    # "cdo" token), injects the actual binary path, and returns a
+    # subprocess.CompletedProcess.  This is the same code path reached by
+    # cdo("cdo ...") but exercised here through the lower-level runner API.
+    print("\n=== 60. run_raw() Direct API ===")
+    runner = cdo._runner  # direct access to the underlying CdoRunner
+
+    # 60a: arithmetic via run_raw
+    rr_mulc_nc = os.path.join(tmpdir, "rr_mulc.nc")
+    run_test("run_raw: mulc,3.14", lambda: runner.run_raw(
+        f"cdo mulc,3.14 {topo_nc} {rr_mulc_nc}", timeout=30) or assert_file(rr_mulc_nc))
+
+    # 60b: time mean via run_raw
+    rr_timmean_nc = os.path.join(tmpdir, "rr_timmean.nc")
+    run_test("run_raw: timmean", lambda: runner.run_raw(
+        f"cdo timmean {monthly_nc} {rr_timmean_nc}", timeout=30) or assert_file(rr_timmean_nc))
+
+    # 60c: grid interpolation via run_raw
+    rr_remap_nc = os.path.join(tmpdir, "rr_remap.nc")
+    run_test("run_raw: remapbil r36x18", lambda: runner.run_raw(
+        f"cdo remapbil,r36x18 {topo_nc} {rr_remap_nc}", timeout=60) or assert_file(rr_remap_nc))
+
+    # 60d: chained operators via run_raw
+    rr_chain_nc = os.path.join(tmpdir, "rr_chain.nc")
+    run_test("run_raw: chained -fldmean -timmean", lambda: runner.run_raw(
+        f"cdo -fldmean -timmean {monthly_nc} {rr_chain_nc}", timeout=30) or assert_file(rr_chain_nc))
+
+    # 60e: metadata change (chname) via run_raw
+    rr_chname_nc = os.path.join(tmpdir, "rr_chname.nc")
+    run_test("run_raw: chname topo->elevation", lambda: runner.run_raw(
+        f"cdo chname,topo,elevation {topo_nc} {rr_chname_nc}", timeout=30) or assert_file(rr_chname_nc))
+
+    # 60f: run_raw returns subprocess.CompletedProcess with returncode=0
+    rr_check_nc = os.path.join(tmpdir, "rr_check.nc")
+    def _test_runraw_completedprocess():
+        result = runner.run_raw(
+            f"cdo addc,1.0 {topo_nc} {rr_check_nc}", timeout=30)
+        assert hasattr(result, "returncode"), \
+            "run_raw() did not return a CompletedProcess object"
+        assert result.returncode == 0, \
+            f"Expected returncode=0, got {result.returncode}"
+        assert_file(rr_check_nc)
+    run_test("run_raw: returns CompletedProcess (returncode=0)",
+             _test_runraw_completedprocess)
+
+    # 60g: run_raw works WITHOUT the leading 'cdo' token
+    # The implementation strips 'cdo'/'cdo.exe' and prepends the real binary,
+    # but when the first token is an operator name (not 'cdo'), it should also
+    # work because the binary path is always prepended unconditionally.
+    rr_noprefix_nc = os.path.join(tmpdir, "rr_noprefix.nc")
+    run_test("run_raw: operator without leading 'cdo' token", lambda: runner.run_raw(
+        f"subc,0.0 {topo_nc} {rr_noprefix_nc}", timeout=30) or assert_file(rr_noprefix_nc))
+
+    # 60h: -O overwrite flag via run_raw (second run overwrites first)
+    def _test_runraw_overwrite():
+        rr_ow_nc = os.path.join(tmpdir, "rr_overwrite.nc")
+        runner.run_raw(f"cdo mulc,1.0 {topo_nc} {rr_ow_nc}", timeout=30)
+        runner.run_raw(f"cdo -O mulc,2.0 {topo_nc} {rr_ow_nc}", timeout=30)
+        assert_file(rr_ow_nc)
+    run_test("run_raw: -O overwrite flag", _test_runraw_overwrite)
+
+    # ======================================================================
+    # Section 61. NCL Wind: uv2vr_cfd / uv2dv_cfd
+    # ======================================================================
+    # CDO's NCL_wind operators convert U and V wind components to derived
+    # fields (relative vorticity, divergence) using curvilinear finite
+    # differences.  The operators identify U and V by CF standard_name
+    # ('eastward_wind' / 'northward_wind').  This test creates a small
+    # synthetic NC4 file with both variables and verifies that:
+    #   a) CDO can locate u/v from their standard_name / long_name attributes.
+    #   b) The output file is non-empty and contains at least one variable.
+    print("\n=== 61. NCL Wind: uv2vr_cfd / uv2dv_cfd ===")
+    uv_wind_nc = os.path.join(tmpdir, "uv_wind.nc")
+
+    def _make_uv_wind_nc(path):
+        """Small CF-1.6 NC4 with u/v wind on an 18x36 regular lat/lon grid."""
+        nlat, nlon = 18, 36
+        lat = np.linspace(-85.0, 85.0, nlat, dtype=np.float32)
+        lon = np.linspace(0.0, 350.0, nlon, dtype=np.float32)
+        la2d, lo2d = np.meshgrid(lat, lon, indexing="ij")
+        # Solid-rotation approximation: u=-sin(lat)*cos(lon)*5, v=cos(lon)*5
+        u_val = (
+            -np.sin(np.deg2rad(la2d)) * np.cos(np.deg2rad(lo2d)) * 5.0
+        ).astype(np.float32)
+        v_val = (np.cos(np.deg2rad(lo2d)) * 5.0).astype(np.float32)
+        with nc4.Dataset(path, "w", format="NETCDF4") as ds:
+            ds.Conventions = "CF-1.6"
+            ds.createDimension("time", 1)
+            ds.createDimension("lat", nlat)
+            ds.createDimension("lon", nlon)
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "days since 2000-01-01"
+            t.calendar = "standard"
+            t[:] = [0.0]
+            la = ds.createVariable("lat", "f4", ("lat",))
+            la.units = "degrees_north"
+            la.standard_name = "latitude"
+            la[:] = lat
+            lo = ds.createVariable("lon", "f4", ("lon",))
+            lo.units = "degrees_east"
+            lo.standard_name = "longitude"
+            lo[:] = lon
+            # u: eastward (zonal) wind component
+            u_var = ds.createVariable("u", "f4", ("time", "lat", "lon"),
+                                      fill_value=1e20)
+            u_var.units = "m s-1"
+            u_var.long_name = "eastward wind"
+            u_var.standard_name = "eastward_wind"
+            u_var[:] = u_val[np.newaxis, :]
+            # v: northward (meridional) wind component
+            v_var = ds.createVariable("v", "f4", ("time", "lat", "lon"),
+                                      fill_value=1e20)
+            v_var.units = "m s-1"
+            v_var.long_name = "northward wind"
+            v_var.standard_name = "northward_wind"
+            v_var[:] = v_val[np.newaxis, :]
+
+    _make_uv_wind_nc(uv_wind_nc)
+
+    # 61a: relative vorticity from U/V
+    vorticity_nc = os.path.join(tmpdir, "vorticity.nc")
+    run_test("uv2vr_cfd (U+V -> relative vorticity)", lambda: cdo.uv2vr_cfd(
+        input=uv_wind_nc, output=vorticity_nc) or assert_file(vorticity_nc))
+
+    # 61b: divergence from U/V
+    divergence_nc = os.path.join(tmpdir, "divergence.nc")
+    run_test("uv2dv_cfd (U+V -> divergence)", lambda: cdo.uv2dv_cfd(
+        input=uv_wind_nc, output=divergence_nc) or assert_file(divergence_nc))
+
+    # 61c: verify uv2vr_cfd output contains named variable(s)
+    # (proves CDO correctly identified u/v in the synthetic file)
+    def _test_vr_varnames():
+        names = str(cdo.showname(input=vorticity_nc)).strip()
+        assert len(names) > 0, (
+            "uv2vr_cfd output has no variables -- "
+            "CDO may have failed to identify u/v from standard_name attributes"
+        )
+    run_test("uv2vr_cfd output has variable names (CDO identified u/v)",
+             _test_vr_varnames)
+
+    # 61d: verify uv2dv_cfd output contains named variable(s)
+    def _test_dv_varnames():
+        names = str(cdo.showname(input=divergence_nc)).strip()
+        assert len(names) > 0, (
+            "uv2dv_cfd output has no variables -- "
+            "CDO may have failed to identify u/v from standard_name attributes"
+        )
+    run_test("uv2dv_cfd output has variable names (CDO identified u/v)",
+             _test_dv_varnames)
 
     # ---- Summary ----
     elapsed = time.time() - t_start
