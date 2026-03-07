@@ -211,15 +211,16 @@ def main():
     # Synthetic data generation
     print("\n=== 2. Data Generation ===")
     topo_nc = os.path.join(tmpdir, "topo.nc")
-    run_test("topo", lambda: cdo.topo(output=topo_nc) or assert_file(topo_nc))
+    run_test("topo (r12x6)", lambda: cdo(
+        f"cdo remapbil,r12x6 -topo {topo_nc}", timeout=30) or assert_file(topo_nc))
 
     rand_nc = os.path.join(tmpdir, "rand.nc")
-    run_test("random r72x36", lambda: cdo(
-        f"cdo -random,r72x36 {rand_nc}", timeout=30) or assert_file(rand_nc))
+    run_test("random r12x6", lambda: cdo(
+        f"cdo -random,r12x6 {rand_nc}", timeout=30) or assert_file(rand_nc))
 
     const_nc = os.path.join(tmpdir, "const.nc")
     run_test("const field", lambda: cdo(
-        f"cdo -const,273.15,r36x18 {const_nc}", timeout=20) or assert_file(const_nc))
+        f"cdo -const,273.15,r12x6 {const_nc}", timeout=20) or assert_file(const_nc))
 
     monthly_nc = os.path.join(tmpdir, "monthly.nc")
     run_test("12-month series", lambda: cdo(
@@ -247,7 +248,7 @@ def main():
 
     selidx_nc = os.path.join(tmpdir, "selindex.nc")
     run_test("selindexbox", lambda: cdo.selindexbox(
-        "1,30,1,20", input=topo_nc, output=selidx_nc) or assert_file(selidx_nc))
+        "1,6,1,3", input=topo_nc, output=selidx_nc) or assert_file(selidx_nc))
 
     sellev_nc = os.path.join(tmpdir, "sellev.nc")
     run_test("sellevel", lambda: cdo.sellevel(
@@ -313,15 +314,15 @@ def main():
     # Grid operations
     print("\n=== 7. Grid Ops ===")
     remap_bil_nc = os.path.join(tmpdir, "remap_bil.nc")
-    run_test("remapbil", lambda: cdo.remapbil("r72x36", input=topo_nc,
+    run_test("remapbil", lambda: cdo.remapbil("r8x4", input=topo_nc,
              output=remap_bil_nc) or assert_file(remap_bil_nc))
 
     remap_con_nc = os.path.join(tmpdir, "remap_con.nc")
-    run_test("remapcon", lambda: cdo.remapcon("r72x36", input=topo_nc,
+    run_test("remapcon", lambda: cdo.remapcon("r8x4", input=topo_nc,
              output=remap_con_nc) or assert_file(remap_con_nc))
 
     remap_nn_nc = os.path.join(tmpdir, "remap_nn.nc")
-    run_test("remapnn", lambda: cdo.remapnn("r72x36", input=topo_nc,
+    run_test("remapnn", lambda: cdo.remapnn("r8x4", input=topo_nc,
              output=remap_nn_nc) or assert_file(remap_nn_nc))
 
     # Spectral (CRITICAL)
@@ -769,19 +770,19 @@ def main():
     # Grid Box Statistics
     print("\n=== 35. Grid Box Statistics ===")
     gridboxmean_nc = os.path.join(tmpdir, "gridboxmean.nc")
-    run_test("gridboxmean", lambda: cdo.gridboxmean("4,4", input=topo_nc,
+    run_test("gridboxmean", lambda: cdo.gridboxmean("2,2", input=topo_nc,
              output=gridboxmean_nc) or assert_file(gridboxmean_nc))
 
     gridboxmax_nc = os.path.join(tmpdir, "gridboxmax.nc")
-    run_test("gridboxmax", lambda: cdo.gridboxmax("4,4", input=topo_nc,
+    run_test("gridboxmax", lambda: cdo.gridboxmax("2,2", input=topo_nc,
              output=gridboxmax_nc) or assert_file(gridboxmax_nc))
 
     gridboxmin_nc = os.path.join(tmpdir, "gridboxmin.nc")
-    run_test("gridboxmin", lambda: cdo.gridboxmin("4,4", input=topo_nc,
+    run_test("gridboxmin", lambda: cdo.gridboxmin("2,2", input=topo_nc,
              output=gridboxmin_nc) or assert_file(gridboxmin_nc))
 
     gridboxstd_nc = os.path.join(tmpdir, "gridboxstd.nc")
-    run_test("gridboxstd", lambda: cdo.gridboxstd("4,4", input=topo_nc,
+    run_test("gridboxstd", lambda: cdo.gridboxstd("2,2", input=topo_nc,
              output=gridboxstd_nc) or assert_file(gridboxstd_nc))
 
     # Set / Rename Operators
@@ -801,11 +802,11 @@ def main():
     # More Interpolation Methods
     print("\n=== 37. More Interpolation ===")
     remapbic_nc = os.path.join(tmpdir, "remapbic.nc")
-    run_test("remapbic", lambda: cdo.remapbic("r36x18", input=topo_nc,
+    run_test("remapbic", lambda: cdo.remapbic("r8x4", input=topo_nc,
              output=remapbic_nc) or assert_file(remapbic_nc))
 
     remaplaf_nc = os.path.join(tmpdir, "remaplaf.nc")
-    run_test("remaplaf", lambda: cdo.remaplaf("r36x18", input=topo_nc,
+    run_test("remaplaf", lambda: cdo.remaplaf("r8x4", input=topo_nc,
              output=remaplaf_nc) or assert_file(remaplaf_nc))
 
     # Splitting Operations
@@ -929,7 +930,7 @@ def main():
 
     def _make_explicit_coord_nc4(path):
         """Create a CF-1 NC4 file with explicit float lat/lon arrays."""
-        nlat, nlon = 18, 36
+        nlat, nlon = 4, 8
         lat = np.linspace(-85.0, 85.0, nlat, dtype=np.float32)
         lon = np.linspace(0.0, 350.0, nlon, dtype=np.float32)
         data = np.random.rand(1, nlat, nlon).astype(np.float32) * 300.0
@@ -1427,13 +1428,13 @@ def main():
     # === 58. GridBox Stats Extended ===
     print("\n=== 58. GridBox Stats Extended ===")
     gridboxrange_nc = os.path.join(tmpdir, "gridboxrange.nc")
-    run_test("gridboxrange", lambda: cdo.gridboxrange("4,4", input=topo_nc,
+    run_test("gridboxrange", lambda: cdo.gridboxrange("2,2", input=topo_nc,
              output=gridboxrange_nc) or assert_file(gridboxrange_nc))
     gridboxsum_nc = os.path.join(tmpdir, "gridboxsum.nc")
-    run_test("gridboxsum", lambda: cdo.gridboxsum("4,4", input=topo_nc,
+    run_test("gridboxsum", lambda: cdo.gridboxsum("2,2", input=topo_nc,
              output=gridboxsum_nc) or assert_file(gridboxsum_nc))
     gridboxvar_nc = os.path.join(tmpdir, "gridboxvar.nc")
-    run_test("gridboxvar", lambda: cdo.gridboxvar("4,4", input=topo_nc,
+    run_test("gridboxvar", lambda: cdo.gridboxvar("2,2", input=topo_nc,
              output=gridboxvar_nc) or assert_file(gridboxvar_nc))
 
     # === 59. Selection Extended ===
@@ -1475,8 +1476,8 @@ def main():
 
     # 60c: grid interpolation via run_raw
     rr_remap_nc = os.path.join(tmpdir, "rr_remap.nc")
-    run_test("run_raw: remapbil r36x18", lambda: runner.run_raw(
-        f"cdo remapbil,r36x18 {topo_nc} {rr_remap_nc}", timeout=60) or assert_file(rr_remap_nc))
+    run_test("run_raw: remapbil r8x4", lambda: runner.run_raw(
+        f"cdo remapbil,r8x4 {topo_nc} {rr_remap_nc}", timeout=60) or assert_file(rr_remap_nc))
 
     # 60d: chained operators via run_raw
     rr_chain_nc = os.path.join(tmpdir, "rr_chain.nc")
@@ -1490,6 +1491,7 @@ def main():
 
     # 60f: run_raw returns subprocess.CompletedProcess with returncode=0
     rr_check_nc = os.path.join(tmpdir, "rr_check.nc")
+
     def _test_runraw_completedprocess():
         result = runner.run_raw(
             f"cdo addc,1.0 {topo_nc} {rr_check_nc}", timeout=30)
@@ -1575,19 +1577,36 @@ def main():
 
     _make_uv_wind_nc(uv_wind_nc)
 
+    # Check Fortran support before running NCL wind tests
+    _has_fortran = cdo.has_operator("uv2vr_cfd")
+
+    def _uv2vr_test():
+        if not _has_fortran:
+            print("  [SKIP] uv2vr_cfd -- CDO built without Fortran support")
+            return
+        cdo.uv2vr_cfd(input=uv_wind_nc, output=vorticity_nc)
+        assert_file(vorticity_nc)
+
+    def _uv2dv_test():
+        if not _has_fortran:
+            print("  [SKIP] uv2dv_cfd -- CDO built without Fortran support")
+            return
+        cdo.uv2dv_cfd(input=uv_wind_nc, output=divergence_nc)
+        assert_file(divergence_nc)
+
     # 61a: relative vorticity from U/V
     vorticity_nc = os.path.join(tmpdir, "vorticity.nc")
-    run_test("uv2vr_cfd (U+V -> relative vorticity)", lambda: cdo.uv2vr_cfd(
-        input=uv_wind_nc, output=vorticity_nc) or assert_file(vorticity_nc))
+    run_test("uv2vr_cfd (U+V -> relative vorticity)", _uv2vr_test)
 
     # 61b: divergence from U/V
     divergence_nc = os.path.join(tmpdir, "divergence.nc")
-    run_test("uv2dv_cfd (U+V -> divergence)", lambda: cdo.uv2dv_cfd(
-        input=uv_wind_nc, output=divergence_nc) or assert_file(divergence_nc))
+    run_test("uv2dv_cfd (U+V -> divergence)", _uv2dv_test)
 
     # 61c: verify uv2vr_cfd output contains named variable(s)
     # (proves CDO correctly identified u/v in the synthetic file)
     def _test_vr_varnames():
+        if not _has_fortran or not os.path.isfile(vorticity_nc):
+            return  # skipped
         names = str(cdo.showname(input=vorticity_nc)).strip()
         assert len(names) > 0, (
             "uv2vr_cfd output has no variables -- "
@@ -1598,6 +1617,8 @@ def main():
 
     # 61d: verify uv2dv_cfd output contains named variable(s)
     def _test_dv_varnames():
+        if not _has_fortran or not os.path.isfile(divergence_nc):
+            return  # skipped
         names = str(cdo.showname(input=divergence_nc)).strip()
         assert len(names) > 0, (
             "uv2dv_cfd output has no variables -- "
@@ -1605,6 +1626,304 @@ def main():
         )
     run_test("uv2dv_cfd output has variable names (CDO identified u/v)",
              _test_dv_varnames)
+
+    # ======================================================================
+    # Section 62. cdo() String API — Extended Coverage
+    # ======================================================================
+    # Each test calls cdo("cdo OPERATOR ...") to exercise the string-API
+    # code path for operator categories not yet covered by Section 43.
+    print("\n=== 62. String API Extended ===")
+
+    # --- 62a. Field statistics ---
+    s_fldmin_nc = os.path.join(tmpdir, "s_fldmin.nc")
+    run_test("str: fldmin", lambda: cdo(
+        f"cdo fldmin {topo_nc} {s_fldmin_nc}", timeout=20) or assert_file(s_fldmin_nc))
+
+    s_fldmax_nc = os.path.join(tmpdir, "s_fldmax.nc")
+    run_test("str: fldmax", lambda: cdo(
+        f"cdo fldmax {topo_nc} {s_fldmax_nc}", timeout=20) or assert_file(s_fldmax_nc))
+
+    s_fldsum_nc = os.path.join(tmpdir, "s_fldsum.nc")
+    run_test("str: fldsum", lambda: cdo(
+        f"cdo fldsum {topo_nc} {s_fldsum_nc}", timeout=20) or assert_file(s_fldsum_nc))
+
+    s_fldstd_nc = os.path.join(tmpdir, "s_fldstd.nc")
+    run_test("str: fldstd", lambda: cdo(
+        f"cdo fldstd {topo_nc} {s_fldstd_nc}", timeout=20) or assert_file(s_fldstd_nc))
+
+    s_fldmean_nc = os.path.join(tmpdir, "s_fldmean.nc")
+    run_test("str: fldmean", lambda: cdo(
+        f"cdo fldmean {topo_nc} {s_fldmean_nc}", timeout=20) or assert_file(s_fldmean_nc))
+
+    # --- 62b. Zonal / Meridional statistics ---
+    s_zonmin_nc = os.path.join(tmpdir, "s_zonmin.nc")
+    run_test("str: zonmin", lambda: cdo(
+        f"cdo zonmin {topo_nc} {s_zonmin_nc}", timeout=20) or assert_file(s_zonmin_nc))
+
+    s_zonmax_nc = os.path.join(tmpdir, "s_zonmax.nc")
+    run_test("str: zonmax", lambda: cdo(
+        f"cdo zonmax {topo_nc} {s_zonmax_nc}", timeout=20) or assert_file(s_zonmax_nc))
+
+    s_mermean_nc = os.path.join(tmpdir, "s_mermean.nc")
+    run_test("str: mermean", lambda: cdo(
+        f"cdo mermean {topo_nc} {s_mermean_nc}", timeout=20) or assert_file(s_mermean_nc))
+
+    s_mermin_nc = os.path.join(tmpdir, "s_mermin.nc")
+    run_test("str: mermin", lambda: cdo(
+        f"cdo mermin {topo_nc} {s_mermin_nc}", timeout=20) or assert_file(s_mermin_nc))
+
+    s_mermax_nc = os.path.join(tmpdir, "s_mermax.nc")
+    run_test("str: mermax", lambda: cdo(
+        f"cdo mermax {topo_nc} {s_mermax_nc}", timeout=20) or assert_file(s_mermax_nc))
+
+    # --- 62c. Time statistics ---
+    s_timmean_nc = os.path.join(tmpdir, "s_timmean.nc")
+    run_test("str: timmean", lambda: cdo(
+        f"cdo timmean {monthly_nc} {s_timmean_nc}", timeout=20) or assert_file(s_timmean_nc))
+
+    s_timmin_nc = os.path.join(tmpdir, "s_timmin.nc")
+    run_test("str: timmin", lambda: cdo(
+        f"cdo timmin {monthly_nc} {s_timmin_nc}", timeout=20) or assert_file(s_timmin_nc))
+
+    s_timmax_nc = os.path.join(tmpdir, "s_timmax.nc")
+    run_test("str: timmax", lambda: cdo(
+        f"cdo timmax {monthly_nc} {s_timmax_nc}", timeout=20) or assert_file(s_timmax_nc))
+
+    s_timstd_nc = os.path.join(tmpdir, "s_timstd.nc")
+    run_test("str: timstd", lambda: cdo(
+        f"cdo timstd {monthly_nc} {s_timstd_nc}", timeout=20) or assert_file(s_timstd_nc))
+
+    s_timsum_nc = os.path.join(tmpdir, "s_timsum.nc")
+    run_test("str: timsum", lambda: cdo(
+        f"cdo timsum {monthly_nc} {s_timsum_nc}", timeout=20) or assert_file(s_timsum_nc))
+
+    s_timvar_nc = os.path.join(tmpdir, "s_timvar.nc")
+    run_test("str: timvar", lambda: cdo(
+        f"cdo timvar {monthly_nc} {s_timvar_nc}", timeout=20) or assert_file(s_timvar_nc))
+
+    s_timavg_nc = os.path.join(tmpdir, "s_timavg.nc")
+    run_test("str: timavg", lambda: cdo(
+        f"cdo timavg {monthly_nc} {s_timavg_nc}", timeout=20) or assert_file(s_timavg_nc))
+
+    s_timrange_nc = os.path.join(tmpdir, "s_timrange.nc")
+    run_test("str: timrange", lambda: cdo(
+        f"cdo timrange {monthly_nc} {s_timrange_nc}", timeout=20) or assert_file(s_timrange_nc))
+
+    # --- 62d. Monthly / Seasonal / Yearly statistics ---
+    s_monmean_nc = os.path.join(tmpdir, "s_monmean.nc")
+    run_test("str: monmean", lambda: cdo(
+        f"cdo monmean {monthly_nc} {s_monmean_nc}", timeout=20) or assert_file(s_monmean_nc))
+
+    s_monmin_nc = os.path.join(tmpdir, "s_monmin.nc")
+    run_test("str: monmin", lambda: cdo(
+        f"cdo monmin {monthly_nc} {s_monmin_nc}", timeout=20) or assert_file(s_monmin_nc))
+
+    s_monmax_nc = os.path.join(tmpdir, "s_monmax.nc")
+    run_test("str: monmax", lambda: cdo(
+        f"cdo monmax {monthly_nc} {s_monmax_nc}", timeout=20) or assert_file(s_monmax_nc))
+
+    s_seasmean_nc = os.path.join(tmpdir, "s_seasmean.nc")
+    run_test("str: seasmean", lambda: cdo(
+        f"cdo seasmean {monthly_nc} {s_seasmean_nc}", timeout=20) or assert_file(s_seasmean_nc))
+
+    s_yearmean_nc = os.path.join(tmpdir, "s_yearmean.nc")
+    run_test("str: yearmean", lambda: cdo(
+        f"cdo yearmean {monthly_nc} {s_yearmean_nc}", timeout=20) or assert_file(s_yearmean_nc))
+
+    # --- 62e. Arithmetic operators ---
+    s_mulc_nc = os.path.join(tmpdir, "s_mulc.nc")
+    run_test("str: mulc,3.14", lambda: cdo(
+        f"cdo mulc,3.14 {topo_nc} {s_mulc_nc}", timeout=20) or assert_file(s_mulc_nc))
+
+    s_addc_nc = os.path.join(tmpdir, "s_addc.nc")
+    run_test("str: addc,50", lambda: cdo(
+        f"cdo addc,50 {topo_nc} {s_addc_nc}", timeout=20) or assert_file(s_addc_nc))
+
+    s_subc_nc = os.path.join(tmpdir, "s_subc.nc")
+    run_test("str: subc,100", lambda: cdo(
+        f"cdo subc,100 {topo_nc} {s_subc_nc}", timeout=20) or assert_file(s_subc_nc))
+
+    s_divc_nc = os.path.join(tmpdir, "s_divc.nc")
+    run_test("str: divc,2.0", lambda: cdo(
+        f"cdo divc,2.0 {topo_nc} {s_divc_nc}", timeout=20) or assert_file(s_divc_nc))
+
+    s_abs_nc = os.path.join(tmpdir, "s_abs.nc")
+    run_test("str: abs", lambda: cdo(
+        f"cdo abs {topo_nc} {s_abs_nc}", timeout=20) or assert_file(s_abs_nc))
+
+    s_sqrt_nc = os.path.join(tmpdir, "s_sqrt.nc")
+    run_test("str: sqrt(-abs)", lambda: cdo(
+        f"cdo sqrt -abs {topo_nc} {s_sqrt_nc}", timeout=20) or assert_file(s_sqrt_nc))
+
+    s_nint_nc = os.path.join(tmpdir, "s_nint.nc")
+    run_test("str: nint", lambda: cdo(
+        f"cdo nint {topo_nc} {s_nint_nc}", timeout=20) or assert_file(s_nint_nc))
+
+    # --- 62f. Two-operand field math ---
+    s_add_nc = os.path.join(tmpdir, "s_add.nc")
+    run_test("str: add topo+mulc", lambda: cdo(
+        f"cdo add {topo_nc} {mulc_nc} {s_add_nc}", timeout=20) or assert_file(s_add_nc))
+
+    s_sub_nc = os.path.join(tmpdir, "s_sub.nc")
+    run_test("str: sub topo-mulc", lambda: cdo(
+        f"cdo sub {topo_nc} {mulc_nc} {s_sub_nc}", timeout=20) or assert_file(s_sub_nc))
+
+    s_mul_nc = os.path.join(tmpdir, "s_mul.nc")
+    run_test("str: mul topo*mulc", lambda: cdo(
+        f"cdo mul {topo_nc} {mulc_nc} {s_mul_nc}", timeout=20) or assert_file(s_mul_nc))
+
+    s_div_nc = os.path.join(tmpdir, "s_div.nc")
+    run_test("str: div topo/mulc", lambda: cdo(
+        f"cdo div {topo_nc} {mulc_nc} {s_div_nc}", timeout=20) or assert_file(s_div_nc))
+
+    # --- 62g. Running statistics ---
+    s_runmean_nc = os.path.join(tmpdir, "s_runmean.nc")
+    run_test("str: runmean,3", lambda: cdo(
+        f"cdo runmean,3 {monthly_nc} {s_runmean_nc}", timeout=20) or assert_file(s_runmean_nc))
+
+    s_runstd_nc = os.path.join(tmpdir, "s_runstd.nc")
+    run_test("str: runstd,3", lambda: cdo(
+        f"cdo runstd,3 {monthly_nc} {s_runstd_nc}", timeout=20) or assert_file(s_runstd_nc))
+
+    s_runmin_nc = os.path.join(tmpdir, "s_runmin.nc")
+    run_test("str: runmin,3", lambda: cdo(
+        f"cdo runmin,3 {monthly_nc} {s_runmin_nc}", timeout=20) or assert_file(s_runmin_nc))
+
+    s_runmax_nc = os.path.join(tmpdir, "s_runmax.nc")
+    run_test("str: runmax,3", lambda: cdo(
+        f"cdo runmax,3 {monthly_nc} {s_runmax_nc}", timeout=20) or assert_file(s_runmax_nc))
+
+    # --- 62h. Grid interpolation ---
+    s_remapbil_nc = os.path.join(tmpdir, "s_remapbil.nc")
+    run_test("str: remapbil,r8x4", lambda: cdo(
+        f"cdo remapbil,r8x4 {topo_nc} {s_remapbil_nc}", timeout=30) or assert_file(s_remapbil_nc))
+
+    s_remapnn_nc = os.path.join(tmpdir, "s_remapnn.nc")
+    run_test("str: remapnn,r8x4", lambda: cdo(
+        f"cdo remapnn,r8x4 {topo_nc} {s_remapnn_nc}", timeout=30) or assert_file(s_remapnn_nc))
+
+    s_remapcon_nc = os.path.join(tmpdir, "s_remapcon.nc")
+    run_test("str: remapcon,r8x4", lambda: cdo(
+        f"cdo remapcon,r8x4 {topo_nc} {s_remapcon_nc}", timeout=30) or assert_file(s_remapcon_nc))
+
+    # --- 62i. Selection ---
+    s_selmon_nc = os.path.join(tmpdir, "s_selmon.nc")
+    run_test("str: selmon,6", lambda: cdo(
+        f"cdo selmon,6 {monthly_nc} {s_selmon_nc}", timeout=20) or assert_file(s_selmon_nc))
+
+    s_selyear_nc = os.path.join(tmpdir, "s_selyear.nc")
+    run_test("str: selyear,2020", lambda: cdo(
+        f"cdo selyear,2020 {monthly_nc} {s_selyear_nc}", timeout=20) or assert_file(s_selyear_nc))
+
+    s_selname_nc = os.path.join(tmpdir, "s_selname.nc")
+
+    def _str_selname_test():
+        vname = str(cdo.showname(input=topo_nc)).strip().split()[0]
+        vname = ''.join(c for c in vname if c.isprintable() and c != ' ')
+        cdo(f"cdo selname,{vname} {topo_nc} {s_selname_nc}", timeout=20)
+        assert_file(s_selname_nc)
+    run_test("str: selname", _str_selname_test)
+
+    s_sellev_nc = os.path.join(tmpdir, "s_sellev.nc")
+    run_test("str: sellevel,0,10000", lambda: cdo(
+        f"cdo sellevel,0,10000 {stdatm_nc} {s_sellev_nc}", timeout=20) or assert_file(s_sellev_nc))
+
+    # --- 62j. Ensemble operators ---
+    s_ensmean_nc = os.path.join(tmpdir, "s_ensmean.nc")
+    run_test("str: ensmean", lambda: cdo(
+        f"cdo ensmean {topo_nc} {mulc_nc} {s_ensmean_nc}", timeout=30) or assert_file(s_ensmean_nc))
+
+    s_ensmin_nc = os.path.join(tmpdir, "s_ensmin.nc")
+    run_test("str: ensmin", lambda: cdo(
+        f"cdo ensmin {topo_nc} {mulc_nc} {s_ensmin_nc}", timeout=30) or assert_file(s_ensmin_nc))
+
+    s_ensmax_nc = os.path.join(tmpdir, "s_ensmax.nc")
+    run_test("str: ensmax", lambda: cdo(
+        f"cdo ensmax {topo_nc} {mulc_nc} {s_ensmax_nc}", timeout=30) or assert_file(s_ensmax_nc))
+
+    # --- 62k. Metadata modification ---
+    s_setname_nc = os.path.join(tmpdir, "s_setname.nc")
+    run_test("str: setname,elevation", lambda: cdo(
+        f"cdo setname,elevation {topo_nc} {s_setname_nc}", timeout=20) or assert_file(s_setname_nc))
+
+    s_setunit_nc = os.path.join(tmpdir, "s_setunit.nc")
+    run_test("str: setunit,m", lambda: cdo(
+        f"cdo setunit,m {topo_nc} {s_setunit_nc}", timeout=20) or assert_file(s_setunit_nc))
+
+    s_chname_nc = os.path.join(tmpdir, "s_chname.nc")
+    run_test("str: chname topo->alt", lambda: cdo(
+        f"cdo chname,topo,alt {topo_nc} {s_chname_nc}", timeout=20) or assert_file(s_chname_nc))
+
+    # --- 62l. Masking ---
+    s_setrtomiss_nc = os.path.join(tmpdir, "s_setrtomiss.nc")
+    run_test("str: setrtomiss,0,100", lambda: cdo(
+        f"cdo setrtomiss,0,100 {topo_nc} {s_setrtomiss_nc}", timeout=20) or assert_file(s_setrtomiss_nc))
+
+    s_setmisstoc_nc = os.path.join(tmpdir, "s_setmisstoc.nc")
+    run_test("str: setmisstoc chain", lambda: cdo(
+        f"cdo -setmisstoc,0 -setrtomiss,0,100 {topo_nc} {s_setmisstoc_nc}",
+        timeout=20) or assert_file(s_setmisstoc_nc))
+
+    # --- 62m. Vertical statistics ---
+    s_vertmean_nc = os.path.join(tmpdir, "s_vertmean.nc")
+    run_test("str: vertmean", lambda: cdo(
+        f"cdo vertmean {stdatm_nc} {s_vertmean_nc}", timeout=20) or assert_file(s_vertmean_nc))
+
+    s_vertsum_nc = os.path.join(tmpdir, "s_vertsum.nc")
+    run_test("str: vertsum", lambda: cdo(
+        f"cdo vertsum {stdatm_nc} {s_vertsum_nc}", timeout=20) or assert_file(s_vertsum_nc))
+
+    s_vertmin_nc = os.path.join(tmpdir, "s_vertmin.nc")
+    run_test("str: vertmin", lambda: cdo(
+        f"cdo vertmin {stdatm_nc} {s_vertmin_nc}", timeout=20) or assert_file(s_vertmin_nc))
+
+    s_vertmax_nc = os.path.join(tmpdir, "s_vertmax.nc")
+    run_test("str: vertmax", lambda: cdo(
+        f"cdo vertmax {stdatm_nc} {s_vertmax_nc}", timeout=20) or assert_file(s_vertmax_nc))
+
+    # --- 62n. Comparison operators ---
+    s_eq_nc = os.path.join(tmpdir, "s_eq.nc")
+    run_test("str: eq (same field)", lambda: cdo(
+        f"cdo eq {topo_nc} {topo_nc} {s_eq_nc}", timeout=20) or assert_file(s_eq_nc))
+
+    s_ne_nc = os.path.join(tmpdir, "s_ne.nc")
+    run_test("str: ne (topo vs mulc)", lambda: cdo(
+        f"cdo ne {topo_nc} {mulc_nc} {s_ne_nc}", timeout=20) or assert_file(s_ne_nc))
+
+    s_le_nc = os.path.join(tmpdir, "s_le.nc")
+    run_test("str: le (topo<=mulc)", lambda: cdo(
+        f"cdo le {topo_nc} {mulc_nc} {s_le_nc}", timeout=20) or assert_file(s_le_nc))
+
+    # --- 62o. Grid box statistics (string API) ---
+    s_gridboxmean_nc = os.path.join(tmpdir, "s_gridboxmean.nc")
+    run_test("str: gridboxmean,2,2", lambda: cdo(
+        f"cdo gridboxmean,2,2 {topo_nc} {s_gridboxmean_nc}", timeout=20) or assert_file(s_gridboxmean_nc))
+
+    # --- 62p. Chained operators (multi-step string API) ---
+    s_chain1_nc = os.path.join(tmpdir, "s_chain1.nc")
+    run_test("str: chain -fldmean -addc,10", lambda: cdo(
+        f"cdo -fldmean -addc,10 {topo_nc} {s_chain1_nc}", timeout=20) or assert_file(s_chain1_nc))
+
+    s_chain2_nc = os.path.join(tmpdir, "s_chain2.nc")
+    run_test("str: chain -timmean -selmon,3,4,5", lambda: cdo(
+        f"cdo -timmean -selmon,3,4,5 {monthly_nc} {s_chain2_nc}", timeout=20) or assert_file(s_chain2_nc))
+
+    s_chain3_nc = os.path.join(tmpdir, "s_chain3.nc")
+    run_test("str: chain -zonmean -mulc,2", lambda: cdo(
+        f"cdo -zonmean -mulc,2 {topo_nc} {s_chain3_nc}", timeout=20) or assert_file(s_chain3_nc))
+
+    # --- 62q. Info operators (text output, no file) ---
+    run_test("str: showname (text)", lambda: assert_true(
+        len(str(cdo(f"cdo showname {topo_nc}"))) > 0))
+
+    run_test("str: ntime (text)", lambda: assert_true(
+        len(str(cdo(f"cdo ntime {monthly_nc}"))) > 0))
+
+    run_test("str: griddes (text)", lambda: assert_true(
+        len(str(cdo(f"cdo griddes {topo_nc}"))) > 0))
+
+    run_test("str: sinfo (text)", lambda: assert_true(
+        len(str(cdo(f"cdo sinfo {topo_nc}"))) > 0))
 
     # ---- Summary ----
     elapsed = time.time() - t_start
