@@ -206,6 +206,8 @@ if old in text:
     text = text.replace(old, new, 1)
     open(fpath, 'w', encoding="utf-8", newline="\n").write(text)
     print(f"[skyborn-cdo] Disabled lazy-grid winpthreads mutex on Windows: {fpath}")
+elif new in text:
+    print(f"[skyborn-cdo] lazy-grid mutex already disabled (pre-patched): {fpath}")
 else:
     print(f"[skyborn-cdo] WARNING: cdf_lazy_grid.c pattern not found in {fpath}")
 PY
