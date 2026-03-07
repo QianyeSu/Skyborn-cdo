@@ -332,7 +332,7 @@ jobs:
           merge-multiple: true
 
       - name: Install wheel
-        run: pip install --find-links dist skyborn_cdo
+        run: pip install --find-links dist "skyborn_cdo[test]"
 
       - name: Verify installation
         run: python -c "from skyborn_cdo import Cdo; cdo = Cdo(); print(repr(cdo)); print(cdo.version())"

@@ -909,80 +909,72 @@ def main():
     # is triggered.
     # ======================================================================
     print("\n=== 21. Explicit-Coordinate NC4 Regression (lazy-grid mutex) ===")
-    try:
-        import netCDF4 as _netcdf4  # type: ignore  # noqa: F401
+    import netCDF4 as nc4  # type: ignore
+    import numpy as np  # type: ignore
 
-        import numpy as np  # type: ignore
+    explicit_coord_nc4 = os.path.join(tmpdir, "explicit_coord.nc4")
 
-        explicit_coord_nc4 = os.path.join(tmpdir, "explicit_coord.nc4")
+    def _make_explicit_coord_nc4(path):
+        """Create a CF-1 NC4 file with explicit float lat/lon arrays."""
+        nlat, nlon = 18, 36
+        lat = np.linspace(-85.0, 85.0, nlat, dtype=np.float32)
+        lon = np.linspace(0.0, 350.0, nlon, dtype=np.float32)
+        data = np.random.rand(1, nlat, nlon).astype(np.float32) * 300.0
 
-        def _make_explicit_coord_nc4(path):
-            """Create a CF-1 NC4 file with explicit float lat/lon arrays."""
-            import netCDF4 as nc4  # type: ignore
-            import numpy as np  # type: ignore
+        with nc4.Dataset(path, "w", format="NETCDF4") as ds:
+            ds.Conventions = "CF-1.6"
+            ds.createDimension("time", None)
+            ds.createDimension("lat", nlat)
+            ds.createDimension("lon", nlon)
 
-            nlat, nlon = 18, 36
-            lat = np.linspace(-85.0, 85.0, nlat, dtype=np.float32)
-            lon = np.linspace(0.0, 350.0, nlon, dtype=np.float32)
-            data = np.random.rand(1, nlat, nlon).astype(np.float32) * 300.0
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "days since 2000-01-01"
+            t.calendar = "standard"
+            t[:] = [0.0]
 
-            with nc4.Dataset(path, "w", format="NETCDF4") as ds:
-                ds.Conventions = "CF-1.6"
-                ds.createDimension("time", None)
-                ds.createDimension("lat", nlat)
-                ds.createDimension("lon", nlon)
+            la = ds.createVariable("lat", "f4", ("lat",))
+            la.units = "degrees_north"
+            la.long_name = "latitude"
+            la.standard_name = "latitude"
+            la[:] = lat
 
-                t = ds.createVariable("time", "f8", ("time",))
-                t.units = "days since 2000-01-01"
-                t.calendar = "standard"
-                t[:] = [0.0]
+            lo = ds.createVariable("lon", "f4", ("lon",))
+            lo.units = "degrees_east"
+            lo.long_name = "longitude"
+            lo.standard_name = "longitude"
+            lo[:] = lon
 
-                la = ds.createVariable("lat", "f4", ("lat",))
-                la.units = "degrees_north"
-                la.long_name = "latitude"
-                la.standard_name = "latitude"
-                la[:] = lat
+            v = ds.createVariable("temperature", "f4",
+                                  ("time", "lat", "lon"),
+                                  fill_value=1e20)
+            v.units = "K"
+            v.long_name = "air temperature"
+            v.standard_name = "air_temperature"
+            v.coordinates = "lat lon"
+            v[:] = data
 
-                lo = ds.createVariable("lon", "f4", ("lon",))
-                lo.units = "degrees_east"
-                lo.long_name = "longitude"
-                lo.standard_name = "longitude"
-                lo[:] = lon
+    _make_explicit_coord_nc4(explicit_coord_nc4)
 
-                v = ds.createVariable("temperature", "f4",
-                                      ("time", "lat", "lon"),
-                                      fill_value=1e20)
-                v.units = "K"
-                v.long_name = "air temperature"
-                v.standard_name = "air_temperature"
-                v.coordinates = "lat lon"
-                v[:] = data
+    # fldmean triggers CDI lazy-grid coordinate loading, which previously
+    # crashed on Windows via cdf_lazy_grid.c's pthread_mutex_lock().
+    explicit_mean_nc4 = os.path.join(tmpdir, "explicit_mean.nc4")
+    run_test(
+        "explicit-coord NC4 fldmean (lazy-grid mutex regression)",
+        lambda: cdo(
+            f"cdo fldmean {explicit_coord_nc4} {explicit_mean_nc4}",
+            timeout=30,
+        ) or assert_file(explicit_mean_nc4),
+    )
 
-        _make_explicit_coord_nc4(explicit_coord_nc4)
-
-        # fldmean triggers CDI lazy-grid coordinate loading, which previously
-        # crashed on Windows via cdf_lazy_grid.c's pthread_mutex_lock().
-        explicit_mean_nc4 = os.path.join(tmpdir, "explicit_mean.nc4")
-        run_test(
-            "explicit-coord NC4 fldmean (lazy-grid mutex regression)",
-            lambda: cdo(
-                f"cdo fldmean {explicit_coord_nc4} {explicit_mean_nc4}",
-                timeout=30,
-            ) or assert_file(explicit_mean_nc4),
-        )
-
-        # Also verify sellonlatbox (requires grid coordinate access)
-        explicit_box_nc4 = os.path.join(tmpdir, "explicit_box.nc4")
-        run_test(
-            "explicit-coord NC4 sellonlatbox (lazy-grid mutex regression)",
-            lambda: cdo(
-                f"cdo sellonlatbox,0,90,-45,45 {explicit_coord_nc4} {explicit_box_nc4}",
-                timeout=30,
-            ) or assert_file(explicit_box_nc4),
-        )
-
-    except ImportError:
-        print("  [SKIP] netCDF4 not installed — skipping explicit-coordinate NC4 regression tests")
+    # Also verify sellonlatbox (requires grid coordinate access)
+    explicit_box_nc4 = os.path.join(tmpdir, "explicit_box.nc4")
+    run_test(
+        "explicit-coord NC4 sellonlatbox (lazy-grid mutex regression)",
+        lambda: cdo(
+            f"cdo sellonlatbox,0,90,-45,45 {explicit_coord_nc4} {explicit_box_nc4}",
+            timeout=30,
+        ) or assert_file(explicit_box_nc4),
+    )
 
     # ---- Summary ----
     elapsed = time.time() - t_start

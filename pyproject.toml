@@ -43,7 +43,7 @@ Documentation = "https://code.mpimet.mpg.de/projects/cdo"
 
 [project.optional-dependencies]
 xarray = ["xarray", "netCDF4"]
-test = ["pytest>=7.0", "numpy"]
+test = ["pytest>=7.0", "numpy", "netCDF4"]
 
 [tool.setuptools]
 package-dir = { "" = "src" }
