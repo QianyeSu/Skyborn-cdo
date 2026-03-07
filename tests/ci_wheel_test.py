@@ -976,6 +976,111 @@ def main():
         ) or assert_file(explicit_box_nc4),
     )
 
+    # ======================================================================
+    # Section 22. mergetime timestep-count and wildcard regression
+    #
+    # Regression tests for two bugs:
+    #   a) Windows exit-hang early-kill: CDO was killed right after creating
+    #      the NC4/HDF5 file header (file size > 0, but before any time
+    #      records were written), producing output with time=0.
+    #      Fix: use file-size STABILITY (not mere existence) + CDO's
+    #      "Processed N values" stderr message as the completion signal.
+    #
+    #   b) Wildcard expansion including the output file: when using
+    #      cdo("cdo mergetime *.nc out.nc") and out.nc already existed,
+    #      glob("*.nc") would match out.nc and add it to the input list.
+    #      Fix: exclude explicit tokens from glob expansion results.
+    # ======================================================================
+    print("\n=== 22. mergetime Timestep-Count & Wildcard Regression ===")
+
+    mt_dir = os.path.join(tmpdir, "mergetime_test")
+    os.makedirs(mt_dir, exist_ok=True)
+
+    def _make_monthly_nc(path, year):
+        """12-month NC4 file with explicit time coordinates."""
+        import cftime  # type: ignore
+        with nc4.Dataset(path, "w", format="NETCDF4") as ds:
+            ds.createDimension("time", 12)
+            ds.createDimension("lat", 4)
+            ds.createDimension("lon", 6)
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "hours since 1900-01-01 00:00:00"
+            t.calendar = "gregorian"
+            t.standard_name = "time"
+            t.axis = "T"
+            dates = [cftime.DatetimeGregorian(year, m, 1)
+                     for m in range(1, 13)]
+            t[:] = nc4.date2num(dates, units=t.units, calendar=t.calendar)
+            la = ds.createVariable("lat", "f4", ("lat",))
+            la.units = "degrees_north"
+            la[:] = np.linspace(-45, 45, 4, dtype=np.float32)
+            lo = ds.createVariable("lon", "f4", ("lon",))
+            lo.units = "degrees_east"
+            lo[:] = np.linspace(0, 300, 6, dtype=np.float32)
+            v = ds.createVariable("tas", "f4", ("time", "lat", "lon"),
+                                  fill_value=-9999.0)
+            v.units = "K"
+            v[:] = np.random.rand(12, 4, 6).astype("f4") + 280.0
+
+    nc_2023 = os.path.join(mt_dir, "ERA5_MSE_2023.nc")
+    nc_2024 = os.path.join(mt_dir, "ERA5_MSE_2024.nc")
+    mt_out  = os.path.join(mt_dir, "ERA5_MSE_merged.nc")
+
+    _make_monthly_nc(nc_2023, 2023)
+    _make_monthly_nc(nc_2024, 2024)
+
+    # --- 22a: method-call, explicit inputs → 24 timesteps ---
+    def _test_mergetime_timesteps():
+        cdo.mergetime(input=f"{nc_2023} {nc_2024}", output=mt_out)
+        with nc4.Dataset(mt_out) as ds:
+            n = ds.variables["time"].size
+            assert n == 24, (
+                f"Expected 24 timesteps, got {n}. "
+                "Likely caused by CDO exit-hang early-kill bug "
+                "(killed before time records were flushed)."
+            )
+            t_vals = ds.variables["time"][:].data
+            assert (t_vals[1:] > t_vals[:-1]).all(), \
+                "Merged time axis is not monotonically increasing"
+
+    run_test("mergetime 2×12 → 24 timesteps (exit-hang early-kill regression)",
+             _test_mergetime_timesteps)
+
+    # --- 22b: wildcard ERA5_MSE_202*.nc must not include the output ---
+    # The output file ERA5_MSE_2025_merged.nc ALSO matches ERA5_MSE_202*.nc
+    # (because 2025 starts with 202).  We pre-create it to simulate a prior
+    # run, then re-run; without the fix, glob would pull it into the input list.
+    nc_2022 = os.path.join(mt_dir, "ERA5_MSE_2022.nc")
+    _make_monthly_nc(nc_2022, 2022)
+
+    def _test_mergetime_wildcard():
+        orig_cwd = os.getcwd()
+        try:
+            os.chdir(mt_dir)
+            # Output name intentionally matches the wildcard ERA5_MSE_202*.nc
+            mt_out_wild = "ERA5_MSE_2025_merged.nc"
+            # Pre-create the output file (simulates a prior run / stale artifact)
+            with nc4.Dataset(mt_out_wild, "w", format="NETCDF4") as _ds:
+                pass  # empty placeholder
+            # Without the fix, glob("ERA5_MSE_202*.nc") would match the output
+            # file and pass it as an input, causing CDO to error or produce
+            # wrong time count.
+            cdo(f"cdo mergetime ERA5_MSE_202*.nc {mt_out_wild}", timeout=60)
+            with nc4.Dataset(mt_out_wild) as ds:
+                n = ds.variables["time"].size
+                # Only 2022+2023+2024 should be inputs → 36 time steps.
+                # If the output was also included as an input the count would
+                # differ or CDO would abort with a circular-reference error.
+                assert n == 36, (
+                    f"Expected 36 timesteps, got {n}. "
+                    "Wildcard likely included the output file as an input."
+                )
+        finally:
+            os.chdir(orig_cwd)
+
+    run_test("mergetime wildcard excludes output file (glob regression)",
+             _test_mergetime_wildcard)
+
     # ---- Summary ----
     elapsed = time.time() - t_start
     total = passed + failed

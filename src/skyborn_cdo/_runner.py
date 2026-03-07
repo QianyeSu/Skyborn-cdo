@@ -212,7 +212,15 @@ class CdoRunner:
         #
         _POLL = 0.3            # seconds between polls
         _GRACE_AFTER = 0.3     # extra wait after completion detected, then kill
-        _SIZE_STABLE_SECS = 1.5  # seconds of unchanged file size = done writing
+        _SIZE_STABLE_SECS = 8.0  # seconds of unchanged file size = done writing
+                               # (conservative: guards against the false-positive
+                               # where the system pauses briefly mid-write.
+                               # Primary completion signal is CDO's stderr
+                               # "Processed N values" message; file-size
+                               # stability is only the secondary fallback for
+                               # cases where C-runtime stderr buffering on
+                               # Windows prevents us from seeing the message
+                               # before the exit-hang occurs.)
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
         _detected_at = None    # timestamp when completion first seen
