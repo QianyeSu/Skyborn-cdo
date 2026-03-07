@@ -12,8 +12,45 @@ import time
 from pathlib import Path
 from typing import List, Optional, Union
 
-# Pattern CDO prints to stderr when processing completes successfully.
+# Pattern CDO prints to stdout when processing completes successfully.
+# NOTE: CDO 2.x writes this to stdout (not stderr), and on Windows the
+# C-runtime stdio buffer is never flushed to the pipe before the exit-hang,
+# so this regex is used only in the post-kill final check, not in the
+# live polling loop where the HDF5 superblock method is used instead.
 _CDO_DONE_RE = re.compile(r"Processed \d+ values? from \d+ variable")
+
+# HDF5 file signature (first 8 bytes of every .nc4 / HDF5 file).
+_HDF5_SIG = b"\x89HDF\r\n\x1a\n"
+
+
+def _hdf5_file_is_closed(path: str):
+    """Detect whether an HDF5/NC4 file has been properly closed by CDO.
+
+    HDF5 stores a ``file_consistency_flags`` byte at offset 11 of the
+    superblock (version 2+).  Bit 0 is set when the file is opened for
+    writing and *cleared* by ``H5Fclose()``.  Reading that single byte
+    gives an instant, reliable completion signal without any arbitrary
+    stability wait.
+
+    Returns
+    -------
+    True   – HDF5 file exists *and* has been properly closed (bit 0 == 0).
+    False  – HDF5 file exists but is still open / too small to read yet.
+    None   – file does not exist yet, or is not an HDF5 file (caller
+             should fall back to size-stability detection).
+    """
+    try:
+        if not os.path.isfile(path):
+            return None
+        with open(path, "rb") as fh:
+            hdr = fh.read(12)
+        if len(hdr) < 12 or hdr[:8] != _HDF5_SIG:
+            return None   # not HDF5 → caller uses fallback
+        if hdr[8] < 2:
+            return None   # superblock v0/v1: no flags at byte 11
+        return (hdr[11] & 0x01) == 0  # True = write-access bit cleared = closed
+    except OSError:
+        return False
 
 
 class CdoError(Exception):
@@ -100,12 +137,12 @@ class CdoRunner:
 
         To work around this, on Windows we read stdout/stderr in daemon
         threads (so reads are non-blocking relative to ``wait()``) and
-        use ``proc.wait()`` instead of ``proc.communicate()``.  If the
-        process does not exit within *timeout* seconds we check whether
-        CDO already finished its work: either the output file was
-        created with non-zero size, or the stderr contains the
-        "Processed N values …" completion message.  If the work is done
-        we kill the hung process and return a successful result.
+        use ``proc.wait()`` instead of ``proc.communicate()``.  Completion
+        is detected by inspecting the HDF5/NC4 output file's superblock:
+        ``H5Fclose()`` clears bit 0 of ``file_consistency_flags`` (offset 11
+        of a version-2+ superblock), giving an instant signal with no
+        arbitrary wait.  When the work is done we kill the hung process and
+        return a successful result.
 
         Parameters
         ----------
@@ -200,31 +237,25 @@ class CdoRunner:
         # alive but the work is done.
         #
         # Completion detection strategy (in priority order):
-        #   1. CDO prints "Processed N values from N variable" to stderr
-        #      → reliable, immediate signal.
-        #   2. stdout_chunks non-empty (info/read-only operators like showname)
-        #      → output is the result, no file needed.
-        #   3. Output-file SIZE STABILITY: the file exists AND its size has not
-        #      changed for _SIZE_STABLE_SECS seconds.  This guards against the
-        #      false positive where CDO creates the NC4/HDF5 header (size > 0)
-        #      before writing any data records – killing CDO at that point
-        #      produces a file with time=0.
+        #   1. HDF5/NC4 output: read the superblock file_consistency_flags
+        #      byte (offset 11, version 2+).  HDF5 sets bit 0 on open and
+        #      clears it on H5Fclose().  When the bit is 0 the file is
+        #      completely written – instant detection, zero wait.
+        #   2. stdout_chunks non-empty (info/read-only operators like
+        #      showname) → output is the result, no file needed.
+        #   3. Non-HDF5 output: file-size STABILITY fallback (rarely
+        #      needed – CDO exits cleanly for GRIB/NC2 output).
+        #
+        # Why NOT rely on "Processed N values" stderr message:
+        #   CDO 2.x prints this to stdout (not stderr).  On Windows the
+        #   MinGW C-runtime stdio buffer is never flushed to the pipe
+        #   because the exit-hang (inside HDF5 DllMain cleanup) occurs
+        #   before stdio streams are flushed by exit().  The message
+        #   therefore never arrives on the pipe, regardless of buffer size.
         #
         _POLL = 0.3            # seconds between polls
-        _GRACE_AFTER = 0.3     # extra wait after completion detected, then kill
-        _SIZE_STABLE_SECS = 2.0  # seconds of unchanged file size = done writing
-        #
-        # Why 2.0 s (not larger):
-        #   On Windows with MinGW-built CDO the "Processed N values" stderr
-        #   message is buffered inside CDO's C runtime and is never flushed
-        #   to the pipe before the exit-hang occurs.  File-size STABILITY is
-        #   therefore the only reliable completion signal on Windows.
-        #   2 s is safe because the original time=0 bug was caused by the old
-        #   "size > 0" heuristic (kill as soon as HDF5 creates the header),
-        #   NOT by stability detection.  CDO writes header + data records
-        #   nearly atomically for files of any reasonable size; a genuine
-        #   mid-write OS pause of >2 s would require extreme system load.
-        #   Using 8 s made every NC4 operation take ≥8 s in CI.
+        _GRACE_AFTER = 0.1     # short grace after close detected, then kill
+        _SIZE_STABLE_SECS = 1.0  # fallback (non-HDF5 only): stable-size window
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
         _detected_at = None    # timestamp when completion first seen
@@ -242,31 +273,33 @@ class CdoRunner:
             # -- Quick-check: did CDO already finish its work? --------
             if _detected_at is None:
                 _done = False
-                # 1) stderr contains CDO completion message
-                if stderr_chunks:
-                    _stderr_so_far = b"".join(stderr_chunks).decode(
-                        "utf-8", errors="replace")
-                    if _CDO_DONE_RE.search(_stderr_so_far):
+                if output_file:
+                    # 1) NC4/HDF5: check superblock file_consistency_flags.
+                    #    H5Fclose() clears bit 0 → instant "done" signal.
+                    _closed = _hdf5_file_is_closed(output_file)
+                    if _closed is True:
                         _done = True
+                    elif _closed is None:
+                        # Not HDF5 (GRIB/NC2): fall back to size-stability.
+                        # CDO exits cleanly for these formats so this path
+                        # is almost never reached on a healthy system.
+                        try:
+                            _cur_size = (
+                                os.path.getsize(output_file)
+                                if os.path.isfile(output_file) else -1
+                            )
+                            if _cur_size != _last_fsize:
+                                _last_fsize = _cur_size
+                                _last_fsize_changed = _elapsed
+                            elif (_cur_size > 0
+                                  and (_elapsed - _last_fsize_changed)
+                                  >= _SIZE_STABLE_SECS):
+                                _done = True
+                        except OSError:
+                            pass
                 # 2) stdout data available (info / print operators)
                 if not _done and stdout_chunks:
                     _done = True
-                # 3) output file size has been stable for _SIZE_STABLE_SECS
-                if not _done and output_file:
-                    try:
-                        _cur_size = (
-                            os.path.getsize(output_file)
-                            if os.path.isfile(output_file) else -1
-                        )
-                        if _cur_size != _last_fsize:
-                            _last_fsize = _cur_size
-                            _last_fsize_changed = _elapsed
-                        elif (_cur_size > 0
-                              and (_elapsed - _last_fsize_changed)
-                              >= _SIZE_STABLE_SECS):
-                            _done = True
-                    except OSError:
-                        pass
                 if _done:
                     _detected_at = _elapsed
 
