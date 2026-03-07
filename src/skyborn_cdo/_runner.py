@@ -212,15 +212,19 @@ class CdoRunner:
         #
         _POLL = 0.3            # seconds between polls
         _GRACE_AFTER = 0.3     # extra wait after completion detected, then kill
-        _SIZE_STABLE_SECS = 8.0  # seconds of unchanged file size = done writing
-        # (conservative: guards against the false-positive
-        # where the system pauses briefly mid-write.
-        # Primary completion signal is CDO's stderr
-        # "Processed N values" message; file-size
-        # stability is only the secondary fallback for
-        # cases where C-runtime stderr buffering on
-        # Windows prevents us from seeing the message
-        # before the exit-hang occurs.)
+        _SIZE_STABLE_SECS = 2.0  # seconds of unchanged file size = done writing
+        #
+        # Why 2.0 s (not larger):
+        #   On Windows with MinGW-built CDO the "Processed N values" stderr
+        #   message is buffered inside CDO's C runtime and is never flushed
+        #   to the pipe before the exit-hang occurs.  File-size STABILITY is
+        #   therefore the only reliable completion signal on Windows.
+        #   2 s is safe because the original time=0 bug was caused by the old
+        #   "size > 0" heuristic (kill as soon as HDF5 creates the header),
+        #   NOT by stability detection.  CDO writes header + data records
+        #   nearly atomically for files of any reasonable size; a genuine
+        #   mid-write OS pause of >2 s would require extreme system load.
+        #   Using 8 s made every NC4 operation take ≥8 s in CI.
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
         _detected_at = None    # timestamp when completion first seen
