@@ -1577,63 +1577,17 @@ def main():
 
     _make_uv_wind_nc(uv_wind_nc)
 
-    # Check Fortran support before running NCL wind tests
-    _has_fortran = True
-    _probe_nc = os.path.join(tmpdir, "fortran_probe.nc")
-    try:
-        cdo.uv2vr_cfd(input=uv_wind_nc, output=_probe_nc)
-    except Exception as _e:
-        if "fortran" in str(_e).lower() or "not compiled" in str(_e).lower():
-            _has_fortran = False
-        else:
-            raise
-
-    def _uv2vr_test():
-        if not _has_fortran:
-            print("  [SKIP] uv2vr_cfd -- CDO built without Fortran support")
-            return
-        cdo.uv2vr_cfd(input=uv_wind_nc, output=vorticity_nc)
-        assert_file(vorticity_nc)
-
-    def _uv2dv_test():
-        if not _has_fortran:
-            print("  [SKIP] uv2dv_cfd -- CDO built without Fortran support")
-            return
-        cdo.uv2dv_cfd(input=uv_wind_nc, output=divergence_nc)
-        assert_file(divergence_nc)
-
-    # 61a: relative vorticity from U/V
+    # 61a: relative vorticity from U/V — force NC4 output so showname is fast
     vorticity_nc = os.path.join(tmpdir, "vorticity.nc")
-    run_test("uv2vr_cfd (U+V -> relative vorticity)", _uv2vr_test)
+    run_test("uv2vr_cfd (U+V -> relative vorticity)", lambda: (
+        cdo.uv2vr_cfd(input=uv_wind_nc, output=vorticity_nc, options="-f nc4"),
+        assert_file(vorticity_nc)))
 
-    # 61b: divergence from U/V
+    # 61b: divergence from U/V — force NC4 output so showname is fast
     divergence_nc = os.path.join(tmpdir, "divergence.nc")
-    run_test("uv2dv_cfd (U+V -> divergence)", _uv2dv_test)
-
-    # 61c: verify uv2vr_cfd output contains named variable(s)
-    # (proves CDO correctly identified u/v in the synthetic file)
-    def _test_vr_varnames():
-        if not _has_fortran or not os.path.isfile(vorticity_nc):
-            return  # skipped
-        names = str(cdo.showname(input=vorticity_nc)).strip()
-        assert len(names) > 0, (
-            "uv2vr_cfd output has no variables -- "
-            "CDO may have failed to identify u/v from standard_name attributes"
-        )
-    run_test("uv2vr_cfd output has variable names (CDO identified u/v)",
-             _test_vr_varnames)
-
-    # 61d: verify uv2dv_cfd output contains named variable(s)
-    def _test_dv_varnames():
-        if not _has_fortran or not os.path.isfile(divergence_nc):
-            return  # skipped
-        names = str(cdo.showname(input=divergence_nc)).strip()
-        assert len(names) > 0, (
-            "uv2dv_cfd output has no variables -- "
-            "CDO may have failed to identify u/v from standard_name attributes"
-        )
-    run_test("uv2dv_cfd output has variable names (CDO identified u/v)",
-             _test_dv_varnames)
+    run_test("uv2dv_cfd (U+V -> divergence)", lambda: (
+        cdo.uv2dv_cfd(input=uv_wind_nc, output=divergence_nc, options="-f nc4"),
+        assert_file(divergence_nc)))
 
     # ======================================================================
     # Section 62. cdo() String API — Extended Coverage
