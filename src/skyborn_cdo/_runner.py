@@ -263,6 +263,19 @@ class CdoRunner:
         _last_fsize = -1       # last observed output-file size
         _last_fsize_changed = 0.0  # time when file size last changed
         hung = False
+        # Two-phase HDF5 detection.
+        # Phase A: wait for write-bit to be SET   (CDO calls H5Fcreate/H5Fopen).
+        # Phase B: wait for write-bit to be CLEARED (CDO calls H5Fclose → done).
+        #
+        # Why two phases? HDF5 may create a NEW file with file_consistency_flags=0
+        # (all bytes zero before H5Fcreate flushes the superblock to the OS page
+        # cache).  Without phase A our very first poll would see bit0=0 and
+        # incorrectly declare the file "closed", killing CDO before any data is
+        # written – producing an output file with only the HDF5 header (tens of KB)
+        # and no time records.  The same issue exists for pre-existing output files
+        # (cdo -O overwrite): the file starts with bit0=0, so phase A waits until
+        # CDO reopens it for writing before phase B watches for the close.
+        _hdf5_write_started = False   # True after we first see bit0 = 1
 
         while True:
             try:
@@ -275,15 +288,23 @@ class CdoRunner:
             if _detected_at is None:
                 _done = False
                 if output_file:
-                    # 1) NC4/HDF5: check superblock file_consistency_flags.
-                    #    H5Fclose() clears bit 0 → instant "done" signal.
                     _closed = _hdf5_file_is_closed(output_file)
-                    if _closed is True:
-                        _done = True
-                    elif _closed is None:
-                        # Not HDF5 (GRIB/NC2): fall back to size-stability.
-                        # CDO exits cleanly for these formats so this path
-                        # is almost never reached on a healthy system.
+                    if _closed is not None:
+                        # NC4/HDF5 file: two-phase write-bit detection.
+                        if not _hdf5_write_started:
+                            # Phase A: CDO hasn't opened the file yet (or hasn't
+                            # flushed the superblock).  Wait until bit0 = 1.
+                            if _closed is False:
+                                _hdf5_write_started = True
+                        else:
+                            # Phase B: CDO has the file open.  Done when
+                            # H5Fclose() clears bit0 → bit0 = 0.
+                            if _closed is True:
+                                _done = True
+                    else:
+                        # Not HDF5 (GRIB/NC2) or file not yet created.
+                        # Fall back to size-stability.  CDO exits cleanly for
+                        # non-HDF5 formats so this path is rarely reached.
                         try:
                             _cur_size = (
                                 os.path.getsize(output_file)

@@ -1080,6 +1080,64 @@ def main():
     run_test("mergetime wildcard excludes output file (glob regression)",
              _test_mergetime_wildcard)
 
+    # ======================================================================
+    # Section 43. cdo("cdo ...") string API — explicit-file write regression
+    #
+    # The Cdo.__call__ / run_raw() code path (string command style) was
+    # found to hang or produce truncated output when used with explicit
+    # input file paths and a write-format operator like mergetime.
+    #
+    # Root cause: _runner.py lacked the two-phase HDF5 write-bit detection.
+    # HDF5 creates a new file with file_consistency_flags = 0 (all zeros)
+    # before H5Fclose flushes the superblock, so the FIRST poll saw bit0=0
+    # and falsely declared the file "done", killing CDO before any time
+    # records were written.  The method-call path (cdo.mergetime) was not
+    # affected because it always resolves wildcards, thus the timing was
+    # slightly different; but both paths share the same _exec() loop.
+    #
+    # These tests exercise the string API for:
+    #   a) mergetime with two explicit NC4 files → must produce 24 timesteps
+    #   b) sellonlatbox string form → output file must be non-empty
+    #   c) chained -fldmean -sellonlatbox → output file must be non-empty
+    #   d) sinfo (no output file) → must return non-empty text
+    # ======================================================================
+    print("\n=== 43. cdo() String API — explicit-file write regression ===")
+
+    # 43a: mergetime with two explicit NC4 files
+    def _test_cdo_str_mergetime():
+        mt_str_out = os.path.join(mt_dir, "cdo_str_merged.nc")
+        if os.path.exists(mt_str_out):
+            os.remove(mt_str_out)
+        cdo(f"cdo mergetime {nc_2023} {nc_2024} {mt_str_out}", timeout=60)
+        with nc4.Dataset(mt_str_out) as ds:
+            n = ds.variables["time"].size
+            assert n == 24, (
+                f"cdo('cdo mergetime ...'): expected 24 timesteps, got {n}. "
+                "Two-phase HDF5 detection likely missing in run_raw() path."
+            )
+
+    run_test("cdo() string API: mergetime 2x12 -> 24 timesteps",
+             _test_cdo_str_mergetime)
+
+    # 43b: sellonlatbox via string API
+    str_bbox_nc = os.path.join(tmpdir, "str_bbox.nc")
+    run_test("cdo() string API: sellonlatbox writes file",
+             lambda: cdo(f"cdo sellonlatbox,0,90,0,45 {topo_nc} {str_bbox_nc}",
+                         timeout=30) or assert_file(str_bbox_nc))
+
+    # 43c: chained operators via string API
+    str_chain_nc = os.path.join(tmpdir, "str_chain.nc")
+    run_test("cdo() string API: chained -fldmean -sellonlatbox",
+             lambda: cdo(
+                 f"cdo -fldmean -sellonlatbox,0,90,0,45 {topo_nc} {str_chain_nc}",
+                 timeout=30) or assert_file(str_chain_nc))
+
+    # 43d: info operator via string API (no output file, returns text)
+    run_test("cdo() string API: sinfo returns text",
+             lambda: assert_true(
+                 isinstance(cdo(f"cdo sinfo {topo_nc}", timeout=20), str)
+                 and len(str(cdo(f"cdo sinfo {topo_nc}", timeout=20))) > 10))
+
     # ---- Summary ----
     elapsed = time.time() - t_start
     total = passed + failed
