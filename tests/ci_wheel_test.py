@@ -1578,7 +1578,15 @@ def main():
     _make_uv_wind_nc(uv_wind_nc)
 
     # Check Fortran support before running NCL wind tests
-    _has_fortran = cdo.has_operator("uv2vr_cfd")
+    _has_fortran = True
+    _probe_nc = os.path.join(tmpdir, "fortran_probe.nc")
+    try:
+        cdo.uv2vr_cfd(input=uv_wind_nc, output=_probe_nc)
+    except Exception as _e:
+        if "fortran" in str(_e).lower() or "not compiled" in str(_e).lower():
+            _has_fortran = False
+        else:
+            raise
 
     def _uv2vr_test():
         if not _has_fortran:
