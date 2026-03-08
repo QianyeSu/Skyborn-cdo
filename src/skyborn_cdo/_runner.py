@@ -254,8 +254,8 @@ class CdoRunner:
         #   before stdio streams are flushed by exit().  The message
         #   therefore never arrives on the pipe, regardless of buffer size.
         #
-        _POLL = 0.3            # seconds between polls
-        _GRACE_AFTER = 0.1     # short grace after close detected, then kill
+        _POLL = 0.05           # seconds between polls (50 ms is plenty for fast CDO ops)
+        _GRACE_AFTER = 0.05    # short grace after close detected, then kill
         _SIZE_STABLE_SECS = 1.0  # fallback (non-HDF5 only): stable-size window
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
@@ -275,7 +275,14 @@ class CdoRunner:
         # and no time records.  The same issue exists for pre-existing output files
         # (cdo -O overwrite): the file starts with bit0=0, so phase A waits until
         # CDO reopens it for writing before phase B watches for the close.
+        #
+        # Fast-completion edge case: when CDO creates AND closes the NC4 output
+        # within the first poll interval, Phase A never sees bit0=1 so Phase B
+        # never fires and the task waits until timeout.  To handle this, we
+        # record whether the file existed BEFORE CDO started.  For new (non-pre-
+        # existing) files, seeing bit0=0 with content means CDO completed fast.
         _hdf5_write_started = False   # True after we first see bit0 = 1
+        _output_existed_before = bool(output_file and os.path.isfile(output_file))
 
         while True:
             try:
@@ -292,10 +299,22 @@ class CdoRunner:
                     if _closed is not None:
                         # NC4/HDF5 file: two-phase write-bit detection.
                         if not _hdf5_write_started:
-                            # Phase A: CDO hasn't opened the file yet (or hasn't
-                            # flushed the superblock).  Wait until bit0 = 1.
+                            # Phase A: wait until CDO opens the file (bit0=1).
                             if _closed is False:
+                                # CDO has the file open for writing.
                                 _hdf5_write_started = True
+                            elif _closed is True and not _output_existed_before:
+                                # Fast-completion: CDO created AND closed the
+                                # NC4 file before our first poll (takes < _POLL
+                                # for small grids).  Phase A never saw bit0=1.
+                                # Safe to declare done only for NEW files
+                                # (pre-existing files start with bit0=0 before
+                                # CDO reopens them, so they need Phase A).
+                                try:
+                                    if os.path.getsize(output_file) > 512:
+                                        _done = True
+                                except OSError:
+                                    pass
                         else:
                             # Phase B: CDO has the file open.  Done when
                             # H5Fclose() clears bit0 → bit0 = 0.
