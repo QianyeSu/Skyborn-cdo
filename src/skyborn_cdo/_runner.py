@@ -22,6 +22,14 @@ _CDO_DONE_RE = re.compile(r"Processed \d+ values? from \d+ variable")
 # HDF5 file signature (first 8 bytes of every .nc4 / HDF5 file).
 _HDF5_SIG = b"\x89HDF\r\n\x1a\n"
 
+# CDO output-file extensions — used to distinguish an output file from an
+# input-only invocation (e.g. "cdo info in.nc" has only 1 file arg).
+_CDO_FILE_EXTS = frozenset([
+    ".nc", ".nc4", ".nc3", ".nc2", ".ncf",
+    ".grib", ".grb", ".grb2",
+    ".bin", ".srv", ".ext", ".ctl",
+])
+
 
 def _hdf5_file_is_closed(path: str):
     """Detect whether an HDF5/NC4 file has been properly closed by CDO.
@@ -210,10 +218,12 @@ class CdoRunner:
         # timeout independently of whether the pipes have reached EOF.
         stdout_chunks: list = []
         stderr_chunks: list = []
-        # Tracks the wall-clock time of the last stdout chunk; used for
-        # quiet-period detection when there is no output file (info / show
-        # operators).  Stored as a one-element list so the thread can mutate it.
+        # Track the wall-clock time of the last chunk on each stream.
+        # Used for quiet-period detection when there is no output file
+        # (info / show / check / diff operators that write only to pipes).
+        # One-element lists so daemon threads can mutate them safely.
         _stdout_last_t: list = [0.0]
+        _stderr_last_t: list = [0.0]
 
         def _reader(pipe, buf, last_t=None):
             try:
@@ -228,10 +238,12 @@ class CdoRunner:
                 pass
 
         tout = threading.Thread(target=_reader,
-                                args=(proc.stdout, stdout_chunks, _stdout_last_t),
+                                args=(proc.stdout, stdout_chunks,
+                                      _stdout_last_t),
                                 daemon=True)
         terr = threading.Thread(target=_reader,
-                                args=(proc.stderr, stderr_chunks),
+                                args=(proc.stderr, stderr_chunks,
+                                      _stderr_last_t),
                                 daemon=True)
         tout.start()
         terr.start()
@@ -346,22 +358,19 @@ class CdoRunner:
                                 _done = True
                         except OSError:
                             pass
-                # 2) stdout data (info / print operators, no output file).
-                # Two sub-cases:
-                #   a) output_file is set (e.g. a chained operator also writes
-                #      to stdout): fire immediately on first chunk so the file
-                #      detection remains the primary signal.
-                #   b) output_file is None (pure stdout operators like info,
-                #      showname): use a quiet-period so we don't kill CDO
-                #      mid-output when large results span multiple pipe buffers.
-                if not _done and stdout_chunks:
-                    if output_file is not None:
-                        _done = True
-                    else:
-                        # Quiet-period: declare done only after stdout has been
-                        # silent for _GRACE_AFTER seconds (all data in the pipe).
-                        _since = time.monotonic() - _stdout_last_t[0]
-                        if _stdout_last_t[0] > 0 and _since >= _GRACE_AFTER:
+                # 2) No output file: info / show / check / diff operators
+                # that write results to stdout and/or stderr, then hang on
+                # Windows.  Declare done once BOTH streams have been quiet
+                # for _GRACE_AFTER seconds — ensures all buffered data has
+                # arrived before we kill CDO.
+                # NOTE: when output_file IS set, stdout activity is never
+                # used as a completion signal; we rely exclusively on the
+                # HDF5 superblock / size-stability detection above to avoid
+                # premature kills from CDO progress/verbose messages.
+                if not _done and output_file is None:
+                    if stdout_chunks or stderr_chunks:
+                        _last_any = max(_stdout_last_t[0], _stderr_last_t[0])
+                        if _last_any > 0 and (time.monotonic() - _last_any) >= _GRACE_AFTER:
                             _done = True
                 if _done:
                     _detected_at = _elapsed
@@ -418,6 +427,11 @@ class CdoRunner:
                     except OSError:
                         completed = False
                 if not completed and stdout.strip():
+                    completed = True
+                # For no-output operators (check, diffn, diffv, …) whose
+                # results go to stderr: treat non-empty stderr as completion
+                # when no output file was expected.
+                if not completed and not output_file and stderr.strip():
                     completed = True
 
             if completed:
@@ -549,12 +563,19 @@ class CdoRunner:
         if self.debug:
             print(f"[skyborn-cdo] Running: {' '.join(cmd)}")
 
-        # Guess the output file: last non-option argument.
-        _outf = None
-        for _p in reversed(cmd[1:]):
-            if not _p.startswith("-"):
-                _outf = _p
-                break
+        # Guess the output file using the same heuristic as the CLI:
+        # collect all file-like arguments (known extension or path separator)
+        # and treat the LAST one as the output — but only when there are at
+        # least TWO such arguments.  Single-file calls like
+        # "cdo info in.nc" or "cdo check in.nc" have no output file; using
+        # the input as _outf would trigger Phase-A HDF5 detection on an input
+        # file, causing the polling loop to wait forever.
+        _file_parts = [
+            _p for _p in cmd[1:]
+            if not _p.startswith("-")
+            and os.path.splitext(_p)[1].lower() in _CDO_FILE_EXTS
+        ]
+        _outf = _file_parts[-1] if len(_file_parts) >= 2 else None
 
         result = self._exec(cmd, timeout, cmd_label=cmd_string,
                             output_file=_outf)

@@ -187,7 +187,7 @@ def _run_windows(cmd, env, output_file=None):
     # Quiet-period for info / show operators (output goes to stdout, no file)
     _QUIET_SECS = 0.5
 
-    _POLL = 0.3       # proc.wait() timeout per iteration
+    _POLL = 0.05      # proc.wait() timeout per iteration (match _runner.py)
     _GRACE = 0.1      # extra grace after detection before kill
     _elapsed = 0.0
     _detected_at = None

@@ -137,7 +137,11 @@ class Cdo:
                         expanded_parts.append(p)
                 else:
                     expanded_parts.append(p)
-            cmd_string = " ".join(expanded_parts)
+            # Quote tokens that contain spaces so the re-parsed command
+            # string preserves paths with spaces after shlex.split in run_raw.
+            def _q(s):
+                return f'"{s}"' if " " in s else s
+            cmd_string = " ".join(_q(p) for p in expanded_parts)
 
         result = self._runner.run_raw(cmd_string, timeout=timeout)
         if result.stdout.strip():
@@ -271,10 +275,11 @@ class Cdo:
                 suffix=".nc", prefix="skyborn_cdo_", delete=False
             )
             output = temp_output.name
-            temp_output.close()  # Release the file handle so CDO can write to it (Windows requires this)
+            # Release the file handle so CDO can write to it (Windows requires this)
+            temp_output.close()
             self._tempfiles.append(output)
             # Force NetCDF output for return types
-            if "-f" not in " ".join(cmd_options):
+            if "-f" not in cmd_options:
                 cmd_options.extend(["-f", "nc"])
 
         # Determine if we should capture output (info, showdate, etc.)
