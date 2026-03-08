@@ -271,6 +271,7 @@ class Cdo:
                 suffix=".nc", prefix="skyborn_cdo_", delete=False
             )
             output = temp_output.name
+            temp_output.close()  # Release the file handle so CDO can write to it (Windows requires this)
             self._tempfiles.append(output)
             # Force NetCDF output for return types
             if "-f" not in " ".join(cmd_options):
@@ -397,7 +398,7 @@ class Cdo:
                     if parts:
                         self._operators.add(parts[0])
             except CdoError:
-                self._operators = set()
+                return set()  # Don't cache failures — allow retry on the next call
         return self._operators
 
     def has_operator(self, name: str) -> bool:

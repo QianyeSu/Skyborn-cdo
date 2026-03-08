@@ -210,19 +210,25 @@ class CdoRunner:
         # timeout independently of whether the pipes have reached EOF.
         stdout_chunks: list = []
         stderr_chunks: list = []
+        # Tracks the wall-clock time of the last stdout chunk; used for
+        # quiet-period detection when there is no output file (info / show
+        # operators).  Stored as a one-element list so the thread can mutate it.
+        _stdout_last_t: list = [0.0]
 
-        def _reader(pipe, buf):
+        def _reader(pipe, buf, last_t=None):
             try:
                 while True:
                     chunk = pipe.read(4096)
                     if not chunk:
                         break
                     buf.append(chunk)
+                    if last_t is not None:
+                        last_t[0] = time.monotonic()
             except (OSError, ValueError):
                 pass
 
         tout = threading.Thread(target=_reader,
-                                args=(proc.stdout, stdout_chunks),
+                                args=(proc.stdout, stdout_chunks, _stdout_last_t),
                                 daemon=True)
         terr = threading.Thread(target=_reader,
                                 args=(proc.stderr, stderr_chunks),
@@ -254,7 +260,8 @@ class CdoRunner:
         #   before stdio streams are flushed by exit().  The message
         #   therefore never arrives on the pipe, regardless of buffer size.
         #
-        _POLL = 0.05           # seconds between polls (50 ms is plenty for fast CDO ops)
+        # seconds between polls (50 ms is plenty for fast CDO ops)
+        _POLL = 0.05
         _GRACE_AFTER = 0.05    # short grace after close detected, then kill
         _SIZE_STABLE_SECS = 1.0  # fallback (non-HDF5 only): stable-size window
         _elapsed = 0.0
@@ -282,7 +289,8 @@ class CdoRunner:
         # record whether the file existed BEFORE CDO started.  For new (non-pre-
         # existing) files, seeing bit0=0 with content means CDO completed fast.
         _hdf5_write_started = False   # True after we first see bit0 = 1
-        _output_existed_before = bool(output_file and os.path.isfile(output_file))
+        _output_existed_before = bool(
+            output_file and os.path.isfile(output_file))
 
         while True:
             try:
@@ -338,9 +346,23 @@ class CdoRunner:
                                 _done = True
                         except OSError:
                             pass
-                # 2) stdout data available (info / print operators)
+                # 2) stdout data (info / print operators, no output file).
+                # Two sub-cases:
+                #   a) output_file is set (e.g. a chained operator also writes
+                #      to stdout): fire immediately on first chunk so the file
+                #      detection remains the primary signal.
+                #   b) output_file is None (pure stdout operators like info,
+                #      showname): use a quiet-period so we don't kill CDO
+                #      mid-output when large results span multiple pipe buffers.
                 if not _done and stdout_chunks:
-                    _done = True
+                    if output_file is not None:
+                        _done = True
+                    else:
+                        # Quiet-period: declare done only after stdout has been
+                        # silent for _GRACE_AFTER seconds (all data in the pipe).
+                        _since = time.monotonic() - _stdout_last_t[0]
+                        if _stdout_last_t[0] > 0 and _since >= _GRACE_AFTER:
+                            _done = True
                 if _done:
                     _detected_at = _elapsed
 
