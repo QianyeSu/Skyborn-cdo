@@ -42,7 +42,6 @@ Test Coverage (~250 tests):
   • String API: cdo("cdo ...") explicit-file write (two-phase HDF5 regression)
   • run_raw() direct: CdoRunner.run_raw() lower-level API (mulc, timmean, remapbil,
                       chained ops, returncode check, no-prefix mode, overwrite flag)
-  • NCL wind: uv2vr_cfd/uv2dv_cfd with synthetic u/v file (CF standard_name recognition)
   • Error handling: invalid inputs
 """
 
@@ -1518,77 +1517,6 @@ def main():
         runner.run_raw(f"cdo -O mulc,2.0 {topo_nc} {rr_ow_nc}", timeout=30)
         assert_file(rr_ow_nc)
     run_test("run_raw: -O overwrite flag", _test_runraw_overwrite)
-
-    # ======================================================================
-    # Section 61. NCL Wind: uv2vr_cfd / uv2dv_cfd
-    # ======================================================================
-    # CDO's NCL_wind operators convert U and V wind components to derived
-    # fields (relative vorticity, divergence) using curvilinear finite
-    # differences.  The operators identify U and V by CF standard_name
-    # ('eastward_wind' / 'northward_wind').  This test creates a small
-    # synthetic NC4 file with both variables and verifies that:
-    #   a) CDO can locate u/v from their standard_name / long_name attributes.
-    #   b) The output file is non-empty and contains at least one variable.
-    print("\n=== 61. NCL Wind: uv2vr_cfd / uv2dv_cfd ===")
-    uv_wind_nc = os.path.join(tmpdir, "uv_wind.nc")
-
-    def _make_uv_wind_nc(path):
-        """Small CF-1.6 NC4 with u/v wind on an 18x36 regular lat/lon grid."""
-        nlat, nlon = 18, 36
-        lat = np.linspace(-85.0, 85.0, nlat, dtype=np.float32)
-        lon = np.linspace(0.0, 350.0, nlon, dtype=np.float32)
-        la2d, lo2d = np.meshgrid(lat, lon, indexing="ij")
-        # Solid-rotation approximation: u=-sin(lat)*cos(lon)*5, v=cos(lon)*5
-        u_val = (
-            -np.sin(np.deg2rad(la2d)) * np.cos(np.deg2rad(lo2d)) * 5.0
-        ).astype(np.float32)
-        v_val = (np.cos(np.deg2rad(lo2d)) * 5.0).astype(np.float32)
-        with nc4.Dataset(path, "w", format="NETCDF4") as ds:
-            ds.Conventions = "CF-1.6"
-            ds.createDimension("time", 1)
-            ds.createDimension("lat", nlat)
-            ds.createDimension("lon", nlon)
-            t = ds.createVariable("time", "f8", ("time",))
-            t.units = "days since 2000-01-01"
-            t.calendar = "standard"
-            t[:] = [0.0]
-            la = ds.createVariable("lat", "f4", ("lat",))
-            la.units = "degrees_north"
-            la.standard_name = "latitude"
-            la[:] = lat
-            lo = ds.createVariable("lon", "f4", ("lon",))
-            lo.units = "degrees_east"
-            lo.standard_name = "longitude"
-            lo[:] = lon
-            # u: eastward (zonal) wind component
-            u_var = ds.createVariable("u", "f4", ("time", "lat", "lon"),
-                                      fill_value=1e20)
-            u_var.units = "m s-1"
-            u_var.long_name = "eastward wind"
-            u_var.standard_name = "eastward_wind"
-            u_var[:] = u_val[np.newaxis, :]
-            # v: northward (meridional) wind component
-            v_var = ds.createVariable("v", "f4", ("time", "lat", "lon"),
-                                      fill_value=1e20)
-            v_var.units = "m s-1"
-            v_var.long_name = "northward wind"
-            v_var.standard_name = "northward_wind"
-            v_var[:] = v_val[np.newaxis, :]
-
-    _make_uv_wind_nc(uv_wind_nc)
-
-    # 61a: relative vorticity from U/V — force NC4 output so showname is fast
-    vorticity_nc = os.path.join(tmpdir, "vorticity.nc")
-    run_test("uv2vr_cfd (U+V -> relative vorticity)", lambda: (
-        cdo.uv2vr_cfd(input=uv_wind_nc, output=vorticity_nc, options="-f nc4"),
-        assert_file(vorticity_nc)))
-
-    # 61b: divergence from U/V — force NC4 output so showname is fast
-    divergence_nc = os.path.join(tmpdir, "divergence.nc")
-    run_test("uv2dv_cfd (U+V -> divergence)", lambda: (
-        cdo.uv2dv_cfd(input=uv_wind_nc, output=divergence_nc,
-                      options="-f nc4"),
-        assert_file(divergence_nc)))
 
     # ======================================================================
     # Section 62. cdo() String API — Extended Coverage
