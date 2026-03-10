@@ -195,6 +195,13 @@ class TestCdoOperations:
         """Test cdo.sinfo on a file."""
         result = cdo.sinfo(input=sample_nc)
         assert isinstance(result, str)
+        assert len(result.strip()) > 0
+
+    def test_call_style_sinfo(self, cdo, sample_nc):
+        """Test raw command-line style sinfo returns text output."""
+        result = cdo(f"cdo sinfo {sample_nc}")
+        assert isinstance(result, str)
+        assert len(result.strip()) > 0
 
     def test_copy(self, cdo, sample_nc, tmp_path):
         """Test cdo.copy."""

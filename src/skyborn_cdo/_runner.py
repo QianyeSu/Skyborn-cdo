@@ -218,18 +218,30 @@ class CdoRunner:
 
         # Read pipes in daemon threads so proc.wait() can detect the
         # timeout independently of whether the pipes have reached EOF.
+        #
+        # IMPORTANT: use os.read(fd, n) rather than pipe.read(n).
+        # BufferedReader.read(4096) on a pipe can wait for the full 4096-byte
+        # request or EOF, which means small outputs such as ``sinfo`` may never
+        # appear in stdout_chunks if CDO hangs during exit before EOF arrives.
+        # os.read() returns as soon as any bytes are available.
         stdout_chunks: list = []
         stderr_chunks: list = []
 
         def _reader(pipe, buf):
             try:
+                fd = pipe.fileno()
                 while True:
-                    chunk = pipe.read(4096)
+                    chunk = os.read(fd, 4096)
                     if not chunk:
                         break
                     buf.append(chunk)
             except (OSError, ValueError):
                 pass
+            finally:
+                try:
+                    pipe.close()
+                except OSError:
+                    pass
 
         tout = threading.Thread(target=_reader,
                                 args=(proc.stdout, stdout_chunks),
@@ -259,8 +271,10 @@ class CdoRunner:
         #        use _SIZE_STABLE_HDF5_SECS (5 s).  Handles the rare case
         #        where CDO hangs *before* H5Fclose() so the bit never
         #        clears – without this branch the loop spins forever.
-        #   3. stdout_chunks non-empty (info/read-only operators like
-        #      showname) → output is the result, no file needed.
+        #   3. stdout STABILITY fallback for stdout-only operators like
+        #      info/sinfo/showname.  Once stdout stops growing for a short
+        #      window, the useful payload has arrived and the hung process can
+        #      be killed.
         #
         # Why NOT rely on "Processed N values" stderr message:
         #   CDO 2.x prints this to stdout (not stderr).  On Windows the
@@ -273,6 +287,7 @@ class CdoRunner:
         _GRACE_AFTER = 0.1     # short grace after close detected, then kill
         _SIZE_STABLE_SECS = 2.0   # fallback: non-HDF5 or unreadable
         _SIZE_STABLE_HDF5_SECS = 5.0   # fallback: HDF5 write-bit still set
+        _STDOUT_STABLE_SECS = 0.8  # stdout-only operators: growth window
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
 
@@ -291,6 +306,8 @@ class CdoRunner:
         _detected_at = None    # wall-clock time when completion first seen
         _last_fsize = -1       # last observed output-file size
         _last_fsize_t = time.monotonic()  # wall-clock of last size change
+        _last_stdout_size = 0
+        _last_stdout_t = time.monotonic()
         hung = False
 
         while True:
@@ -332,9 +349,15 @@ class CdoRunner:
                                 _done = True
                         except OSError:
                             pass
-                # 2) stdout data available (info / print operators)
-                if not _done and stdout_chunks:
-                    _done = True
+                # 2) stdout-only operators: wait for stdout growth to stop.
+                if not _done and output_file is None:
+                    _stdout_size = sum(len(chunk) for chunk in stdout_chunks)
+                    if _stdout_size != _last_stdout_size:
+                        _last_stdout_size = _stdout_size
+                        _last_stdout_t = _now
+                    elif (_stdout_size > 0
+                          and (_now - _last_stdout_t) >= _STDOUT_STABLE_SECS):
+                        _done = True
                 if _done:
                     _detected_at = _elapsed
 
