@@ -117,7 +117,8 @@ def _expand_cli_wildcards(args):
     expanded_args = []
     for arg in args:
         if any(c in arg for c in ("*", "?", "[", "]")):
-            matches = sorted(m for m in glob.glob(arg) if m not in explicit_files)
+            matches = sorted(m for m in glob.glob(
+                arg) if m not in explicit_files)
             if matches:
                 expanded_args.extend(matches)
             else:

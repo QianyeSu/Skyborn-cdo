@@ -408,7 +408,8 @@ class TestCli:
             t = ds.createVariable("time", "f8", ("time",))
             t.units = "hours since 1900-01-01 00:00:00"
             t.calendar = "gregorian"
-            dates = [cftime.DatetimeGregorian(year, m, 1) for m in range(1, 13)]
+            dates = [cftime.DatetimeGregorian(
+                year, m, 1) for m in range(1, 13)]
             t[:] = nc4.date2num(dates, units=t.units, calendar=t.calendar)
             v = ds.createVariable("tas", "f4", ("time", "lat", "lon"))
             v[:] = np.random.rand(12, 2, 3).astype("f4")
