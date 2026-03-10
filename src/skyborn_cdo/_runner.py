@@ -252,10 +252,15 @@ class CdoRunner:
         #      byte (offset 11, version 2+).  HDF5 sets bit 0 on open and
         #      clears it on H5Fclose().  When the bit is 0 the file is
         #      completely written – instant detection, zero wait.
-        #   2. stdout_chunks non-empty (info/read-only operators like
+        #   2. File-size STABILITY fallback for all output types:
+        #      – _closed is None  (non-HDF5 / superblock unreadable):
+        #        use _SIZE_STABLE_SECS (2 s)
+        #      – _closed is False (HDF5 write-bit still set):
+        #        use _SIZE_STABLE_HDF5_SECS (5 s).  Handles the rare case
+        #        where CDO hangs *before* H5Fclose() so the bit never
+        #        clears – without this branch the loop spins forever.
+        #   3. stdout_chunks non-empty (info/read-only operators like
         #      showname) → output is the result, no file needed.
-        #   3. Non-HDF5 output: file-size STABILITY fallback (rarely
-        #      needed – CDO exits cleanly for GRIB/NC2 output).
         #
         # Why NOT rely on "Processed N values" stderr message:
         #   CDO 2.x prints this to stdout (not stderr).  On Windows the
@@ -266,12 +271,13 @@ class CdoRunner:
         #
         _POLL = 0.3            # seconds between polls
         _GRACE_AFTER = 0.1     # short grace after close detected, then kill
-        _SIZE_STABLE_SECS = 2.0  # fallback (non-HDF5 / unreadable): stable-size window
+        _SIZE_STABLE_SECS = 2.0   # fallback: non-HDF5 or unreadable
+        _SIZE_STABLE_HDF5_SECS = 5.0   # fallback: HDF5 write-bit still set
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
-        _detected_at = None    # timestamp when completion first seen
+        _detected_at = None    # wall-clock time when completion first seen
         _last_fsize = -1       # last observed output-file size
-        _last_fsize_changed = 0.0  # time when file size last changed
+        _last_fsize_t = time.monotonic()  # wall-clock of last size change
         hung = False
 
         while True:
@@ -280,6 +286,8 @@ class CdoRunner:
                 break  # process exited normally
             except subprocess.TimeoutExpired:
                 _elapsed += _POLL
+
+            _now = time.monotonic()
 
             # -- Quick-check: did CDO already finish its work? --------
             if _detected_at is None:
@@ -290,14 +298,14 @@ class CdoRunner:
                     _closed = _hdf5_file_is_closed(output_file)
                     if _closed is True:
                         _done = True
-                    elif _closed is None:
-                        # Size-stability fallback: _closed is None when the
-                        # file is not HDF5 (GRIB/NC2) OR when the superblock
-                        # could not be read (e.g. transient OS sharing error).
-                        # For confirmed-open HDF5 files (_closed is False) we
-                        # deliberately skip this branch to avoid prematurely
-                        # killing CDO during the compute phase of operators
-                        # like sp2gpl that write data after a long transform.
+                    else:
+                        # Size-stability fallback.
+                        # _closed is None  → non-HDF5 or unreadable: 2 s window
+                        # _closed is False → HDF5 write-bit still set: 5 s window
+                        # (covers CDO hanging before H5Fclose clears the bit)
+                        _stable_win = (_SIZE_STABLE_HDF5_SECS
+                                       if _closed is False
+                                       else _SIZE_STABLE_SECS)
                         try:
                             _cur_size = (
                                 os.path.getsize(output_file)
@@ -305,10 +313,9 @@ class CdoRunner:
                             )
                             if _cur_size != _last_fsize:
                                 _last_fsize = _cur_size
-                                _last_fsize_changed = _elapsed
+                                _last_fsize_t = _now
                             elif (_cur_size > 0
-                                  and (_elapsed - _last_fsize_changed)
-                                  >= _SIZE_STABLE_SECS):
+                                  and (_now - _last_fsize_t) >= _stable_win):
                                 _done = True
                         except OSError:
                             pass
