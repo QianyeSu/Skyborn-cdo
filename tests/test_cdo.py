@@ -6,8 +6,18 @@ import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 import pytest
+
+
+def _cli_test_env():
+    """Ensure CLI subprocesses import the workspace src/ tree first."""
+    env = os.environ.copy()
+    src_dir = str(Path(__file__).resolve().parents[1] / "src")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = src_dir if not existing else src_dir + os.pathsep + existing
+    return env
 
 
 class TestCdoBinaryDiscovery:
@@ -336,6 +346,7 @@ class TestCli:
             [sys.executable, "-m", "skyborn_cdo._cli", "--info"],
             capture_output=True,
             text=True,
+            env=_cli_test_env(),
         )
         assert "skyborn-cdo version" in result.stdout
 
@@ -345,6 +356,84 @@ class TestCli:
             [sys.executable, "-m", "skyborn_cdo._cli", "--help"],
             capture_output=True,
             text=True,
+            env=_cli_test_env(),
         )
         assert "skyborn-cdo" in result.stdout
         assert "Python API" in result.stdout
+
+    def test_cli_sinfo_outputs_text(self, tmp_path):
+        """CLI sinfo should print metadata text for a NetCDF file."""
+        from skyborn_cdo import Cdo
+
+        try:
+            cdo = Cdo()
+            cdo.version()
+        except (FileNotFoundError, Exception):
+            pytest.skip("CDO binary not available or not functional")
+
+        sample_nc = str(tmp_path / "cli_sinfo.nc")
+        cdo.topo(output=sample_nc)
+
+        result = subprocess.run(
+            [sys.executable, "-m", "skyborn_cdo._cli", "sinfo", sample_nc],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=_cli_test_env(),
+        )
+        assert result.returncode == 0
+        combined = (result.stdout + result.stderr).strip()
+        assert combined
+        assert "File format" in combined or "Grid coordinates" in combined or "points" in combined
+
+    def test_cli_wildcard_mergetime_windows_style(self, tmp_path):
+        """CLI should expand *.nc itself because PowerShell won't."""
+        from skyborn_cdo import Cdo
+
+        try:
+            cdo = Cdo()
+            cdo.version()
+        except (FileNotFoundError, Exception):
+            pytest.skip("CDO binary not available or not functional")
+
+        nc4 = pytest.importorskip("netCDF4")
+        cftime = pytest.importorskip("cftime")
+        import numpy as np
+
+        def _make_monthly_nc(path, year):
+            ds = nc4.Dataset(path, "w", format="NETCDF4")
+            ds.createDimension("time", 12)
+            ds.createDimension("lat", 2)
+            ds.createDimension("lon", 3)
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "hours since 1900-01-01 00:00:00"
+            t.calendar = "gregorian"
+            dates = [cftime.DatetimeGregorian(year, m, 1) for m in range(1, 13)]
+            t[:] = nc4.date2num(dates, units=t.units, calendar=t.calendar)
+            v = ds.createVariable("tas", "f4", ("time", "lat", "lon"))
+            v[:] = np.random.rand(12, 2, 3).astype("f4")
+            ds.close()
+
+        _make_monthly_nc(str(tmp_path / "ERA5_MSE_and_DSE_2023.nc"), 2023)
+        _make_monthly_nc(str(tmp_path / "ERA5_MSE_and_DSE_2024.nc"), 2024)
+        merged = str(tmp_path / "merged.nc")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "skyborn_cdo._cli",
+                "-O",
+                "mergetime",
+                str(tmp_path / "ERA5_MSE_and_DSE_202*.nc"),
+                merged,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=_cli_test_env(),
+        )
+        assert result.returncode == 0, result.stderr or result.stdout
+        assert os.path.exists(merged)
+        with nc4.Dataset(merged) as ds:
+            assert ds.variables["time"].size == 24

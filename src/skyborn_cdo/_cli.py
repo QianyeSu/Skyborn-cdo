@@ -5,6 +5,7 @@ Allows running CDO commands directly via: skyborn-cdo <cdo args>
 or checking the installation via: skyborn-cdo --info
 """
 
+import glob
 import os
 import sys
 
@@ -25,6 +26,12 @@ def main():
             _print_help()
             return
         # e.g. "skyborn-cdo -h sellonlatbox" → forward to CDO
+
+    # PowerShell does not expand *.nc for native commands.  Mirror the Python
+    # API behavior so `skyborn-cdo mergetime data_202*.nc out.nc` works on
+    # Windows exactly like the shell-expanded form does on POSIX shells.
+    if os.name == "nt" and any(c in " ".join(args) for c in ("*", "?", "[")):
+        args = _expand_cli_wildcards(args)
 
     import subprocess
 
@@ -95,6 +102,31 @@ def _extract_output_file(args):
     return file_args[-1] if len(file_args) >= 2 else None
 
 
+def _expand_cli_wildcards(args):
+    """Expand wildcard file arguments for Windows shells.
+
+    PowerShell does not expand globs for external commands, so CDO receives the
+    literal pattern and fails with "Open failed on >*.nc<".  This mirrors the
+    Python API's wildcard handling: expand only arguments that contain glob
+    characters and leave unmatched patterns untouched so CDO can report them.
+    """
+    explicit_files = {
+        a for a in args
+        if not a.startswith("-") and not any(c in a for c in ("*", "?", "[", "]"))
+    }
+    expanded_args = []
+    for arg in args:
+        if any(c in arg for c in ("*", "?", "[", "]")):
+            matches = sorted(m for m in glob.glob(arg) if m not in explicit_files)
+            if matches:
+                expanded_args.extend(matches)
+            else:
+                expanded_args.append(arg)
+        else:
+            expanded_args.append(arg)
+    return expanded_args
+
+
 def _run_windows(cmd, env, output_file=None):
     """Run CDO on Windows with real-time streaming and exit-hang workaround.
 
@@ -142,8 +174,9 @@ def _run_windows(cmd, env, output_file=None):
 
     def _stream(pipe, dest):
         try:
+            fd = pipe.fileno()
             while True:
-                chunk = pipe.read(4096)
+                chunk = os.read(fd, 4096)
                 if not chunk:
                     break
                 dest.buffer.write(chunk)
@@ -153,6 +186,11 @@ def _run_windows(cmd, env, output_file=None):
                     _last_activity[0] = time.monotonic()
         except (OSError, ValueError, AttributeError):
             pass
+        finally:
+            try:
+                pipe.close()
+            except OSError:
+                pass
 
     t_out = threading.Thread(target=_stream, args=(
         proc.stdout, sys.stdout), daemon=True)
