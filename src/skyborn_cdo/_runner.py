@@ -35,9 +35,16 @@ def _hdf5_file_is_closed(path: str):
     Returns
     -------
     True   – HDF5 file exists *and* has been properly closed (bit 0 == 0).
-    False  – HDF5 file exists but is still open / too small to read yet.
-    None   – file does not exist yet, or is not an HDF5 file (caller
-             should fall back to size-stability detection).
+    False  – HDF5 superblock was **successfully read** and bit 0 == 1,
+             meaning CDO still has the file open for writing.  The caller
+             should trust this signal and NOT fall back to size-stability
+             (which would risk killing CDO mid-write for compute-heavy
+             operators such as sp2gpl that write data after a long transform
+             phase).
+    None   – Cannot determine: file does not exist, is not an HDF5 file,
+             uses a superblock version < 2, or an OSError prevented reading
+             the header (e.g. transient Windows sharing violation).  In all
+             these cases the caller should use the size-stability fallback.
     """
     try:
         if not os.path.isfile(path):
@@ -51,7 +58,10 @@ def _hdf5_file_is_closed(path: str):
         # True = write-access bit cleared = closed
         return (hdr[11] & 0x01) == 0
     except OSError:
-        return False
+        # Cannot read the superblock (e.g. transient Windows sharing
+        # violation).  Return None so the caller uses size-stability as a
+        # fallback instead of spinning forever on a False sentinel.
+        return None
 
 
 class CdoError(Exception):
@@ -256,7 +266,7 @@ class CdoRunner:
         #
         _POLL = 0.3            # seconds between polls
         _GRACE_AFTER = 0.1     # short grace after close detected, then kill
-        _SIZE_STABLE_SECS = 1.0  # fallback (non-HDF5 only): stable-size window
+        _SIZE_STABLE_SECS = 2.0  # fallback (non-HDF5 / unreadable): stable-size window
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
         _detected_at = None    # timestamp when completion first seen
@@ -281,9 +291,13 @@ class CdoRunner:
                     if _closed is True:
                         _done = True
                     elif _closed is None:
-                        # Not HDF5 (GRIB/NC2): fall back to size-stability.
-                        # CDO exits cleanly for these formats so this path
-                        # is almost never reached on a healthy system.
+                        # Size-stability fallback: _closed is None when the
+                        # file is not HDF5 (GRIB/NC2) OR when the superblock
+                        # could not be read (e.g. transient OS sharing error).
+                        # For confirmed-open HDF5 files (_closed is False) we
+                        # deliberately skip this branch to avoid prematurely
+                        # killing CDO during the compute phase of operators
+                        # like sp2gpl that write data after a long transform.
                         try:
                             _cur_size = (
                                 os.path.getsize(output_file)
