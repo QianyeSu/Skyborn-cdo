@@ -275,6 +275,19 @@ class CdoRunner:
         _SIZE_STABLE_HDF5_SECS = 5.0   # fallback: HDF5 write-bit still set
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
+
+        # On Windows, when there is no output file to monitor, the only
+        # completion signal is stdout_chunks.  MinGW fully buffers stdout
+        # when writing to a pipe; if CDO hangs *before* calling exit()
+        # (e.g. inside HDF5 H5Fclose, before atexit flushes stdio), the
+        # buffer is never written to the pipe and stdout_chunks stays empty
+        # forever — the loop would spin indefinitely without a deadline.
+        # Apply a conservative fallback so the caller gets a CdoError
+        # instead of an infinite hang.  Users who need a longer window can
+        # pass timeout= explicitly (which sets _deadline above).
+        _NO_OUTFILE_DEADLINE = 30  # seconds; generous for any metadata op
+        if os.name == "nt" and output_file is None and _deadline == 0:
+            _deadline = _NO_OUTFILE_DEADLINE
         _detected_at = None    # wall-clock time when completion first seen
         _last_fsize = -1       # last observed output-file size
         _last_fsize_t = time.monotonic()  # wall-clock of last size change
@@ -386,7 +399,11 @@ class CdoRunner:
                 return subprocess.CompletedProcess(cmd, 0, stdout, stderr)
 
             raise CdoError(
-                f"CDO command timed out after {timeout}s: {label}",
+                f"CDO command timed out after {_elapsed:.0f}s "
+                f"(no output file or stdout data detected): {label}\n"
+                f"  Hint: CDO may have hung inside HDF5/NetCDF4 file operations "
+                f"before flushing stdout.  If the operation legitimately takes "
+                f"longer, pass timeout=<seconds> to override the default limit.",
                 returncode=-1, stderr=stderr, cmd=label,
             )
 
@@ -508,12 +525,19 @@ class CdoRunner:
         if self.debug:
             print(f"[skyborn-cdo] Running: {' '.join(cmd)}")
 
-        # Guess the output file: last non-option argument.
-        _outf = None
-        for _p in reversed(cmd[1:]):
-            if not _p.startswith("-"):
-                _outf = _p
-                break
+        # Guess the output file: last argument that looks like a file path
+        # (contains a dot or a path separator) among ALL such arguments.
+        # We require at least 2 file-like args so that a command whose only
+        # file argument is an INPUT file (e.g. "sinfo data.nc" or
+        # "showname data.nc") never has that input file mistaken for an
+        # output file.  Misidentifying an existing input HDF5 file as the
+        # output file would cause _hdf5_file_is_closed() to return True
+        # immediately, killing CDO before it does any work.
+        _file_like_args = [
+            p for p in cmd[1:]
+            if not p.startswith("-") and ("." in p or os.sep in p or "/" in p)
+        ]
+        _outf = _file_like_args[-1] if len(_file_like_args) >= 2 else None
 
         result = self._exec(cmd, timeout, cmd_label=cmd_string,
                             output_file=_outf)

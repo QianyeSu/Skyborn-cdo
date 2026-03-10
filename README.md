@@ -356,6 +356,65 @@ cdo.copy(input="input.nc", output="out.grb", options="-f grb")    # GRIB1
 cdo.copy(input="input.nc", output="out.grb2", options="-f grb2")  # GRIB2
 ```
 
+#### Copy vs Clone — Understanding File Size Changes
+
+When using `copy` operator, **output file may be significantly larger** than input file. This is expected behavior and not a bug.
+
+**Why does `copy` increase file size?**
+
+The `copy` operator:
+1. **Reads and decompresses** all data from input file into memory
+2. **Writes uncompressed** to output file (by default CDO does **not** apply compression)
+
+Example: A compressed NetCDF4 file with deflate compression may be 28 MB. After `cdo.copy()`, the output becomes 47 MB (uncompressed original data).
+
+**Solutions:**
+
+Use `clone` for file duplication (no re-compression):
+```python
+cdo = Cdo(options="-O")
+
+# Fastest and smallest: clone preserves compression, no decode/encode
+cdo.clone(input="compressed_file.nc", output="output.nc")
+```
+
+Use `-z zip` option to re-compress with deflate:
+```python
+cdo = Cdo(options="-O")
+
+# Force deflate compression (level 1, matches typical NetCDF4 default)
+cdo.copy(input="input.nc", output="output.nc", options="-z zip")
+
+# Specify compression level (1=low/fast, 9=high/slow)
+cdo.copy(input="input.nc", output="output.nc", options="-z zip_5")
+
+# Both command styles work
+cdo("-O -z zip copy input.nc output.nc")
+```
+
+**Difference between `copy` vs `clone`:**
+
+| Operator | Compression | Speed | Use Case | Output Size |
+|----------|------------|-------|----------|---|
+| `copy` | Default (none) | Decodes all data | Data inspection, reformat | **Larger** |
+| `copy -z zip` | Deflate (level 1) | Slower (re-compress) | Archive, storage | **Smaller** |
+| `clone` | Preserves original | Fast (no decode) | Direct duplication | **Same as input** |
+
+```python
+cdo = Cdo(options="-O")
+
+# Input file: data.nc (28.2 MB, compressed with deflate)
+
+# ❌ Don't do this (output: 47.5 MB)
+cdo.copy(input="data.nc", output="output.nc")
+
+# ✅ Do this instead - with compression
+cdo.copy(input="data.nc", output="output.nc", options="-z zip")  # output: ~28 MB
+
+# ✅ Or use clone for fastest/smallest direct copy
+cdo.clone(input="data.nc", output="output.nc")  # output: ~28 MB (identical)
+```
+
 #### Variable Metadata
 
 ```python
