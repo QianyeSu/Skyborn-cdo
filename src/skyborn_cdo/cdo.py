@@ -166,8 +166,12 @@ class Cdo:
         def operator_method(*args, **kwargs):
             return self._execute_operator(name, *args, **kwargs)
 
+        def operator_help():
+            return self.help(name)
+
         operator_method.__name__ = name
         operator_method.__doc__ = f"Execute CDO operator: {name}"
+        operator_method.help = operator_help
         return operator_method
 
     def _execute_operator(

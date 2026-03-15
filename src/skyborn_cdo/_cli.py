@@ -27,6 +27,13 @@ def main():
             return
         # e.g. "skyborn-cdo -h sellonlatbox" → forward to CDO
 
+    # Convenience operator help style:
+    #   skyborn-cdo mergetime --help
+    #   skyborn-cdo mergetime --h
+    # Rewrite to canonical CDO style: -h <operator>
+    if len(args) >= 2 and not args[0].startswith("-") and args[1] in ("--help", "--h"):
+        args = ["-h", args[0]]
+
     # PowerShell does not expand *.nc for native commands.  Mirror the Python
     # API behavior so `skyborn-cdo mergetime data_202*.nc out.nc` works on
     # Windows exactly like the shell-expanded form does on POSIX shells.

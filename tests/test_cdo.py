@@ -168,6 +168,12 @@ class TestCdoClass:
         cdo.cleanup()
         assert len(cdo._tempfiles) == 0
 
+    def test_operator_bound_help(self, cdo):
+        """Test cdo.<operator>.help() convenience shortcut."""
+        txt = cdo.mergetime.help()
+        assert isinstance(txt, str)
+        assert "mergetime" in txt.lower()
+
 
 class TestCdoOperations:
     """Integration tests that require a working CDO and test NC files."""
@@ -360,6 +366,29 @@ class TestCli:
         )
         assert "skyborn-cdo" in result.stdout
         assert "Python API" in result.stdout
+
+    def test_cli_operator_help_long_form(self):
+        """Test `skyborn-cdo mergetime --help` convenience syntax."""
+        result = subprocess.run(
+            [sys.executable, "-m", "skyborn_cdo._cli", "mergetime", "--help"],
+            capture_output=True,
+            text=True,
+            env=_cli_test_env(),
+        )
+        out = (result.stdout + result.stderr).lower()
+        assert "mergetime" in out
+        assert "merge datasets" in out or "sorted by date and time" in out
+
+    def test_cli_operator_help_short_alias(self):
+        """Test `skyborn-cdo mergetime --h` convenience syntax."""
+        result = subprocess.run(
+            [sys.executable, "-m", "skyborn_cdo._cli", "mergetime", "--h"],
+            capture_output=True,
+            text=True,
+            env=_cli_test_env(),
+        )
+        out = (result.stdout + result.stderr).lower()
+        assert "mergetime" in out
 
     def test_cli_sinfo_outputs_text(self, tmp_path):
         """CLI sinfo should print metadata text for a NetCDF file."""
