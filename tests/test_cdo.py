@@ -8,6 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 import tomllib
+from types import SimpleNamespace
 
 import pytest
 
@@ -378,6 +379,57 @@ class TestCdoOperations:
 
 class TestCli:
     """Test CLI entry point."""
+
+    def test_cli_decode_output_handles_utf8_bytes(self):
+        """CLI help decoding should not depend on the active Windows code page."""
+        from skyborn_cdo._cli import _decode_cli_output
+
+        payload = "Operator help – remapbil °".encode("utf-8")
+        decoded = _decode_cli_output(payload)
+        assert "remapbil" in decoded
+        assert "Operator help" in decoded
+
+    def test_cli_operator_help_decodes_binary_output(self, monkeypatch, capsys):
+        """Regression: help output with non-GBK bytes must not crash on Windows."""
+        import skyborn_cdo._cli as cli
+
+        old_argv = sys.argv[:]
+        sys.argv = ["skyborn-cdo", "remapbil", "--help"]
+
+        monkeypatch.setattr(cli, "get_cdo_path", lambda: "cdo")
+        monkeypatch.setattr(cli, "get_bundled_env", lambda: {})
+
+        original_os_name = cli.os.name
+        monkeypatch.setattr(cli.os, "name", "nt")
+
+        class _SubprocessStub:
+            CREATE_NO_WINDOW = 0
+
+            @staticmethod
+            def run(*args, **kwargs):
+                assert kwargs.get("capture_output") is True
+                assert "text" not in kwargs
+                return SimpleNamespace(
+                    stdout="remapbil help – details".encode("utf-8"),
+                    stderr=b"",
+                    returncode=0,
+                )
+
+        original_subprocess = sys.modules.get("subprocess")
+        sys.modules["subprocess"] = _SubprocessStub
+        try:
+            with pytest.raises(SystemExit) as exc:
+                cli.main()
+            assert exc.value.code == 0
+        finally:
+            sys.argv = old_argv
+            if original_subprocess is not None:
+                sys.modules["subprocess"] = original_subprocess
+            else:
+                sys.modules.pop("subprocess", None)
+
+        out = capsys.readouterr().out
+        assert "remapbil help" in out
 
     def test_cli_info(self):
         """Test skyborn-cdo --info."""

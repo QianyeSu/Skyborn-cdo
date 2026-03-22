@@ -6,6 +6,7 @@ or checking the installation via: skyborn-cdo --info
 """
 
 import glob
+import locale
 import os
 import sys
 
@@ -45,14 +46,15 @@ def main():
         result = subprocess.run(
             [cdo_path] + args,
             capture_output=True,
-            text=True,
             env=env,
             creationflags=_creationflags,
         )
-        if result.stdout.strip():
-            print(result.stdout.strip())
-        if result.stderr.strip():
-            print(result.stderr.strip())
+        stdout = _decode_cli_output(result.stdout)
+        stderr = _decode_cli_output(result.stderr)
+        if stdout.strip():
+            print(stdout.strip())
+        if stderr.strip():
+            print(stderr.strip())
         sys.exit(0)
 
     if os.name == "nt":
@@ -76,6 +78,35 @@ def _normalize_cli_args(args):
     if len(args) >= 2 and not args[0].startswith("-") and args[1] in ("--help", "--h", "-h"):
         return ["-h", args[0]]
     return args
+
+
+def _decode_cli_output(data):
+    """Decode subprocess output without assuming the console code page."""
+    if data is None:
+        return ""
+    if isinstance(data, str):
+        return data
+
+    # MinGW-built CDO on Windows may emit UTF-8 help text even when the
+    # active console encoding is GBK. Decode bytes ourselves so help output
+    # never crashes inside subprocess' text-mode reader thread.
+    encodings = []
+    if os.name == "nt":
+        encodings.append("utf-8")
+    encodings.append(locale.getpreferredencoding(False) or "utf-8")
+    encodings.extend(["utf-8", "latin-1"])
+
+    seen = set()
+    for enc in encodings:
+        if not enc or enc in seen:
+            continue
+        seen.add(enc)
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+
+    return data.decode("utf-8", errors="replace")
 
 
 # ---------------------------------------------------------------------------
