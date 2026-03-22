@@ -14,7 +14,7 @@ from skyborn_cdo._cdo_binary import get_bundled_env, get_cdo_path, get_cdo_versi
 
 def main():
     """Entry point for the skyborn-cdo console script."""
-    args = sys.argv[1:]
+    args = _normalize_cli_args(sys.argv[1:])
 
     if not args or args[0] in ("--info", "-i"):
         _print_info()
@@ -26,13 +26,6 @@ def main():
             _print_help()
             return
         # e.g. "skyborn-cdo -h sellonlatbox" → forward to CDO
-
-    # Convenience operator help style:
-    #   skyborn-cdo mergetime --help
-    #   skyborn-cdo mergetime --h
-    # Rewrite to canonical CDO style: -h <operator>
-    if len(args) >= 2 and not args[0].startswith("-") and args[1] in ("--help", "--h"):
-        args = ["-h", args[0]]
 
     # PowerShell does not expand *.nc for native commands.  Mirror the Python
     # API behavior so `skyborn-cdo mergetime data_202*.nc out.nc` works on
@@ -76,6 +69,13 @@ def main():
     else:
         result = subprocess.run([cdo_path] + args, env=env)
         sys.exit(result.returncode)
+
+
+def _normalize_cli_args(args):
+    """Normalize convenience help forms to the canonical ``-h <operator>``."""
+    if len(args) >= 2 and not args[0].startswith("-") and args[1] in ("--help", "--h", "-h"):
+        return ["-h", args[0]]
+    return args
 
 
 # ---------------------------------------------------------------------------
@@ -333,12 +333,14 @@ def _print_help():
     print("  skyborn-cdo --info              Show CDO binary info and version")
     print("  skyborn-cdo --help              Show this help message")
     print("  skyborn-cdo -h <operator>       Show help for a specific CDO operator")
+    print("  skyborn-cdo <operator> --help   Show help for a specific CDO operator")
     print("  skyborn-cdo --operators         List all available CDO operators")
     print("  skyborn-cdo <cdo-args>          Pass arguments directly to CDO")
     print()
     print("Operator Help Examples:")
     print("  skyborn-cdo -h sellonlatbox     Show help for sellonlatbox")
     print("  skyborn-cdo -h mergetime        Show help for mergetime")
+    print("  skyborn-cdo mergetime --help    Alternate operator help syntax")
     print("  skyborn-cdo -h remapbil         Show help for remapbil")
     print()
     print("Command Examples:")

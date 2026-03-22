@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import tomllib
 
 import pytest
 
@@ -366,6 +367,7 @@ class TestCli:
         )
         assert "skyborn-cdo" in result.stdout
         assert "Python API" in result.stdout
+        assert "<operator> --help" in result.stdout
 
     def test_cli_operator_help_long_form(self):
         """Test `skyborn-cdo mergetime --help` convenience syntax."""
@@ -389,6 +391,28 @@ class TestCli:
         )
         out = (result.stdout + result.stderr).lower()
         assert "mergetime" in out
+
+    def test_cli_operator_help_short_flag_after_operator(self):
+        """Test `skyborn-cdo mergetime -h` convenience syntax."""
+        result = subprocess.run(
+            [sys.executable, "-m", "skyborn_cdo._cli", "mergetime", "-h"],
+            capture_output=True,
+            text=True,
+            env=_cli_test_env(),
+        )
+        out = (result.stdout + result.stderr).lower()
+        assert "mergetime" in out
+        assert "merge datasets" in out or "sorted by date and time" in out
+
+    def test_package_version_matches_pyproject(self):
+        """Package __version__ should match the published project version."""
+        import skyborn_cdo
+
+        pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        with pyproject.open("rb") as f:
+            project = tomllib.load(f)
+
+        assert skyborn_cdo.__version__ == project["project"]["version"]
 
     def test_cli_sinfo_outputs_text(self, tmp_path):
         """CLI sinfo should print metadata text for a NetCDF file."""
