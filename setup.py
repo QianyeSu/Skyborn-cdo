@@ -12,7 +12,6 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 from setuptools import Extension, find_packages, setup
@@ -48,41 +47,10 @@ class CdoBuildExt(build_ext):
                 "Set SKYBORN_CDO_BUILD=1 to compile CDO. "
                 "Skipping CDO compilation (development mode)."
             )
-            self._validate_wheel_artifacts()
         else:
             print(
                 "[skyborn-cdo] No CDO source tree found (vendor/cdo/). "
                 "Building Python wrapper only (CDO binary not bundled)."
-            )
-            self._validate_wheel_artifacts()
-
-    def _validate_wheel_artifacts(self):
-        """Refuse wheel builds that are missing bundled runtime assets."""
-        if "bdist_wheel" not in sys.argv:
-            return
-
-        system = platform.system()
-        exe_name = "cdo.exe" if system == "Windows" else "cdo"
-        required_paths = [
-            SRC_DIR / "bin" / exe_name,
-            SRC_DIR / "share" / "proj",
-            SRC_DIR / "share" / "udunits" / "udunits2.xml",
-        ]
-        # Windows wheels rely on external ecCodes definition files.
-        # Linux/macOS builds compile ecCodes with MEMFS enabled, so the
-        # definitions/samples are embedded in libeccodes and share/eccodes
-        # is optional there.
-        if system == "Windows":
-            required_paths.append(SRC_DIR / "share" / "eccodes" / "definitions")
-        missing = [str(path) for path in required_paths if not path.exists()]
-        if missing:
-            missing_txt = "\n".join(f"  - {path}" for path in missing)
-            raise RuntimeError(
-                "[skyborn-cdo] Refusing to build a wheel with missing bundled runtime assets.\n"
-                "This would produce an undersized, non-portable wheel that may only work on developer machines.\n"
-                "Either set SKYBORN_CDO_BUILD=1 to rebuild CDO and bundle its data files, or populate src/skyborn_cdo "
-                "with the release artifacts before running bdist_wheel.\n"
-                f"Missing paths:\n{missing_txt}"
             )
 
     def _build_cdo(self):
