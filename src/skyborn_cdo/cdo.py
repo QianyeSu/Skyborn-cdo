@@ -137,7 +137,12 @@ class Cdo:
                         expanded_parts.append(p)
                 else:
                     expanded_parts.append(p)
-            cmd_string = " ".join(expanded_parts)
+            # Re-quote the expanded argv so paths containing spaces remain
+            # single arguments when run_raw() parses the command string.
+            if os.name == 'nt':
+                cmd_string = subprocess.list2cmdline(expanded_parts)
+            else:
+                cmd_string = shlex.join(expanded_parts)
 
         result = self._runner.run_raw(cmd_string, timeout=timeout)
         if result.stdout.strip():

@@ -343,6 +343,38 @@ class TestCdoOperations:
         finally:
             _os.chdir(orig_cwd)
 
+    def test_call_style_wildcard_preserves_spaces(self, cdo, tmp_path):
+        """Wildcard expansion in raw command strings must preserve paths with spaces."""
+        nc4 = pytest.importorskip("netCDF4")
+        import numpy as np
+
+        def _make_nc(path, n_times, offset_hours=0):
+            ds = nc4.Dataset(path, "w", format="NETCDF4")
+            ds.createDimension("time", n_times)
+            t = ds.createVariable("time", "f8", ("time",))
+            t.units = "hours since 1900-01-01 00:00:00"
+            t.calendar = "gregorian"
+            t.standard_name = "time"
+            t.axis = "T"
+            t[:] = [offset_hours + i * 24 for i in range(n_times)]
+            v = ds.createVariable("tas", "f4", ("time",))
+            v[:] = np.ones(n_times, dtype="f4")
+            ds.close()
+
+        spaced_dir = tmp_path / "dir with spaces"
+        spaced_dir.mkdir()
+        _make_nc(str(spaced_dir / "a_2023.nc"), 12, offset_hours=0)
+        _make_nc(str(spaced_dir / "a_2024.nc"), 12, offset_hours=12 * 24)
+
+        merged = spaced_dir / "merged.nc"
+        cdo(
+            f'cdo -O mergetime "{spaced_dir / "a_202*.nc"}" "{merged}"'
+        )
+
+        assert merged.exists()
+        with nc4.Dataset(merged) as ds:
+            assert ds.variables["time"].size == 24
+
 
 class TestCli:
     """Test CLI entry point."""
