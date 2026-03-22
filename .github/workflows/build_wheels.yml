@@ -7,6 +7,7 @@
 #
 # Supported platforms:
 #   - Linux x86_64 (manylinux_2_28)
+#   - Linux x86_64 (manylinux2014, glibc 2.17)
 #   - macOS arm64 (Apple Silicon, macOS 11.0+)
 #   - Windows x86_64 (MSYS2/MinGW64)
 #
@@ -91,6 +92,68 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-x86_64
+          path: wheelhouse/*.whl
+
+  # =========================================================================
+  # Linux x86_64 (manylinux2014 / glibc 2.17)
+  # =========================================================================
+  build_linux2014_x86_64:
+    name: Linux x86_64 (manylinux2014)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel==3.4.0
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_BUILD: "cp39-manylinux_x86_64 cp310-manylinux_x86_64 cp311-manylinux_x86_64 cp312-manylinux_x86_64 cp313-manylinux_x86_64 cp314-manylinux_x86_64"
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BEFORE_ALL_LINUX: >
+            bash {project}/scripts/build_deps_linux.sh &&
+            bash {project}/scripts/build_cdo.sh &&
+            cp {project}/scripts/repair_linux_wheel.sh /tmp/repair_linux_wheel.sh &&
+            chmod +x /tmp/repair_linux_wheel.sh
+          CIBW_ENVIRONMENT_LINUX: >
+            SKYBORN_CDO_BUILD=0
+            CDO_DEPS_PREFIX=/opt/cdo-deps
+            CDO_INSTALL_PREFIX=/opt/cdo-install
+          CIBW_BEFORE_BUILD_LINUX: >
+            mkdir -p {project}/src/skyborn_cdo/bin &&
+            cp /opt/cdo-install/bin/cdo {project}/src/skyborn_cdo/bin/ &&
+            chmod +x {project}/src/skyborn_cdo/bin/cdo &&
+            strip -s {project}/src/skyborn_cdo/bin/cdo 2>/dev/null || true &&
+            mkdir -p {project}/src/skyborn_cdo/lib &&
+            (cp -a /opt/cdo-deps/lib/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
+            (cp -a /opt/cdo-deps/lib64/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
+            (cp -a /opt/cdo-install/lib/*.so* {project}/src/skyborn_cdo/lib/ 2>/dev/null || true) &&
+            bash {project}/scripts/fix_linux_deps.sh {project}/src/skyborn_cdo /opt/cdo-install/bin/cdo &&
+            mkdir -p {project}/src/skyborn_cdo/share &&
+            (cp -r /opt/cdo-deps/share/proj {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
+            (cp -r /opt/cdo-deps/share/udunits {project}/src/skyborn_cdo/share/ 2>/dev/null || true) &&
+            find {project}/src/skyborn_cdo/share/proj/ -type f ! -name 'proj.db' -delete 2>/dev/null || true &&
+            find {project}/src/skyborn_cdo/lib/ -name '*.so*' -type f -exec strip --strip-unneeded {} + 2>/dev/null || true &&
+            echo '=== Pre-build CDO test ===' &&
+            LD_LIBRARY_PATH={project}/src/skyborn_cdo/lib /opt/cdo-install/bin/cdo --version 2>&1 | head -3 || true &&
+            echo '=== Packaging size check ===' &&
+            du -sh {project}/src/skyborn_cdo/bin/ {project}/src/skyborn_cdo/lib/ {project}/src/skyborn_cdo/share/ 2>/dev/null || true
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
+            LD_LIBRARY_PATH=/opt/cdo-deps/lib:/opt/cdo-deps/lib64:/opt/cdo-install/lib
+            bash /tmp/repair_linux_wheel.sh {dest_dir} {wheel}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-linux2014-x86_64
           path: wheelhouse/*.whl
 
   # =========================================================================
@@ -309,7 +372,7 @@ jobs:
   # =========================================================================
   test_install:
     name: Test ${{ matrix.os }}
-    needs: [build_linux_x86_64, build_macos_arm64, build_windows_x86_64]
+    needs: [build_linux_x86_64, build_linux2014_x86_64, build_macos_arm64, build_windows_x86_64]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -332,7 +395,42 @@ jobs:
           merge-multiple: true
 
       - name: Install wheel
-        run: pip install --find-links dist "skyborn_cdo[test]"
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          case "${{ matrix.python-version }}" in
+            3.9) ABI_TAG="cp39-cp39" ;;
+            3.10) ABI_TAG="cp310-cp310" ;;
+            3.12) ABI_TAG="cp312-cp312" ;;
+            *)
+              echo "Unsupported test python version: ${{ matrix.python-version }}"
+              exit 1
+              ;;
+          esac
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            if [[ "${{ matrix.python-version }}" == "3.9" || "${{ matrix.python-version }}" == "3.10" ]]; then
+              wheels=(dist/skyborn_cdo-*-${ABI_TAG}-*manylinux2014_x86_64*.whl)
+            else
+              wheels=(dist/skyborn_cdo-*-${ABI_TAG}-*manylinux_2_28_x86_64*.whl)
+            fi
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            wheels=(dist/skyborn_cdo-*-${ABI_TAG}-*macosx*_arm64.whl)
+          else
+            wheels=(dist/skyborn_cdo-*-${ABI_TAG}-*win_amd64.whl)
+          fi
+
+          if [[ ${#wheels[@]} -ne 1 ]]; then
+            echo "Expected exactly one matching wheel, found ${#wheels[@]}"
+            ls -1 dist || true
+            exit 1
+          fi
+
+          echo "Installing wheel: ${wheels[0]}"
+          pip install --no-deps "${wheels[0]}"
+          pip install "pytest>=7.0" numpy netCDF4
 
       - name: Verify installation
         run: python -c "from skyborn_cdo import Cdo; cdo = Cdo(); print(repr(cdo)); print(cdo.version())"

@@ -2,8 +2,8 @@
 # =============================================================================
 # build_deps_linux.sh - Compile all CDO dependencies from source on Linux
 # =============================================================================
-# This script is designed to run inside a manylinux_2_28 Docker container
-# (CentOS Stream / AlmaLinux based) used by cibuildwheel.
+# This script is designed to run inside the Linux manylinux containers used
+# by cibuildwheel, currently including manylinux_2_28 and manylinux2014.
 #
 # Usage:
 #   SKYBORN_CDO_BUILD=1 bash scripts/build_deps_linux.sh
@@ -40,7 +40,7 @@ echo "============================================"
 
 mkdir -p "${PREFIX}" "${BUILD_DIR}"
 
-# Install system-level build tools that manylinux_2_28 might be missing
+# Install system-level build tools that the active manylinux image might be missing
 if command -v dnf &>/dev/null; then
     dnf install -y cmake gcc-c++ gcc-gfortran wget perl openssl-devel \
         sqlite-devel libtiff-devel libxml2-devel expat-devel 2>/dev/null || true

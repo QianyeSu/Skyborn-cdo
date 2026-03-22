@@ -27,8 +27,9 @@ fi
 
 mkdir -p "$LIB_DIR"
 
-# ---- manylinux_2_28 baseline libraries (PEP 600) — MUST NOT be bundled ----
-# These are guaranteed to exist on any manylinux_2_28-compatible system.
+# ---- conservative manylinux baseline libraries – MUST NOT be bundled ----
+# These are expected to exist on the manylinux policies we currently target,
+# including manylinux2014 (glibc 2.17) and manylinux_2_28.
 BASELINE='linux-vdso|ld-linux|/ld[.-]|/libc\.|/libm\.|/libpthread|/libdl\.|/librt\.|/libstdc\+\+|/libgcc_s|/libresolv|/libz\.|/libutil|/libnsl|/libcrypt|/libBrokenLocale|/libSegFault|/libthread_db|/libanl|/libmvec|/libnss|/libmcheck'
 
 copy_missing_libs() {
