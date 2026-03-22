@@ -61,13 +61,19 @@ class CdoBuildExt(build_ext):
         if "bdist_wheel" not in sys.argv:
             return
 
-        exe_name = "cdo.exe" if platform.system() == "Windows" else "cdo"
+        system = platform.system()
+        exe_name = "cdo.exe" if system == "Windows" else "cdo"
         required_paths = [
             SRC_DIR / "bin" / exe_name,
-            SRC_DIR / "share" / "eccodes" / "definitions",
             SRC_DIR / "share" / "proj",
             SRC_DIR / "share" / "udunits" / "udunits2.xml",
         ]
+        # Windows wheels rely on external ecCodes definition files.
+        # Linux/macOS builds compile ecCodes with MEMFS enabled, so the
+        # definitions/samples are embedded in libeccodes and share/eccodes
+        # is optional there.
+        if system == "Windows":
+            required_paths.append(SRC_DIR / "share" / "eccodes" / "definitions")
         missing = [str(path) for path in required_paths if not path.exists()]
         if missing:
             missing_txt = "\n".join(f"  - {path}" for path in missing)
