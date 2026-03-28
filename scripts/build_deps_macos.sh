@@ -51,16 +51,42 @@ export LDFLAGS="-L${PREFIX}/lib -arch ${ARCH}"
 export CPPFLAGS="-I${PREFIX}/include"
 export CMAKE_OSX_ARCHITECTURES="${ARCH}"
 
+download_archive() {
+    local output="$1"
+    shift
+
+    if [[ -f "${output}" ]]; then
+        return 0
+    fi
+
+    local url
+    for url in "$@"; do
+        echo "Downloading ${output} from ${url}"
+        if curl --retry 5 --retry-delay 2 --retry-all-errors --connect-timeout 20 -fL "${url}" -o "${output}"; then
+            return 0
+        fi
+    done
+
+    echo "ERROR: failed to download ${output}"
+    return 1
+}
+
 # Helper function
 build_autotools() {
     local name="$1"
-    local url="$2"
-    local configure_args="${3:-}"
+    local argc=$#
+    local configure_args="${!argc}"
+    local urls=()
+    local i
+
+    for ((i = 2; i < argc; i++)); do
+        urls+=("${!i}")
+    done
 
     echo "--- Building ${name} ---"
     cd "${BUILD_DIR}"
-    local archive="${url##*/}"
-    [[ -f "${archive}" ]] || curl -fsSL "${url}" -o "${archive}"
+    local archive="${urls[0]##*/}"
+    download_archive "${archive}" "${urls[@]}"
 
     local dir
     dir=$(set +o pipefail; tar tf "${archive}" | head -1 | cut -d/ -f1)
@@ -77,12 +103,15 @@ build_autotools() {
 # ---- 1. zlib ----
 build_autotools "zlib" \
     "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz" \
+    "https://zlib.net/zlib-${ZLIB_VERSION}.tar.gz" \
+    "https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz" \
     "--shared"
 
 # ---- 2. libaec ----
 echo "--- Building libaec ---"
 cd "${BUILD_DIR}"
-curl -fsSL "https://github.com/MathisRosenhauer/libaec/releases/download/v${LIBAEC_VERSION}/libaec-${LIBAEC_VERSION}.tar.gz" -o "libaec-${LIBAEC_VERSION}.tar.gz"
+download_archive "libaec-${LIBAEC_VERSION}.tar.gz" \
+    "https://github.com/MathisRosenhauer/libaec/releases/download/v${LIBAEC_VERSION}/libaec-${LIBAEC_VERSION}.tar.gz"
 tar xf "libaec-${LIBAEC_VERSION}.tar.gz"
 cd "libaec-${LIBAEC_VERSION}"
 mkdir -p build && cd build
@@ -100,8 +129,9 @@ echo "--- libaec installed ---"
 echo "--- Building HDF5 ---"
 cd "${BUILD_DIR}"
 HDF5_URL="https://github.com/HDFGroup/hdf5/releases/download/hdf5_${HDF5_TAG}/hdf5-${HDF5_VERSION}.tar.gz"
-curl -fsSL "${HDF5_URL}" -o "hdf5-${HDF5_VERSION}.tar.gz" || \
-    curl -fsSL "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-${HDF5_VERSION}/src/hdf5-${HDF5_VERSION}.tar.gz" -o "hdf5-${HDF5_VERSION}.tar.gz"
+download_archive "hdf5-${HDF5_VERSION}.tar.gz" \
+    "${HDF5_URL}" \
+    "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-${HDF5_VERSION}/src/hdf5-${HDF5_VERSION}.tar.gz"
 tar xf "hdf5-${HDF5_VERSION}.tar.gz"
 cd "hdf5-${HDF5_VERSION}"
 ./configure \
@@ -120,9 +150,10 @@ echo "--- HDF5 installed ---"
 # ---- 4. NetCDF-C ----
 echo "--- Building NetCDF-C ---"
 cd "${BUILD_DIR}"
-curl -fsSL "https://github.com/Unidata/netcdf-c/archive/refs/tags/v${NETCDF_VERSION}.tar.gz" -o "netcdf-c-${NETCDF_VERSION}.tar.gz" || \
-    curl -fsSL "https://github.com/Unidata/netcdf-c/releases/download/v${NETCDF_VERSION}/netcdf-c-${NETCDF_VERSION}.tar.gz" -o "netcdf-c-${NETCDF_VERSION}.tar.gz" || \
-    curl -fsSL "https://downloads.unidata.ucar.edu/netcdf-c/${NETCDF_VERSION}/netcdf-c-${NETCDF_VERSION}.tar.gz" -o "netcdf-c-${NETCDF_VERSION}.tar.gz"
+download_archive "netcdf-c-${NETCDF_VERSION}.tar.gz" \
+    "https://github.com/Unidata/netcdf-c/archive/refs/tags/v${NETCDF_VERSION}.tar.gz" \
+    "https://github.com/Unidata/netcdf-c/releases/download/v${NETCDF_VERSION}/netcdf-c-${NETCDF_VERSION}.tar.gz" \
+    "https://downloads.unidata.ucar.edu/netcdf-c/${NETCDF_VERSION}/netcdf-c-${NETCDF_VERSION}.tar.gz"
 tar xf "netcdf-c-${NETCDF_VERSION}.tar.gz"
 cd "netcdf-c-${NETCDF_VERSION}"
 CPPFLAGS="-I${PREFIX}/include" LDFLAGS="-L${PREFIX}/lib -arch ${ARCH}" \
@@ -142,8 +173,9 @@ echo "--- NetCDF-C installed ---"
 # ---- 5. ecCodes ----
 echo "--- Building ecCodes ---"
 cd "${BUILD_DIR}"
-curl -fsSL "https://github.com/ecmwf/eccodes/archive/refs/tags/${ECCODES_VERSION}.tar.gz" -o "eccodes-${ECCODES_VERSION}.tar.gz" || \
-    curl -fsSL "https://confluence.ecmwf.int/download/attachments/45757960/eccodes-${ECCODES_VERSION}-Source.tar.gz" -o "eccodes-${ECCODES_VERSION}.tar.gz"
+download_archive "eccodes-${ECCODES_VERSION}.tar.gz" \
+    "https://github.com/ecmwf/eccodes/archive/refs/tags/${ECCODES_VERSION}.tar.gz" \
+    "https://confluence.ecmwf.int/download/attachments/45757960/eccodes-${ECCODES_VERSION}-Source.tar.gz"
 tar xf "eccodes-${ECCODES_VERSION}.tar.gz"
 cd "eccodes-${ECCODES_VERSION}"
 mkdir -p build && cd build
@@ -176,7 +208,8 @@ build_autotools "FFTW3" \
 # ---- 7. PROJ ----
 echo "--- Building PROJ ---"
 cd "${BUILD_DIR}"
-curl -fsSL "https://github.com/OSGeo/PROJ/releases/download/${PROJ_VERSION}/proj-${PROJ_VERSION}.tar.gz" -o "proj-${PROJ_VERSION}.tar.gz"
+download_archive "proj-${PROJ_VERSION}.tar.gz" \
+    "https://github.com/OSGeo/PROJ/releases/download/${PROJ_VERSION}/proj-${PROJ_VERSION}.tar.gz"
 tar xf "proj-${PROJ_VERSION}.tar.gz"
 cd "proj-${PROJ_VERSION}"
 mkdir -p build && cd build
