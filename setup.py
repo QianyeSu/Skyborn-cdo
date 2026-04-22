@@ -184,8 +184,16 @@ ext_modules = [
     ),
 ]
 
+windows_scripts = []
+if os.name == "nt":
+    windows_scripts = [
+        "scripts/cdo.cmd",
+        "scripts/cdo-win.cmd",
+    ]
+
 
 setup(
     ext_modules=ext_modules,
     cmdclass={"build_ext": CdoBuildExt},
+    scripts=windows_scripts,
 )
