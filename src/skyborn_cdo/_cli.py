@@ -176,7 +176,8 @@ def _run_windows(cmd, env, output_file=None):
       time**, so the user sees CDO's progress messages as they are printed,
       exactly as on Linux.
     * Detects that CDO has finished its work by reading the HDF5 superblock
-      (instant) or file-size stability (fallback for non-HDF5).  For
+      (instant) or checking whether the output file can be opened
+      exclusively after CDO releases its handle.  For
       info/show operators that write to stdout instead of a file, completion
       is detected by a short quiet period after output stops.
     * Kills the hung CDO process and returns exit code 0.
@@ -189,7 +190,15 @@ def _run_windows(cmd, env, output_file=None):
     import threading
     import time
 
-    from skyborn_cdo._runner import _hdf5_file_is_closed
+    from skyborn_cdo._runner import (
+        CdoRunner,
+        _win_default_deadline,
+        _win_init_completion_state,
+        _win_timeout_completion_succeeded,
+        _win_update_completion_state,
+    )
+
+    state = _win_init_completion_state(output_file, now=time.monotonic())
 
     try:
         proc = subprocess.Popen(
@@ -205,10 +214,7 @@ def _run_windows(cmd, env, output_file=None):
         return 1
 
     # Stream stdout/stderr to the terminal in real time.
-    # We also track total bytes + last-activity timestamp for detecting
-    # when info operators (no output file) have finished.
     _bytes_written = [0]
-    _last_activity = [time.monotonic()]
     _lock = threading.Lock()
 
     def _stream(pipe, dest):
@@ -222,7 +228,6 @@ def _run_windows(cmd, env, output_file=None):
                 dest.buffer.flush()
                 with _lock:
                     _bytes_written[0] += len(chunk)
-                    _last_activity[0] = time.monotonic()
         except (OSError, ValueError, AttributeError):
             pass
         finally:
@@ -238,29 +243,6 @@ def _run_windows(cmd, env, output_file=None):
     t_out.start()
     t_err.start()
 
-    # ------------------------------------------------------------------
-    # Completion-detection state
-    # ------------------------------------------------------------------
-    # HDF5 two-phase detection:
-    #   Phase A – wait for write-bit to be SET   (CDO opened the file)
-    #   Phase B – wait for write-bit to be CLEARED (H5Fclose() returned)
-    #
-    # For a NEW output file:      initial_hdf5 = None  → write_started = True
-    #   None → False (phase A done) → True (done!)
-    #
-    # For a PRE-EXISTING output file (overwrite with -O):
-    #                             initial_hdf5 = True → write_started = False
-    #   True (wait) → False (phase A done, write_started → True) → True (done!)
-    #
-    initial_hdf5 = _hdf5_file_is_closed(output_file) if output_file else None
-    # True for new files; False for pre-existing
-    write_started = initial_hdf5 is not True
-
-    # Size-stability fallback for non-HDF5 output (GRIB, NC3 classic, …)
-    _last_fsize = -1
-    _last_fsize_t = 0.0
-    _SIZE_STABLE = 1.0  # seconds
-
     # Quiet-period for info / show operators (output goes to stdout, no file)
     _QUIET_SECS = 0.5
 
@@ -268,6 +250,19 @@ def _run_windows(cmd, env, output_file=None):
     _GRACE = 0.1      # extra grace after detection before kill
     _elapsed = 0.0
     _detected_at = None
+    _deadline = _win_default_deadline(output_file)
+    env_timeout = os.environ.get("SKYBORN_CDO_TIMEOUT")
+    if env_timeout:
+        try:
+            parsed_timeout = int(env_timeout)
+            if parsed_timeout > 0:
+                _deadline = parsed_timeout
+        except ValueError:
+            sys.stderr.write(
+                "skyborn-cdo: ignoring invalid SKYBORN_CDO_TIMEOUT value; "
+                "expected a positive integer number of seconds.\n"
+            )
+    timed_out = False
 
     while True:
         try:
@@ -280,56 +275,20 @@ def _run_windows(cmd, env, output_file=None):
             _elapsed += _POLL
 
         if _detected_at is None:
-            done = False
-
-            if output_file:
-                closed = _hdf5_file_is_closed(output_file)
-                if closed is not None:
-                    # HDF5 file: two-phase write-bit detection.
-                    if not write_started:
-                        if closed is False:        # write bit set → phase A done
-                            write_started = True
-                    else:
-                        if closed is True:         # write bit cleared → done!
-                            done = True
-                else:
-                    # Not HDF5 (GRIB / NC3 classic): size-stability fallback.
-                    try:
-                        cur = (os.path.getsize(output_file)
-                               if os.path.isfile(output_file) else -1)
-                        if cur != _last_fsize:
-                            _last_fsize = cur
-                            _last_fsize_t = _elapsed
-                        elif cur > 0 and (_elapsed - _last_fsize_t) >= _SIZE_STABLE:
-                            done = True
-                    except OSError:
-                        pass
-            else:
-                # No output file (info / show operators).
-                # CDO writes output, then hangs.  Detect via quiet period.
-                with _lock:
-                    total = _bytes_written[0]
-                    since = time.monotonic() - _last_activity[0]
-                if total > 0 and since >= _QUIET_SECS:
-                    done = True
-
+            with _lock:
+                total = _bytes_written[0]
+            done = _win_update_completion_state(
+                state,
+                stdout_size=total,
+                now=time.monotonic(),
+                quiet_secs=_QUIET_SECS,
+            )
             if done:
                 _detected_at = _elapsed
 
         if _detected_at is not None and (_elapsed - _detected_at) >= _GRACE:
             # CDO finished its work but is stuck in exit cleanup.  Kill it.
-            try:
-                proc.kill()
-            except OSError:
-                pass
-            try:
-                subprocess.Popen(
-                    ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-            except OSError:
-                pass
+            CdoRunner._kill_proc_tree(proc)
             try:
                 proc.wait(timeout=2)
             except subprocess.TimeoutExpired:
@@ -337,6 +296,32 @@ def _run_windows(cmd, env, output_file=None):
             t_out.join(timeout=1)
             t_err.join(timeout=1)
             return 0
+
+        if _deadline and _elapsed >= _deadline:
+            timed_out = True
+            CdoRunner._kill_proc_tree(proc)
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            break
+
+    if timed_out:
+        t_out.join(timeout=1)
+        t_err.join(timeout=1)
+        completed = _win_timeout_completion_succeeded(state)
+        if completed:
+            return 0
+
+        sys.stderr.write(
+            f"skyborn-cdo: command timed out after {_elapsed:.0f}s before "
+            f"the Windows completion safeguard could confirm the result.\n"
+        )
+        sys.stderr.write(
+            "Set SKYBORN_CDO_TIMEOUT=<seconds> or use the Python API "
+            "timeout=... override for longer jobs.\n"
+        )
+        return 1
 
     return 0  # unreachable, satisfies linters
 
@@ -362,6 +347,8 @@ def _print_help():
     print()
     print("Usage:")
     print("  skyborn-cdo --info              Show CDO binary info and version")
+    print("  cdo --info                      Windows-only alias for skyborn-cdo")
+    print("  cdo-win --info                  Windows-only alias for skyborn-cdo")
     print("  skyborn-cdo --help              Show this help message")
     print("  skyborn-cdo -h <operator>       Show help for a specific CDO operator")
     print("  skyborn-cdo <operator> --help   Show help for a specific CDO operator")
@@ -378,6 +365,8 @@ def _print_help():
     print("  skyborn-cdo -O mergetime in1.nc in2.nc out.nc")
     print("  skyborn-cdo -O -f nc4 sellonlatbox,0,30,0,30 input.nc output.nc")
     print("  skyborn-cdo -O -f nc4 -fldmean -sellonlatbox,70,140,10,55 input.nc output.nc")
+    print("  cdo -O sellonlatbox,70,140,15,55 input.nc output.nc")
+    print("  cdo-win -O sellonlatbox,70,140,15,55 input.nc output.nc")
     print()
     print("Python API:")
     print("  from skyborn_cdo import Cdo")
@@ -385,6 +374,9 @@ def _print_help():
     print('  cdo("mergetime in1.nc in2.nc out.nc")')
     print('  cdo.mergetime(input="in1.nc in2.nc", output="out.nc")')
     print('  print(cdo.help("sellonlatbox"))  # operator help in Python')
+    print()
+    print("Windows:")
+    print("  Set SKYBORN_CDO_TIMEOUT=<seconds> to raise the default safeguard limit")
 
 
 if __name__ == "__main__":
