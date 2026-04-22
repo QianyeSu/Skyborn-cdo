@@ -217,6 +217,21 @@ class TestWindowsCompletionState:
         assert runner_mod._win_update_output_completion_state(state) is True
         assert runner_mod._win_timeout_completion_succeeded(state) is True
 
+    def test_hdf5_open_bit_blocks_exclusive_ready_success(self, tmp_path, monkeypatch):
+        """An HDF5 file that still advertises 'open for write' must fail even if handles are released."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "unclean_hdf5.nc"
+        path.write_bytes(b"old-output")
+        state = runner_mod._win_init_completion_state(str(path), now=0.0)
+
+        path.write_bytes(b"changed-header-only-output")
+        monkeypatch.setattr(runner_mod, "_hdf5_file_is_closed", lambda _path: False)
+        monkeypatch.setattr(runner_mod, "_win_file_is_exclusive_ready", lambda _path: True)
+
+        assert runner_mod._win_update_output_completion_state(state) is False
+        assert runner_mod._win_timeout_completion_succeeded(state) is False
+
     def test_stdout_only_partial_output_without_quiet_period_fails(self):
         """Stdout-only commands must fail hard timeout unless quiet completion was observed."""
         import skyborn_cdo._runner as runner_mod
