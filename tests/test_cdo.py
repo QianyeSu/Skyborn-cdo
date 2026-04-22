@@ -650,12 +650,20 @@ class TestCli:
         """Windows alias wrappers must live in repo scripts and setup.py Windows-only logic."""
         repo_root = Path(__file__).resolve().parents[1]
         setup_py = (repo_root / "setup.py").read_text(encoding="utf-8")
+        cdo_cmd = (repo_root / "scripts" / "cdo.cmd").read_text(encoding="utf-8")
+        cdo_win_cmd = (repo_root / "scripts" / "cdo-win.cmd").read_text(encoding="utf-8")
 
         assert (repo_root / "scripts" / "cdo.cmd").is_file()
         assert (repo_root / "scripts" / "cdo-win.cmd").is_file()
         assert 'if os.name == "nt":' in setup_py
         assert '"scripts/cdo.cmd"' in setup_py
         assert '"scripts/cdo-win.cmd"' in setup_py
+        assert '"%~dp0skyborn-cdo.exe" %*' in cdo_cmd
+        assert '"%~dp0python.exe" -m skyborn_cdo %*' in cdo_cmd
+        assert "exit /b %ERRORLEVEL%" in cdo_cmd
+        assert '"%~dp0skyborn-cdo.exe" %*' in cdo_win_cmd
+        assert '"%~dp0python.exe" -m skyborn_cdo %*' in cdo_win_cmd
+        assert "exit /b %ERRORLEVEL%" in cdo_win_cmd
 
     def test_cli_sinfo_outputs_text(self, tmp_path):
         """CLI sinfo should print metadata text for a NetCDF file."""
