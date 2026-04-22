@@ -3,24 +3,45 @@ Low-level subprocess runner for CDO commands.
 """
 
 import os
-import re
 import shlex
 import subprocess
 import tempfile
 import threading
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
 
-# Pattern CDO prints to stdout when processing completes successfully.
-# NOTE: CDO 2.x writes this to stdout (not stderr), and on Windows the
-# C-runtime stdio buffer is never flushed to the pipe before the exit-hang,
-# so this regex is used only in the post-kill final check, not in the
-# live polling loop where the HDF5 superblock method is used instead.
-_CDO_DONE_RE = re.compile(r"Processed \d+ values? from \d+ variable")
+if os.name == "nt":
+    import ctypes
+    from ctypes import wintypes
 
 # HDF5 file signature (first 8 bytes of every .nc4 / HDF5 file).
 _HDF5_SIG = b"\x89HDF\r\n\x1a\n"
+_WIN_OUTPUTFILE_DEADLINE = 3600
+_WIN_NO_OUTFILE_DEADLINE = 30
+
+if os.name == "nt":
+    _GENERIC_READ = 0x80000000
+    _OPEN_EXISTING = 3
+    _ERROR_SHARING_VIOLATION = 32
+    _ERROR_LOCK_VIOLATION = 33
+    _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CreateFileW = _kernel32.CreateFileW
+    _CreateFileW.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    _CreateFileW.restype = wintypes.HANDLE
+    _CloseHandle = _kernel32.CloseHandle
+    _CloseHandle.argtypes = [wintypes.HANDLE]
+    _CloseHandle.restype = wintypes.BOOL
 
 
 def _hdf5_file_is_closed(path: str):
@@ -37,14 +58,12 @@ def _hdf5_file_is_closed(path: str):
     True   – HDF5 file exists *and* has been properly closed (bit 0 == 0).
     False  – HDF5 superblock was **successfully read** and bit 0 == 1,
              meaning CDO still has the file open for writing.  The caller
-             should trust this signal and NOT fall back to size-stability
-             (which would risk killing CDO mid-write for compute-heavy
-             operators such as sp2gpl that write data after a long transform
-             phase).
+             should trust this signal and NOT fall back to weaker completion
+             probes while the file is still open for writing.
     None   – Cannot determine: file does not exist, is not an HDF5 file,
              uses a superblock version < 2, or an OSError prevented reading
              the header (e.g. transient Windows sharing violation).  In all
-             these cases the caller should use the size-stability fallback.
+             these cases the caller should use another completion probe.
     """
     try:
         if not os.path.isfile(path):
@@ -59,9 +78,208 @@ def _hdf5_file_is_closed(path: str):
         return (hdr[11] & 0x01) == 0
     except OSError:
         # Cannot read the superblock (e.g. transient Windows sharing
-        # violation).  Return None so the caller uses size-stability as a
-        # fallback instead of spinning forever on a False sentinel.
+        # violation).  Return None so the caller can fall back to another
+        # completion probe instead of spinning forever on a False sentinel.
         return None
+
+
+def _win_file_is_exclusive_ready(path: str):
+    """Return whether *path* can be opened exclusively on Windows.
+
+    When CDO still holds the output file open, ``CreateFileW(..., share=0)``
+    fails with a sharing violation.  Once CDO has closed the handle, the same
+    probe succeeds even if the process itself is still hung in exit cleanup.
+    """
+    if os.name != "nt":
+        return None
+
+    try:
+        if not os.path.isfile(path):
+            return None
+        handle = _CreateFileW(
+            path,
+            _GENERIC_READ,
+            0,
+            None,
+            _OPEN_EXISTING,
+            0,
+            None,
+        )
+        if handle == _INVALID_HANDLE_VALUE:
+            err = ctypes.get_last_error()
+            if err in (_ERROR_SHARING_VIOLATION, _ERROR_LOCK_VIOLATION):
+                return False
+            return None
+        _CloseHandle(handle)
+        return True
+    except OSError:
+        return None
+
+
+def _win_default_deadline(output_file: Optional[str]) -> int:
+    """Return the default Windows safeguard timeout in seconds."""
+    return _WIN_OUTPUTFILE_DEADLINE if output_file else _WIN_NO_OUTFILE_DEADLINE
+
+
+@dataclass(frozen=True)
+class _WinOutputFingerprint:
+    """Minimal output-file identity used to detect real work on Windows."""
+
+    existed: bool
+    size: int = 0
+    mtime_ns: int = 0
+
+
+@dataclass
+class _WinCompletionState:
+    """Shared Windows completion state used by both runner and CLI."""
+
+    output_file: Optional[str]
+    initial_output: Optional[_WinOutputFingerprint]
+    write_started: bool
+    quiet_period_observed: bool
+    last_stdout_size: int
+    last_stdout_t: float
+
+
+def _win_capture_output_fingerprint(output_file: Optional[str]) -> Optional[_WinOutputFingerprint]:
+    """Return a stable fingerprint for *output_file*, or ``None`` for stdout-only calls."""
+    if not output_file:
+        return None
+
+    try:
+        stat = os.stat(output_file)
+    except OSError:
+        return _WinOutputFingerprint(existed=False)
+
+    mtime_ns = getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1_000_000_000))
+    return _WinOutputFingerprint(
+        existed=True,
+        size=stat.st_size,
+        mtime_ns=mtime_ns,
+    )
+
+
+def _win_init_completion_state(
+    output_file: Optional[str],
+    *,
+    now: Optional[float] = None,
+) -> _WinCompletionState:
+    """Capture the pre-launch Windows completion baseline."""
+    if now is None:
+        now = time.monotonic()
+
+    return _WinCompletionState(
+        output_file=output_file,
+        initial_output=_win_capture_output_fingerprint(output_file),
+        write_started=False,
+        quiet_period_observed=False,
+        last_stdout_size=0,
+        last_stdout_t=now,
+    )
+
+
+def _win_output_fingerprint_changed(
+    initial: Optional[_WinOutputFingerprint],
+    current: Optional[_WinOutputFingerprint],
+) -> bool:
+    """Return whether a pre-existing output file changed identity during this run."""
+    return bool(
+        initial
+        and current
+        and initial.existed
+        and current.existed
+        and (current.size != initial.size or current.mtime_ns != initial.mtime_ns)
+    )
+
+
+def _win_output_created_nonempty(
+    initial: Optional[_WinOutputFingerprint],
+    current: Optional[_WinOutputFingerprint],
+) -> bool:
+    """Return whether this run produced a new non-empty output file."""
+    return bool(
+        initial
+        and current
+        and not initial.existed
+        and current.existed
+        and current.size > 0
+    )
+
+
+def _win_update_output_completion_state(state: _WinCompletionState) -> bool:
+    """Update output-file completion state and return whether completion is verified."""
+    if not state.output_file:
+        return False
+
+    current = _win_capture_output_fingerprint(state.output_file)
+    hdf5_closed = _hdf5_file_is_closed(state.output_file)
+    exclusive_ready = _win_file_is_exclusive_ready(state.output_file)
+    fingerprint_changed = _win_output_fingerprint_changed(state.initial_output, current)
+    created_nonempty = _win_output_created_nonempty(state.initial_output, current)
+
+    if not state.write_started and (
+        hdf5_closed is False
+        or exclusive_ready is False
+        or fingerprint_changed
+        or created_nonempty
+    ):
+        state.write_started = True
+
+    # A readable HDF5 "still open for write" bit is a stronger signal than
+    # the Windows handle probe. Do not accept exclusive-open success while
+    # the superblock still says the file was not cleanly closed.
+    if hdf5_closed is False:
+        file_ready = False
+    else:
+        file_ready = hdf5_closed is True or exclusive_ready is True
+    return state.write_started and file_ready and (fingerprint_changed or created_nonempty)
+
+
+def _win_update_stdout_completion_state(
+    state: _WinCompletionState,
+    *,
+    stdout_size: int,
+    now: float,
+    quiet_secs: float,
+) -> bool:
+    """Update stdout-only completion state and return whether quiet completion was observed."""
+    if stdout_size != state.last_stdout_size:
+        state.last_stdout_size = stdout_size
+        state.last_stdout_t = now
+        return False
+
+    if stdout_size > 0 and (now - state.last_stdout_t) >= quiet_secs:
+        state.quiet_period_observed = True
+
+    return state.quiet_period_observed
+
+
+def _win_update_completion_state(
+    state: _WinCompletionState,
+    *,
+    stdout_size: int,
+    now: float,
+    quiet_secs: float,
+) -> bool:
+    """Shared Windows completion update for output-file and stdout-only commands."""
+    if state.output_file:
+        return _win_update_output_completion_state(state)
+
+    return _win_update_stdout_completion_state(
+        state,
+        stdout_size=stdout_size,
+        now=now,
+        quiet_secs=quiet_secs,
+    )
+
+
+def _win_timeout_completion_succeeded(state: _WinCompletionState) -> bool:
+    """Return whether a hard-timeout can still be treated as success."""
+    if state.output_file:
+        return _win_update_output_completion_state(state)
+
+    return state.quiet_period_observed
 
 
 class CdoError(Exception):
@@ -200,6 +418,8 @@ class CdoRunner:
         # We still use PIPE (not file redirect) for stdout/stderr and
         # drain them via daemon threads so that ``proc.wait()`` can time
         # out independently of the pipe EOF.
+        _STDOUT_STABLE_SECS = 0.8  # stdout-only operators: growth window
+        _state = _win_init_completion_state(output_file, now=time.monotonic())
 
         try:
             proc = subprocess.Popen(
@@ -264,13 +484,10 @@ class CdoRunner:
         #      byte (offset 11, version 2+).  HDF5 sets bit 0 on open and
         #      clears it on H5Fclose().  When the bit is 0 the file is
         #      completely written – instant detection, zero wait.
-        #   2. File-size STABILITY fallback for all output types:
-        #      – _closed is None  (non-HDF5 / superblock unreadable):
-        #        use _SIZE_STABLE_SECS (2 s)
-        #      – _closed is False (HDF5 write-bit still set):
-        #        use _SIZE_STABLE_HDF5_SECS (5 s).  Handles the rare case
-        #        where CDO hangs *before* H5Fclose() so the bit never
-        #        clears – without this branch the loop spins forever.
+        #   2. Windows file-handle probe: once CDO closes the output file,
+        #      it becomes exclusively openable even if the process is still
+        #      stuck in exit cleanup. This avoids treating a stable 30 KB
+        #      NetCDF4 header as a finished multi-GB output file.
         #   3. stdout STABILITY fallback for stdout-only operators like
         #      info/sinfo/showname.  Once stdout stops growing for a short
         #      window, the useful payload has arrived and the hung process can
@@ -285,29 +502,21 @@ class CdoRunner:
         #
         _POLL = 0.3            # seconds between polls
         _GRACE_AFTER = 0.1     # short grace after close detected, then kill
-        _SIZE_STABLE_SECS = 2.0   # fallback: non-HDF5 or unreadable
-        _SIZE_STABLE_HDF5_SECS = 5.0   # fallback: HDF5 write-bit still set
-        _STDOUT_STABLE_SECS = 0.8  # stdout-only operators: growth window
         _elapsed = 0.0
         _deadline = timeout if timeout else 0
 
-        # On Windows, when there is no output file to monitor, the only
-        # completion signal is stdout_chunks.  MinGW fully buffers stdout
-        # when writing to a pipe; if CDO hangs *before* calling exit()
+        # On Windows, the wrapper needs a safeguard deadline because the
+        # completion probe may never resolve if the process hangs in exit
+        # cleanup or another process interferes with the output file handle.
         # (e.g. inside HDF5 H5Fclose, before atexit flushes stdio), the
         # buffer is never written to the pipe and stdout_chunks stays empty
         # forever — the loop would spin indefinitely without a deadline.
         # Apply a conservative fallback so the caller gets a CdoError
         # instead of an infinite hang.  Users who need a longer window can
         # pass timeout= explicitly (which sets _deadline above).
-        _NO_OUTFILE_DEADLINE = 30  # seconds; generous for any metadata op
-        if os.name == "nt" and output_file is None and _deadline == 0:
-            _deadline = _NO_OUTFILE_DEADLINE
+        if os.name == "nt" and _deadline == 0:
+            _deadline = _win_default_deadline(output_file)
         _detected_at = None    # wall-clock time when completion first seen
-        _last_fsize = -1       # last observed output-file size
-        _last_fsize_t = time.monotonic()  # wall-clock of last size change
-        _last_stdout_size = 0
-        _last_stdout_t = time.monotonic()
         hung = False
 
         while True:
@@ -321,36 +530,35 @@ class CdoRunner:
 
             # -- Quick-check: did CDO already finish its work? --------
             if _detected_at is None:
-                _done = False
-                if output_file:
+                _done = _win_update_completion_state(
+                    _state,
+                    stdout_size=sum(len(chunk) for chunk in stdout_chunks),
+                    now=_now,
+                    quiet_secs=_STDOUT_STABLE_SECS,
+                )
+                if False and output_file:
                     # 1) NC4/HDF5: check superblock file_consistency_flags.
                     #    H5Fclose() clears bit 0 → instant "done" signal.
                     _closed = _hdf5_file_is_closed(output_file)
+                    _exclusive_ready = _win_file_is_exclusive_ready(output_file)
                     if _closed is True:
                         _done = True
-                    else:
-                        # Size-stability fallback.
-                        # _closed is None  → non-HDF5 or unreadable: 2 s window
-                        # _closed is False → HDF5 write-bit still set: 5 s window
-                        # (covers CDO hanging before H5Fclose clears the bit)
-                        _stable_win = (_SIZE_STABLE_HDF5_SECS
-                                       if _closed is False
-                                       else _SIZE_STABLE_SECS)
+                    elif not _write_started:
+                        if _exclusive_ready is False:
+                            _write_started = True
+                    elif _exclusive_ready is True:
+                        # Once the output handle is released, the file is safe
+                        # to consume even if the process itself is still hung
+                        # during exit cleanup.
                         try:
-                            _cur_size = (
-                                os.path.getsize(output_file)
-                                if os.path.isfile(output_file) else -1
+                            _done = (
+                                os.path.isfile(output_file)
+                                and os.path.getsize(output_file) > 0
                             )
-                            if _cur_size != _last_fsize:
-                                _last_fsize = _cur_size
-                                _last_fsize_t = _now
-                            elif (_cur_size > 0
-                                  and (_now - _last_fsize_t) >= _stable_win):
-                                _done = True
                         except OSError:
-                            pass
+                            _done = False
                 # 2) stdout-only operators: wait for stdout growth to stop.
-                if not _done and output_file is None:
+                if False and not _done and output_file is None:
                     _stdout_size = sum(len(chunk) for chunk in stdout_chunks)
                     if _stdout_size != _last_stdout_size:
                         _last_stdout_size = _stdout_size
@@ -404,16 +612,7 @@ class CdoRunner:
             if _detected_at is not None:
                 completed = True
             else:
-                completed = (_CDO_DONE_RE.search(stdout)
-                             or _CDO_DONE_RE.search(stderr))
-                if not completed and output_file:
-                    try:
-                        completed = os.path.isfile(output_file) and \
-                            os.path.getsize(output_file) > 0
-                    except OSError:
-                        completed = False
-                if not completed and stdout.strip():
-                    completed = True
+                completed = _win_timeout_completion_succeeded(_state)
 
             if completed:
                 if self.debug:
@@ -422,11 +621,11 @@ class CdoRunner:
                 return subprocess.CompletedProcess(cmd, 0, stdout, stderr)
 
             raise CdoError(
-                f"CDO command timed out after {_elapsed:.0f}s "
-                f"(no output file or stdout data detected): {label}\n"
+                f"CDO command timed out after {_elapsed:.0f}s: {label}\n"
                 f"  Hint: CDO may have hung inside HDF5/NetCDF4 file operations "
-                f"before flushing stdout.  If the operation legitimately takes "
-                f"longer, pass timeout=<seconds> to override the default limit.",
+                f"before the Windows completion safeguard could confirm the "
+                f"result. If the operation legitimately takes longer, pass "
+                f"timeout=<seconds> to override the default limit.",
                 returncode=-1, stderr=stderr, cmd=label,
             )
 
