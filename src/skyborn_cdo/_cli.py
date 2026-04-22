@@ -21,12 +21,12 @@ def main():
         _print_info()
         return
 
-    # --help / -h with no further args → Python help; with args → passthrough to CDO
+    # --help / -h with no further args: Python help; with args: passthrough to CDO
     if args[0] in ("--help", "-h"):
         if len(args) == 1:
             _print_help()
             return
-        # e.g. "skyborn-cdo -h sellonlatbox" → forward to CDO
+        # e.g. "skyborn-cdo -h sellonlatbox": forward to CDO
 
     # PowerShell does not expand *.nc for native commands.  Mirror the Python
     # API behavior so `skyborn-cdo mergetime data_202*.nc out.nc` works on
@@ -172,7 +172,7 @@ def _run_windows(cmd, env, output_file=None):
     CDO (MinGW build) hangs at process exit when NC4/HDF5 is involved.
     This function:
 
-    * Pipes CDO stdout → sys.stdout and stderr → sys.stderr **in real
+    * Pipes CDO stdout to sys.stdout and stderr to sys.stderr **in real
       time**, so the user sees CDO's progress messages as they are printed,
       exactly as on Linux.
     * Detects that CDO has finished its work by reading the HDF5 superblock
@@ -182,7 +182,7 @@ def _run_windows(cmd, env, output_file=None):
       is detected by a short quiet period after output stops.
     * Kills the hung CDO process and returns exit code 0.
 
-    For CDO *failures* (bad input, unknown operator, …) CDO exits cleanly
+    For CDO *failures* (bad input, unknown operator, etc.) CDO exits cleanly
     with a non-zero code before any hang; those cases fall through to a
     normal ``proc.wait()`` and the real return code is preserved.
     """
@@ -267,7 +267,7 @@ def _run_windows(cmd, env, output_file=None):
     while True:
         try:
             proc.wait(timeout=_POLL)
-            # CDO exited cleanly (success or error) – drain and return.
+            # CDO exited cleanly (success or error); drain and return.
             t_out.join(timeout=1)
             t_err.join(timeout=1)
             return proc.returncode
