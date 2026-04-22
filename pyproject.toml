@@ -56,4 +56,3 @@ where = ["src"]
 
 [project.entry-points.console_scripts]
 skyborn-cdo = "skyborn_cdo._cli:main"
-cdo-win = "skyborn_cdo._cli:main"
