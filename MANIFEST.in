@@ -8,7 +8,7 @@ recursive-include src/skyborn_cdo/bin *
 recursive-include src/skyborn_cdo/lib *
 recursive-include src/skyborn_cdo/share *
 
-recursive-include scripts *.sh
+recursive-include scripts *.sh *.cmd
 recursive-include patches *.patch
 recursive-include tests *.py
 
