@@ -232,6 +232,40 @@ class TestWindowsCompletionState:
         assert runner_mod._win_update_output_completion_state(state) is False
         assert runner_mod._win_timeout_completion_succeeded(state) is False
 
+    def test_non_hdf5_timeout_cannot_succeed_from_postkill_exclusive_ready(self, tmp_path, monkeypatch):
+        """Non-HDF5 outputs must not succeed solely because the handle opens after we kill the process."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "classic_timeout.nc"
+        path.write_bytes(b"old-output")
+        state = runner_mod._win_init_completion_state(str(path), now=0.0)
+
+        readiness = [False, True]
+        monkeypatch.setattr(runner_mod, "_hdf5_file_is_closed", lambda _path: None)
+        monkeypatch.setattr(
+            runner_mod,
+            "_win_file_is_exclusive_ready",
+            lambda _path: readiness.pop(0) if readiness else True,
+        )
+
+        assert runner_mod._win_update_output_completion_state(state) is False
+
+        path.write_bytes(b"new-but-truncated")
+        assert runner_mod._win_timeout_completion_succeeded(state) is False
+
+    def test_hdf5_timeout_can_still_succeed_from_postkill_close_bit(self, tmp_path, monkeypatch):
+        """HDF5 outputs may still be accepted after timeout if the close bit confirms a clean close."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "nc4_timeout.nc"
+        state = runner_mod._win_init_completion_state(str(path), now=0.0)
+
+        path.write_bytes(b"new-hdf5-output")
+        monkeypatch.setattr(runner_mod, "_hdf5_file_is_closed", lambda _path: True)
+        monkeypatch.setattr(runner_mod, "_win_file_is_exclusive_ready", lambda _path: True)
+
+        assert runner_mod._win_timeout_completion_succeeded(state) is True
+
     def test_stdout_only_partial_output_without_quiet_period_fails(self):
         """Stdout-only commands must fail hard timeout unless quiet completion was observed."""
         import skyborn_cdo._runner as runner_mod
