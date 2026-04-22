@@ -257,6 +257,11 @@ def _run_windows(cmd, env, output_file=None):
             parsed_timeout = int(env_timeout)
             if parsed_timeout > 0:
                 _deadline = parsed_timeout
+            else:
+                sys.stderr.write(
+                    "skyborn-cdo: ignoring invalid SKYBORN_CDO_TIMEOUT value; "
+                    "expected a positive integer number of seconds.\n"
+                )
         except ValueError:
             sys.stderr.write(
                 "skyborn-cdo: ignoring invalid SKYBORN_CDO_TIMEOUT value; "
