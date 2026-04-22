@@ -633,6 +633,31 @@ class TestCli:
         assert "Python API" in result.stdout
         assert "<operator> --help" in result.stdout
 
+    def test_cli_invalid_env_timeout_warns_for_nonpositive(self, tmp_path):
+        """Non-positive SKYBORN_CDO_TIMEOUT values should be ignored with a warning."""
+        from skyborn_cdo import Cdo
+
+        try:
+            cdo = Cdo()
+            cdo.version()
+        except (FileNotFoundError, Exception):
+            pytest.skip("CDO binary not available or not functional")
+
+        sample_nc = str(tmp_path / "cli_env_timeout.nc")
+        cdo.topo(output=sample_nc)
+
+        env = _cli_test_env()
+        env["SKYBORN_CDO_TIMEOUT"] = "0"
+        result = subprocess.run(
+            [sys.executable, "-m", "skyborn_cdo._cli", "sinfo", sample_nc],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
+        )
+        assert result.returncode == 0
+        assert "ignoring invalid SKYBORN_CDO_TIMEOUT value" in result.stderr
+
     def test_cli_operator_help_long_form(self):
         """Test `skyborn-cdo mergetime --help` convenience syntax."""
         result = subprocess.run(
