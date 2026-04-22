@@ -108,6 +108,135 @@ class TestCdoRunner:
         with pytest.raises(CdoError, match="CDO binary not found"):
             runner.run(["--version"])
 
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-only file-lock probe")
+    def test_win_file_is_exclusive_ready(self, tmp_path):
+        """Exclusive-open probe should track whether a file handle is still held."""
+        import ctypes
+        from ctypes import wintypes
+
+        from skyborn_cdo._runner import _win_file_is_exclusive_ready
+
+        path = tmp_path / "lockprobe.nc"
+        path.write_bytes(b"test")
+
+        generic_read = 0x80000000
+        open_existing = 3
+        invalid_handle = wintypes.HANDLE(-1).value
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = [
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        ]
+        create_file.restype = wintypes.HANDLE
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = [wintypes.HANDLE]
+        close_handle.restype = wintypes.BOOL
+
+        assert _win_file_is_exclusive_ready(str(path)) is True
+
+        handle = create_file(str(path), generic_read, 0, None, open_existing, 0, None)
+        assert handle != invalid_handle
+        try:
+            assert _win_file_is_exclusive_ready(str(path)) is False
+        finally:
+            close_handle(handle)
+
+        assert _win_file_is_exclusive_ready(str(path)) is True
+
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-only file-lock probe")
+    def test_win_file_is_exclusive_ready_ignores_nonsharing_errors(self, tmp_path, monkeypatch):
+        """Non-sharing open failures must not be treated as 'still writing'."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "lockprobe_access.nc"
+        path.write_bytes(b"test")
+
+        monkeypatch.setattr(runner_mod, "_CreateFileW",
+                            lambda *args, **kwargs: runner_mod._INVALID_HANDLE_VALUE)
+        monkeypatch.setattr(runner_mod.ctypes, "get_last_error", lambda: 5)
+
+        assert runner_mod._win_file_is_exclusive_ready(str(path)) is None
+
+
+class TestWindowsCompletionState:
+    """Unit tests for shared Windows completion-state helpers."""
+
+    def test_preexisting_output_unchanged_after_timeout_fails(self, tmp_path, monkeypatch):
+        """A stale pre-existing output must never be treated as successful completion."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "existing.nc"
+        path.write_bytes(b"old-output")
+
+        state = runner_mod._win_init_completion_state(str(path), now=0.0)
+        monkeypatch.setattr(runner_mod, "_hdf5_file_is_closed", lambda _path: True)
+        monkeypatch.setattr(runner_mod, "_win_file_is_exclusive_ready", lambda _path: True)
+
+        assert runner_mod._win_update_output_completion_state(state) is False
+        assert runner_mod._win_timeout_completion_succeeded(state) is False
+
+    def test_preexisting_output_changed_after_write_start_and_close_succeeds(self, tmp_path, monkeypatch):
+        """A pre-existing output should succeed only after write-start plus a changed fingerprint."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "existing_changed.nc"
+        path.write_bytes(b"old-output")
+
+        state = runner_mod._win_init_completion_state(str(path), now=0.0)
+        readiness = [False, True]
+        monkeypatch.setattr(runner_mod, "_hdf5_file_is_closed", lambda _path: None)
+        monkeypatch.setattr(
+            runner_mod,
+            "_win_file_is_exclusive_ready",
+            lambda _path: readiness.pop(0) if readiness else True,
+        )
+
+        assert runner_mod._win_update_output_completion_state(state) is False
+
+        path.write_bytes(b"new-output-that-changed")
+        assert runner_mod._win_update_output_completion_state(state) is True
+        assert runner_mod._win_timeout_completion_succeeded(state) is True
+
+    def test_new_output_nonempty_and_closed_succeeds(self, tmp_path, monkeypatch):
+        """A newly created non-empty ready output should count as successful completion."""
+        import skyborn_cdo._runner as runner_mod
+
+        path = tmp_path / "new_output.nc"
+        state = runner_mod._win_init_completion_state(str(path), now=0.0)
+
+        path.write_bytes(b"fresh-output")
+        monkeypatch.setattr(runner_mod, "_hdf5_file_is_closed", lambda _path: True)
+        monkeypatch.setattr(runner_mod, "_win_file_is_exclusive_ready", lambda _path: True)
+
+        assert runner_mod._win_update_output_completion_state(state) is True
+        assert runner_mod._win_timeout_completion_succeeded(state) is True
+
+    def test_stdout_only_partial_output_without_quiet_period_fails(self):
+        """Stdout-only commands must fail hard timeout unless quiet completion was observed."""
+        import skyborn_cdo._runner as runner_mod
+
+        state = runner_mod._win_init_completion_state(None, now=0.0)
+
+        assert runner_mod._win_update_completion_state(
+            state,
+            stdout_size=64,
+            now=0.0,
+            quiet_secs=0.5,
+        ) is False
+        assert runner_mod._win_update_completion_state(
+            state,
+            stdout_size=64,
+            now=0.2,
+            quiet_secs=0.5,
+        ) is False
+        assert runner_mod._win_timeout_completion_succeeded(state) is False
+
 
 class TestCdoClass:
     """Test the high-level Cdo class."""
@@ -450,6 +579,8 @@ class TestCli:
             env=_cli_test_env(),
         )
         assert "skyborn-cdo" in result.stdout
+        assert "cdo --info" in result.stdout
+        assert "cdo-win" in result.stdout
         assert "Python API" in result.stdout
         assert "<operator> --help" in result.stdout
 
@@ -497,6 +628,19 @@ class TestCli:
             project = tomllib.load(f)
 
         assert skyborn_cdo.__version__ == project["project"]["version"]
+        scripts = project["project"]["entry-points"]["console_scripts"]
+        assert scripts == {"skyborn-cdo": "skyborn_cdo._cli:main"}
+
+    def test_windows_launcher_scripts_are_packaged_conditionally(self):
+        """Windows alias wrappers must live in repo scripts and setup.py Windows-only logic."""
+        repo_root = Path(__file__).resolve().parents[1]
+        setup_py = (repo_root / "setup.py").read_text(encoding="utf-8")
+
+        assert (repo_root / "scripts" / "cdo.cmd").is_file()
+        assert (repo_root / "scripts" / "cdo-win.cmd").is_file()
+        assert 'if os.name == "nt":' in setup_py
+        assert '"scripts/cdo.cmd"' in setup_py
+        assert '"scripts/cdo-win.cmd"' in setup_py
 
     def test_cli_sinfo_outputs_text(self, tmp_path):
         """CLI sinfo should print metadata text for a NetCDF file."""
