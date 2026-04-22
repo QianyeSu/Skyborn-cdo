@@ -1,10 +1,8 @@
 @echo off
-setlocal
-if exist "%~dp0skyborn-cdo.exe" (
-    "%~dp0skyborn-cdo.exe" %*
-    set "RC=%ERRORLEVEL%"
-    exit /b %RC%
-)
+if exist "%~dp0skyborn-cdo.exe" goto run_launcher
 "%~dp0python.exe" -m skyborn_cdo %*
-set "RC=%ERRORLEVEL%"
-exit /b %RC%
+exit /b %ERRORLEVEL%
+
+:run_launcher
+"%~dp0skyborn-cdo.exe" %*
+exit /b %ERRORLEVEL%
